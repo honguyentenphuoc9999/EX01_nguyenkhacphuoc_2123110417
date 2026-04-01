@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Demo02.Models
@@ -7,6 +7,7 @@ namespace Demo02.Models
     {
         [Key]
         public Guid ReservationId { get; set; } = Guid.NewGuid();
+        
         [Required, StringLength(20)]
         public string BookingCode { get; set; } = string.Empty;
 
@@ -19,15 +20,16 @@ namespace Demo02.Models
         public DateTime? ActualCheckIn { get; set; }
         public DateTime? ActualCheckOut { get; set; }
 
-        [Required]
-        public string Channel { get; set; } = "Trực tiếp";
+        public BookingChannel Channel { get; set; } = BookingChannel.Direct;
         public string? OtaSource { get; set; }
         public bool IsOtaPrepaid { get; set; } = false;
 
-        [Required]
-        public string Status { get; set; } = "Chờ xác nhận";
+        public ReservationStatus Status { get; set; } = ReservationStatus.Pending;
+        
         [Column(TypeName = "decimal(18,2)")]
         public decimal DepositAmount { get; set; } = 0;
+        
+        [StringLength(1000)]
         public string? SpecialRequests { get; set; }
 
         public DateTime? CancelledAt { get; set; }
@@ -39,6 +41,6 @@ namespace Demo02.Models
         public byte[]? RowVersion { get; set; }
 
         // Bảng trung gian ReservationRoom (Vì 1 booking có thể đặt nhiều phòng)
-        public ICollection<Room>? Rooms { get; set; }
+        public ICollection<ReservationRoom>? ReservationRooms { get; set; }
     }
 }

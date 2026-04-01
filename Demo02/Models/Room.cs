@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace Demo02.Models
@@ -7,8 +7,10 @@ namespace Demo02.Models
     {
         [Key]
         public Guid RoomId { get; set; } = Guid.NewGuid();
+        
         [Required, StringLength(10)]
         public string RoomNumber { get; set; } = string.Empty;
+        
         public int Floor { get; set; }
 
         public Guid RoomTypeId { get; set; }
@@ -16,9 +18,11 @@ namespace Demo02.Models
         public RoomType? RoomType { get; set; }
 
         [Required]
-        public string Status { get; set; } = "Sạch sẵn sàng";
+        public RoomStatus Status { get; set; } = RoomStatus.VacantClean;
+        
         [Column(TypeName = "decimal(18,2)")]
         public decimal BasePrice { get; set; }
+        
         [StringLength(500)]
         public string? Description { get; set; }
 
