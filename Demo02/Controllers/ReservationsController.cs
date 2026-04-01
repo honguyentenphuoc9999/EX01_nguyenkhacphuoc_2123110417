@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,14 +25,20 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
         {
-            return await _context.Reservations.ToListAsync();
+            return await _context.Reservations
+                .Include(r => r.Guest)
+                .Include(r => r.ReservationRooms)
+                .ToListAsync();
         }
 
         // GET: api/Reservations/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Reservation>> GetReservation(Guid id)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
+            var reservation = await _context.Reservations
+                .Include(r => r.Guest)
+                .Include(r => r.ReservationRooms)
+                .FirstOrDefaultAsync(r => r.ReservationId == id);
 
             if (reservation == null)
             {
@@ -43,7 +49,6 @@ namespace Demo02.Controllers
         }
 
         // PUT: api/Reservations/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutReservation(Guid id, Reservation reservation)
         {
@@ -74,7 +79,6 @@ namespace Demo02.Controllers
         }
 
         // POST: api/Reservations
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Reservation>> PostReservation(Reservation reservation)
         {

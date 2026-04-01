@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,7 +43,6 @@ namespace Demo02.Controllers
         }
 
         // PUT: api/FolioCharges/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutFolioCharge(Guid id, FolioCharge folioCharge)
         {
@@ -52,11 +51,14 @@ namespace Demo02.Controllers
                 return BadRequest();
             }
 
+            // Recalculate TotalAmount
+            folioCharge.TotalAmount = folioCharge.Quantity * folioCharge.UnitPrice;
             _context.Entry(folioCharge).State = EntityState.Modified;
 
             try
             {
                 await _context.SaveChangesAsync();
+                await UpdateFolioTotals(folioCharge.FolioId);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -74,12 +76,16 @@ namespace Demo02.Controllers
         }
 
         // POST: api/FolioCharges
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<FolioCharge>> PostFolioCharge(FolioCharge folioCharge)
         {
+            // Recalculate TotalAmount before saving
+            folioCharge.TotalAmount = folioCharge.Quantity * folioCharge.UnitPrice;
             _context.FolioCharges.Add(folioCharge);
             await _context.SaveChangesAsync();
+            
+            // Cập nhật lại tổng tiền trong Folio
+            await UpdateFolioTotals(folioCharge.FolioId);
 
             return CreatedAtAction("GetFolioCharge", new { id = folioCharge.ChargeId }, folioCharge);
         }
@@ -94,10 +100,25 @@ namespace Demo02.Controllers
                 return NotFound();
             }
 
+            Guid folioId = folioCharge.FolioId;
             _context.FolioCharges.Remove(folioCharge);
             await _context.SaveChangesAsync();
+            
+            // Cập nhật lại tổng tiền trong Folio
+            await UpdateFolioTotals(folioId);
 
             return NoContent();
+        }
+
+        private async Task UpdateFolioTotals(Guid folioId)
+        {
+            var folio = await _context.Folios.Include(f => f.Charges).FirstOrDefaultAsync(f => f.FolioId == folioId);
+            if (folio != null)
+            {
+                folio.TotalCharges = folio.Charges?.Sum(c => c.TotalAmount) ?? 0;
+                folio.Balance = folio.TotalCharges - folio.TotalPayments;
+                await _context.SaveChangesAsync();
+            }
         }
 
         private bool FolioChargeExists(Guid id)

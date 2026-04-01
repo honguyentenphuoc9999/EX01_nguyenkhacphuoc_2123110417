@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,14 +25,15 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Room>>> GetRooms()
         {
-            return await _context.Rooms.ToListAsync();
+            // Bao gồm thông tin loại phòng khi xem danh sách phòng
+            return await _context.Rooms.Include(r => r.RoomType).ToListAsync();
         }
 
         // GET: api/Rooms/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Room>> GetRoom(Guid id)
         {
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _context.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.RoomId == id);
 
             if (room == null)
             {
@@ -43,7 +44,6 @@ namespace Demo02.Controllers
         }
 
         // PUT: api/Rooms/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRoom(Guid id, Room room)
         {
@@ -74,7 +74,6 @@ namespace Demo02.Controllers
         }
 
         // POST: api/Rooms
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Room>> PostRoom(Room room)
         {
@@ -94,6 +93,7 @@ namespace Demo02.Controllers
                 return NotFound();
             }
 
+            // Theo logic AppDbContext, đây sẽ là Soft Delete
             _context.Rooms.Remove(room);
             await _context.SaveChangesAsync();
 
