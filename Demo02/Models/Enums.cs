@@ -75,4 +75,13 @@ namespace Demo02.Models
         Regular,
         Group
     }
+
+    public enum StaffRole
+    {
+        Admin,
+        Receptionist,
+        Housekeeper,
+        Accountant,
+        Technician
+    }
 }

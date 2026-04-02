@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<Staff> Staffs { get; set; }
     public DbSet<LoyaltyAccount> LoyaltyAccounts { get; set; }
     public DbSet<InventoryItem> InventoryItems { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,25 +84,42 @@ public class AppDbContext : DbContext
     private void HandleAuditFields()
     {
         var entries = ChangeTracker.Entries()
-            .Where(e => e.Entity is BaseEntity && (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted));
+            .Where(e => e.Entity is BaseEntity && (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted))
+            .ToList();
 
         foreach (var entityEntry in entries)
         {
             var entity = (BaseEntity)entityEntry.Entity;
+            string action = "";
+            
             if (entityEntry.State == EntityState.Added)
             {
                 entity.CreatedAt = DateTime.Now;
+                action = "Create";
             }
             else if (entityEntry.State == EntityState.Modified)
             {
                 entity.UpdatedAt = DateTime.Now;
+                action = "Update";
             }
             else if (entityEntry.State == EntityState.Deleted)
             {
                 entityEntry.State = EntityState.Modified; // Chuyển Hard Delete -> Soft Delete
                 entity.IsDeleted = true;
                 entity.DeletedAt = DateTime.Now;
+                action = "Delete";
             }
+
+            // --- BR-17: Audit Trail Logging ---
+            var log = new AuditLog
+            {
+                EntityName = entity.GetType().Name,
+                EntityId = entity.GetType().GetProperties().FirstOrDefault(p => p.Name.EndsWith("Id"))?.GetValue(entity)?.ToString() ?? "Unknown",
+                Action = action,
+                Timestamp = DateTime.Now,
+                UserId = entity.UpdatedBy ?? "System"
+            };
+            AuditLogs.Add(log);
         }
     }
 }

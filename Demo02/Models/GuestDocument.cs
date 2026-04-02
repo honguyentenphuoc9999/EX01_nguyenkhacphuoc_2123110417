@@ -14,6 +14,10 @@ namespace Demo02.Models
 
         [Required]
         public string DocumentType { get; set; } = "IDCard"; // IDCard, Passport, Visa...
+        
+        [Required]
+        public string DocumentNumber { get; set; } = string.Empty; // Sẽ được mã hóa
+
         [Required, StringLength(500)]
         public string DocumentUrl { get; set; } = string.Empty;
         public DateTime UploadedAt { get; set; } = DateTime.Now;

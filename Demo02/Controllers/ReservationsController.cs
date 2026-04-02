@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Demo02.Data;
-using Demo02.Models;
+using Demo02.Services;
+using Demo02.Models.DTOs;
 
 namespace Demo02.Controllers
 {
@@ -14,99 +11,69 @@ namespace Demo02.Controllers
     [ApiController]
     public class ReservationsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IReservationService _reservationService;
 
-        public ReservationsController(AppDbContext context)
+        public ReservationsController(IReservationService reservationService)
         {
-            _context = context;
+            _reservationService = reservationService;
         }
 
         // GET: api/Reservations
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
+        public async Task<ActionResult<IEnumerable<ReservationResponseDto>>> GetReservations()
         {
-            return await _context.Reservations
-                .Include(r => r.Guest)
-                .Include(r => r.ReservationRooms)
-                .ToListAsync();
+            return Ok(await _reservationService.GetAllReservationsAsync());
         }
 
         // GET: api/Reservations/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Reservation>> GetReservation(Guid id)
+        public async Task<ActionResult<ReservationResponseDto>> GetReservation(Guid id)
         {
-            var reservation = await _context.Reservations
-                .Include(r => r.Guest)
-                .Include(r => r.ReservationRooms)
-                .FirstOrDefaultAsync(r => r.ReservationId == id);
-
-            if (reservation == null)
-            {
-                return NotFound();
-            }
-
-            return reservation;
-        }
-
-        // PUT: api/Reservations/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReservation(Guid id, Reservation reservation)
-        {
-            if (id != reservation.ReservationId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(reservation).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ReservationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            var r = await _reservationService.GetReservationByIdAsync(id);
+            if (r == null) return NotFound();
+            return Ok(r);
         }
 
         // POST: api/Reservations
         [HttpPost]
-        public async Task<ActionResult<Reservation>> PostReservation(Reservation reservation)
+        public async Task<ActionResult<ReservationResponseDto>> PostReservation(ReservationCreateDto dto)
         {
-            _context.Reservations.Add(reservation);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetReservation", new { id = reservation.ReservationId }, reservation);
+            var result = await _reservationService.CreateReservationAsync(dto);
+            return CreatedAtAction("GetReservation", new { id = result.ReservationId }, result);
         }
 
-        // DELETE: api/Reservations/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReservation(Guid id)
+        // POST: api/Reservations/5/check-in
+        [HttpPost("{id}/check-in")]
+        public async Task<IActionResult> CheckIn(Guid id)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null)
-            {
-                return NotFound();
-            }
-
-            _context.Reservations.Remove(reservation);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            var success = await _reservationService.CheckInAsync(id);
+            if (!success) return BadRequest("Check-in failed. Please check reservation status.");
+            return Ok("Check-in successful.");
         }
 
-        private bool ReservationExists(Guid id)
+        // POST: api/Reservations/5/cancel
+        [HttpPost("{id}/check-out")]
+        public async Task<IActionResult> PostCheckOut(Guid id)
         {
-            return _context.Reservations.Any(e => e.ReservationId == id);
+            var success = await _reservationService.CheckOutAsync(id);
+            if (!success) return BadRequest("Check-out failed. Ensure reservation is CheckedIn and Folio exists.");
+            return Ok("Check-out successful. Invoice generated.");
+        }
+
+        [HttpPost("{id}/assign-room/{roomId}")]
+        public async Task<IActionResult> PostAssignRoom(Guid id, Guid roomId)
+        {
+            var success = await _reservationService.AssignRoomAsync(id, roomId);
+            if (!success) return BadRequest("Room assignment failed. Ensure room is VacantClean.");
+            return Ok("Room assigned successfully.");
+        }
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> Cancel(Guid id, [FromBody] string reason)
+        {
+            var success = await _reservationService.CancelAsync(id, reason);
+            if (!success) return NotFound();
+            return Ok("Reservation cancelled.");
         }
     }
 }

@@ -1,10 +1,15 @@
 using Demo02.Data;
+using Demo02.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add Repository and Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+// Add Services
+builder.Services.AddScoped<Demo02.Services.IReservationService, Demo02.Services.ReservationService>();
 // Add services to the container.
 
 builder.Services.AddControllers()
