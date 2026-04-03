@@ -18,9 +18,9 @@ namespace Demo02.Models
         [ForeignKey("AssignedStaffId")]
         public Staff? AssignedStaff { get; set; }
 
-        public string TaskType { get; set; } = "Cleaning"; // Cleaning, Turndown, Inspection...
-        public string Status { get; set; } = "Pending"; // Pending, InProgress, Completed
-        public string Priority { get; set; } = "Normal";
+        public HmsTaskType TaskType { get; set; } = HmsTaskType.Cleaning;
+        public HmsTaskStatus Status { get; set; } = HmsTaskStatus.Pending;
+        public Priority Priority { get; set; } = Priority.Normal;
         public DateTime ScheduledDate { get; set; } = DateTime.Now;
         public DateTime? CompletedAt { get; set; }
         public string? Notes { get; set; }
@@ -37,7 +37,7 @@ namespace Demo02.Models
 
         public string ReportedBy { get; set; } = string.Empty;
         public string IssueDescription { get; set; } = string.Empty;
-        public string Severity { get; set; } = "Medium"; // Low, Medium, High, Critical
+        public Priority Severity { get; set; } = Priority.Normal;
         public string Status { get; set; } = "Open"; // Open, InProgress, Resolved, Closed
         
         public Guid? AssignedTechnicianId { get; set; }
@@ -95,7 +95,7 @@ namespace Demo02.Models
         [Key]
         public Guid StaffId { get; set; } = Guid.NewGuid();
 
-        [Required, StringLength(20)]
+        [StringLength(20)]
         public string EmployeeCode { get; set; } = string.Empty;
         [Required, StringLength(200)]
         public string FullName { get; set; } = string.Empty;
@@ -120,7 +120,7 @@ namespace Demo02.Models
 
         [Required, StringLength(20)]
         public string MemberNumber { get; set; } = string.Empty;
-        public string Tier { get; set; } = "Silver"; // Silver, Gold, Platinum
+        public LoyaltyTier Tier { get; set; } = LoyaltyTier.Silver;
         public int CurrentPoints { get; set; }
         public int LifetimePoints { get; set; }
         public DateTime EnrolledAt { get; set; } = DateTime.Now;

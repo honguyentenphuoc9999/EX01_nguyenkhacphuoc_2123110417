@@ -10,7 +10,7 @@ namespace Demo02.Models
         [Required, StringLength(200)]
         public string FullName { get; set; } = string.Empty;
         
-        [Required, StringLength(20)]
+        [Required, StringLength(500)]
         public string IdNumber { get; set; } = string.Empty;
         
         [Required, StringLength(50)]

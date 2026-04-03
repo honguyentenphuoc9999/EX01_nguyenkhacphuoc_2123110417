@@ -17,6 +17,11 @@ namespace Demo02.Data.Repositories
         IGenericRepository<GuestDocument> GuestDocuments { get; }
         IGenericRepository<HousekeepingTask> HousekeepingTasks { get; }
         IGenericRepository<Staff> Staffs { get; }
+        IGenericRepository<LoyaltyAccount> LoyaltyAccounts { get; }
+        IGenericRepository<InventoryItem> InventoryItems { get; }
+        IGenericRepository<MinibarLog> MinibarLogs { get; }
+        IGenericRepository<Refund> Refunds { get; }
+        IGenericRepository<ReservationRoom> ReservationRooms { get; }
         // Add other repositories as needed
         
         Task<int> CompleteAsync();

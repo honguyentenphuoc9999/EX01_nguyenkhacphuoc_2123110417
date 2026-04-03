@@ -22,6 +22,11 @@ namespace Demo02.Data.Repositories
             GuestDocuments = new GenericRepository<GuestDocument>(_context);
             HousekeepingTasks = new GenericRepository<HousekeepingTask>(_context);
             Staffs = new GenericRepository<Staff>(_context);
+            LoyaltyAccounts = new GenericRepository<LoyaltyAccount>(_context);
+            InventoryItems = new GenericRepository<InventoryItem>(_context);
+            MinibarLogs = new GenericRepository<MinibarLog>(_context);
+            Refunds = new GenericRepository<Refund>(_context);
+            ReservationRooms = new GenericRepository<ReservationRoom>(_context);
         }
 
         public IGenericRepository<Room> Rooms { get; private set; }
@@ -35,6 +40,11 @@ namespace Demo02.Data.Repositories
         public IGenericRepository<GuestDocument> GuestDocuments { get; private set; }
         public IGenericRepository<HousekeepingTask> HousekeepingTasks { get; private set; }
         public IGenericRepository<Staff> Staffs { get; private set; }
+        public IGenericRepository<LoyaltyAccount> LoyaltyAccounts { get; private set; }
+        public IGenericRepository<InventoryItem> InventoryItems { get; private set; }
+        public IGenericRepository<MinibarLog> MinibarLogs { get; private set; }
+        public IGenericRepository<Refund> Refunds { get; private set; }
+        public IGenericRepository<ReservationRoom> ReservationRooms { get; private set; }
 
         public async Task<int> CompleteAsync()
         {

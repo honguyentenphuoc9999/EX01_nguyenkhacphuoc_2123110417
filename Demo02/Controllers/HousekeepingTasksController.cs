@@ -42,7 +42,23 @@ namespace Demo02.Controllers
         public async Task<IActionResult> PutHousekeepingTask(Guid id, HousekeepingTask task)
         {
             if (id != task.TaskId) return BadRequest();
-            _context.Entry(task).State = EntityState.Modified;
+            
+            var existingTask = await _context.HousekeepingTasks.FindAsync(id);
+            if (existingTask == null) return NotFound();
+
+            // Cập nhật các trường cần thiết
+            existingTask.Status = task.Status;
+            existingTask.Notes = task.Notes;
+            existingTask.CompletedAt = task.CompletedAt;
+            existingTask.AssignedStaffId = task.AssignedStaffId;
+
+            // --- HMS Automation: Nếu dọn xong, biến phòng thành Trống Sạch ---
+            if (existingTask.Status == HmsTaskStatus.Completed)
+            {
+                var room = await _context.Rooms.FindAsync(existingTask.RoomId);
+                if (room != null) room.Status = RoomStatus.VacantClean;
+            }
+
             await _context.SaveChangesAsync();
             return NoContent();
         }

@@ -1,12 +1,18 @@
 using Demo02.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Demo02.Utilities;
 
 namespace Demo02.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
     {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     // --- Nhóm Core: Lễ tân & Đặt phòng (UC-01 to UC-07, BK-01 to BK-03) ---
@@ -39,6 +45,15 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // --- NFR-05: AES-256 Encryption for PII Data (CCCD/Passport) ---
+        var encryptionConverter = new ValueConverter<string, string>(
+            v => EncryptionHelper.Encrypt(v),
+            v => EncryptionHelper.Decrypt(v));
+
+        modelBuilder.Entity<Guest>()
+            .Property(g => g.IdNumber)
+            .HasConversion(encryptionConverter);
 
         // --- Cài đặt Global Query Filter cho tất cả thực thể Nghiệp vụ (Soft Delete - BR 14) ---
         modelBuilder.Entity<RoomType>().HasQueryFilter(x => !x.IsDeleted);
@@ -87,6 +102,9 @@ public class AppDbContext : DbContext
             .Where(e => e.Entity is BaseEntity && (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted))
             .ToList();
 
+        // Lấy tên User đang đăng nhập từ HttpContext (BRD BR-17)
+        var currentUserName = _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "System";
+
         foreach (var entityEntry in entries)
         {
             var entity = (BaseEntity)entityEntry.Entity;
@@ -95,11 +113,13 @@ public class AppDbContext : DbContext
             if (entityEntry.State == EntityState.Added)
             {
                 entity.CreatedAt = DateTime.Now;
+                entity.CreatedBy = currentUserName;
                 action = "Create";
             }
             else if (entityEntry.State == EntityState.Modified)
             {
                 entity.UpdatedAt = DateTime.Now;
+                entity.UpdatedBy = currentUserName;
                 action = "Update";
             }
             else if (entityEntry.State == EntityState.Deleted)
@@ -107,6 +127,7 @@ public class AppDbContext : DbContext
                 entityEntry.State = EntityState.Modified; // Chuyển Hard Delete -> Soft Delete
                 entity.IsDeleted = true;
                 entity.DeletedAt = DateTime.Now;
+                entity.UpdatedBy = currentUserName;
                 action = "Delete";
             }
 
@@ -117,7 +138,7 @@ public class AppDbContext : DbContext
                 EntityId = entity.GetType().GetProperties().FirstOrDefault(p => p.Name.EndsWith("Id"))?.GetValue(entity)?.ToString() ?? "Unknown",
                 Action = action,
                 Timestamp = DateTime.Now,
-                UserId = entity.UpdatedBy ?? "System"
+                UserId = currentUserName
             };
             AuditLogs.Add(log);
         }

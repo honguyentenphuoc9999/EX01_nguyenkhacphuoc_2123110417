@@ -73,7 +73,8 @@ namespace Demo02.Models
         VIP,
         Corporate,
         Regular,
-        Group
+        Group,
+        Individual
     }
 
     public enum StaffRole
@@ -83,5 +84,37 @@ namespace Demo02.Models
         Housekeeper,
         Accountant,
         Technician
+    }
+
+    public enum LoyaltyTier
+    {
+        Silver,
+        Gold,
+        Platinum
+    }
+
+    public enum HmsTaskType
+    {
+        Cleaning,
+        Turndown,
+        Inspection,
+        Maintenance,
+        Repair
+    }
+
+    public enum HmsTaskStatus
+    {
+        Pending,
+        InProgress,
+        Completed,
+        Cancelled
+    }
+
+    public enum Priority
+    {
+        Low,
+        Normal,
+        High,
+        Critical
     }
 }

@@ -4,64 +4,68 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Demo02.Data;
+using Demo02.Data.Repositories;
 using Demo02.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Demo02.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MinibarLogsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public MinibarLogsController(AppDbContext context) => _context = context;
+        private readonly IUnitOfWork _uow;
+        public MinibarLogsController(IUnitOfWork uow) => _uow = uow;
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MinibarLog>>> GetMinibarLogs() => await _context.MinibarLogs.Include(l=>l.Room).Include(l=>l.Item).ToListAsync();
+        public async Task<ActionResult<IEnumerable<MinibarLog>>> GetMinibarLogs() => Ok(await _uow.MinibarLogs.GetAllAsync(l=>l.Room!, l=>l.Item!));
 
         [HttpPost]
         public async Task<ActionResult<MinibarLog>> PostMinibarLog(MinibarLog log)
         {
-            _context.MinibarLogs.Add(log);
-            await _context.SaveChangesAsync();
+            await _uow.MinibarLogs.AddAsync(log);
+            await _uow.CompleteAsync();
             return CreatedAtAction("GetMinibarLogs", new { id = log.LogId }, log);
         }
     }
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin,FrontDesk")]
     public class LoyaltyAccountsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public LoyaltyAccountsController(AppDbContext context) => _context = context;
+        private readonly IUnitOfWork _uow;
+        public LoyaltyAccountsController(IUnitOfWork uow) => _uow = uow;
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LoyaltyAccount>>> GetLoyaltyAccounts() => await _context.LoyaltyAccounts.Include(a=>a.Guest).ToListAsync();
+        public async Task<ActionResult<IEnumerable<LoyaltyAccount>>> GetLoyaltyAccounts() => Ok(await _uow.LoyaltyAccounts.GetAllAsync(a=>a.Guest!));
 
         [HttpPost]
         public async Task<ActionResult<LoyaltyAccount>> PostLoyaltyAccount(LoyaltyAccount acc)
         {
-            _context.LoyaltyAccounts.Add(acc);
-            await _context.SaveChangesAsync();
+            await _uow.LoyaltyAccounts.AddAsync(acc);
+            await _uow.CompleteAsync();
             return CreatedAtAction("GetLoyaltyAccounts", new { id = acc.AccountId }, acc);
         }
     }
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin,Accountant")]
     public class RefundsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public RefundsController(AppDbContext context) => _context = context;
+        private readonly IUnitOfWork _uow;
+        public RefundsController(IUnitOfWork uow) => _uow = uow;
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Refund>>> GetRefunds() => await _context.Refunds.ToListAsync();
+        public async Task<ActionResult<IEnumerable<Refund>>> GetRefunds() => Ok(await _uow.Refunds.GetAllAsync());
 
         [HttpPost]
         public async Task<ActionResult<Refund>> PostRefund(Refund refund)
         {
-            _context.Refunds.Add(refund);
-            await _context.SaveChangesAsync();
+            await _uow.Refunds.AddAsync(refund);
+            await _uow.CompleteAsync();
             return CreatedAtAction("GetRefunds", new { id = refund.RefundId }, refund);
         }
     }

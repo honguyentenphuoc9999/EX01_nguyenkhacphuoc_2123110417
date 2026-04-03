@@ -5,10 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using Demo02.Services;
 using Demo02.Models.DTOs;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace Demo02.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin,FrontDesk")]
     public class ReservationsController : ControllerBase
     {
         private readonly IReservationService _reservationService;
@@ -48,7 +51,10 @@ namespace Demo02.Controllers
         {
             var success = await _reservationService.CheckInAsync(id);
             if (!success) return BadRequest("Check-in failed. Please check reservation status.");
-            return Ok("Check-in successful.");
+            
+            // Lấy Folio ID để trả về cho người dùng dễ test
+            var folioId = await _reservationService.GetFolioIdByReservationIdAsync(id);
+            return Ok($"Check-in successful. Folio ID: {folioId}");
         }
 
         // POST: api/Reservations/5/cancel
@@ -74,6 +80,13 @@ namespace Demo02.Controllers
             var success = await _reservationService.CancelAsync(id, reason);
             if (!success) return NotFound();
             return Ok("Reservation cancelled.");
+        }
+        [HttpPost("checkout-by-room/{roomId}")]
+        public async Task<IActionResult> CheckOutByRoom(Guid roomId)
+        {
+            var success = await _reservationService.CheckOutByRoomAsync(roomId);
+            if (!success) return BadRequest("Could not check out this room. Check if it's currently occupied.");
+            return Ok("Check-out successful. Invoice generated and Housekeeping task created.");
         }
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Demo02.Data;
 using Demo02.Models;
+using Demo02.Models.DTOs;
 
 namespace Demo02.Controllers
 {
@@ -23,9 +24,18 @@ namespace Demo02.Controllers
 
         // GET: api/RoomTypes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoomType>>> GetRoomTypes()
+        public async Task<ActionResult<IEnumerable<RoomTypeResponseDto>>> GetRoomTypes()
         {
-            return await _context.RoomTypes.ToListAsync();
+            return await _context.RoomTypes
+                .Select(rt => new RoomTypeResponseDto {
+                    RoomTypeId = rt.RoomTypeId,
+                    TypeName = rt.TypeName,
+                    BasePrice = rt.BasePrice,
+                    Description = rt.Description,
+                    MaxOccupancy = rt.MaxOccupancy,
+                    RoomCount = rt.Rooms != null ? rt.Rooms.Count() : 0
+                })
+                .ToListAsync();
         }
 
         // GET: api/RoomTypes/5

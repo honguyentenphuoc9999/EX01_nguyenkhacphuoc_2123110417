@@ -16,6 +16,8 @@ namespace Demo02.Models
         public Guest? Guest { get; set; }
         
         public Guid RoomId { get; set; } // Hỗ trợ gán 1 phòng nhanh
+        [ForeignKey("RoomId")]
+        public Room? Room { get; set; }
 
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }

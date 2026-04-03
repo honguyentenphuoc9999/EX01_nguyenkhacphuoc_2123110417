@@ -15,5 +15,7 @@ namespace Demo02.Services
         Task<bool> CheckOutAsync(Guid id);
         Task<bool> AssignRoomAsync(Guid reservationId, Guid roomId);
         Task<bool> CancelAsync(Guid id, string reason);
+        Task<Guid?> GetFolioIdByReservationIdAsync(Guid reservationId);
+        Task<bool> CheckOutByRoomAsync(Guid roomId);
     }
 }
