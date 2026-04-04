@@ -53,4 +53,17 @@ namespace Demo02.Models.DTOs
         public string RoomNumber { get; set; } = "N/A";
         // We do NOT expose CreatedAt in final production response for clients
     }
+
+    public class CheckInDto
+    {
+        [Required(ErrorMessage = "Vui lòng nhập số CCCD/Hộ chiếu.")]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "Số CCCD phải bao gồm đúng 12 chữ số và không chứa chữ cái.")]
+        public string IdNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng chọn quốc tịch.")]
+        public string Nationality { get; set; } = "Vietnam";
+
+        // Trường nhận ảnh CCCD/QR dạng Base64 từ Frontend
+        public string? IdCardImage { get; set; }
+    }
 }

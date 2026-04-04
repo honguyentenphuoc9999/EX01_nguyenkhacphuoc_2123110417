@@ -31,6 +31,9 @@ namespace Demo02.Models
         [StringLength(1000)]
         public string? Preferences { get; set; }
 
+        // Mới: Lưu ảnh CMND/CCCD/Passport để khai báo cư trú (UC-21)
+        public string? IdCardImageUrl { get; set; }
+
         public ICollection<Reservation>? Reservations { get; set; }
         public ICollection<GuestDocument>? GuestDocuments { get; set; }
     }

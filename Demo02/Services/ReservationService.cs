@@ -104,11 +104,22 @@ namespace Demo02.Services
             return !overlaps.Any();
         }
 
-        public async Task<bool> CheckInAsync(Guid id)
+        public async Task<bool> CheckInAsync(Guid id, CheckInDto? dto = null)
         {
-            var r = await _uow.Reservations.GetByIdAsync(id, res => res.ReservationRooms!);
+            var r = await _uow.Reservations.GetByIdAsync(id, res => res.ReservationRooms!, res => res.Guest!);
             if (r == null || (r.Status != ReservationStatus.Pending && r.Status != ReservationStatus.Confirmed))
                 return false;
+
+            // --- 🛡️ CẬP NHẬT THÔNG TIN ĐỊNH DANH (PHÁP LÝ & HÌNH ẢNH) ---
+            if (dto != null && r.Guest != null)
+            {
+                r.Guest.IdNumber = dto.IdNumber;
+                r.Guest.Nationality = dto.Nationality;
+                if (!string.IsNullOrEmpty(dto.IdCardImage))
+                {
+                    r.Guest.IdCardImageUrl = dto.IdCardImage; // Lưu ảnh CCCD/QR
+                }
+            }
 
             r.Status = ReservationStatus.CheckedIn;
             r.ActualCheckIn = DateTime.Now;
@@ -154,6 +165,20 @@ namespace Demo02.Services
             r.ActualCheckOut = DateTime.Now;
             var folio = await GetOrCreateFolio(r.ReservationId);
 
+            // --- HMS FINANCE FIX: Tính toán số đêm và giá phòng chính xác ---
+            int nights = (r.CheckOutDate.Date - r.CheckInDate.Date).Days;
+            if (nights <= 0) nights = 1;
+
+            decimal baseRoomRate = r.ReservationRooms?.FirstOrDefault()?.RoomRate ?? 0;
+            if (baseRoomRate == 0 && r.RoomId != Guid.Empty)
+            {
+                var room = await _uow.Rooms.GetByIdAsync(r.RoomId);
+                baseRoomRate = room?.BasePrice ?? 0;
+            }
+
+            decimal totalRoomCharge = baseRoomRate * nights;
+            await AddSurcharge(folio.FolioId, totalRoomCharge, $"Phí thuê phòng ({nights} đêm x {baseRoomRate:N0}₫)");
+
             // --- BR-03: Late Check-out Surcharge Logic ---
             var checkOutHour = r.ActualCheckOut.Value.Hour;
             decimal surchargeRate = 0;
@@ -163,17 +188,12 @@ namespace Demo02.Services
 
             if (surchargeRate > 0)
             {
-                var roomRate = r.ReservationRooms?.FirstOrDefault()?.RoomRate ?? 0;
-                await AddSurcharge(folio.FolioId, roomRate * surchargeRate, $"Late Check-out Fee ({surchargeRate*100}%)");
+                await AddSurcharge(folio.FolioId, baseRoomRate * surchargeRate, $"Phí trả phòng muộn ({surchargeRate * 100}%)");
             }
-
-            // --- HMS Fix: Thêm tiền phòng gốc vào hóa đơn ---
-            var baseRoomRate = r.ReservationRooms?.FirstOrDefault()?.RoomRate ?? 0;
-            await AddSurcharge(folio.FolioId, baseRoomRate, "Phí thuê phòng (Base Room Rate)");
 
             // --- BR-15 & BR-16: Finance Logic ---
             decimal subTotal = await CalculateFolioTotal(folio.FolioId);
-            decimal vat = subTotal * 0.10m; // BR-16: Thuế 10%
+            decimal vat = subTotal * 0.10m; // BR-16: Thuế VAT 10%
             decimal total = subTotal + vat;
 
             // --- UC-10: Auto-generate Invoice ---

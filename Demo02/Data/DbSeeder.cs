@@ -9,6 +9,10 @@ namespace Demo02.Data
         public static async Task SeedAsync(AppDbContext context, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             // 1. Seed Roles
+            try {
+                await context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Guests') AND name = 'IdCardImageUrl') ALTER TABLE Guests ADD IdCardImageUrl nvarchar(max) NULL;");
+            } catch { /* Bỏ qua nếu cột đã tồn tại hoặc DB chưa sẵn sàng */ }
+
             string[] roles = { "Admin", "Manager", "Receptionist", "Housekeeper", "Technician" };
             foreach (var role in roles)
             {

@@ -11,7 +11,7 @@ namespace Demo02.Services
         Task<IEnumerable<ReservationResponseDto>> GetAllReservationsAsync();
         Task<ReservationResponseDto?> GetReservationByIdAsync(Guid id);
         Task<ReservationResponseDto> CreateReservationAsync(ReservationCreateDto dto);
-        Task<bool> CheckInAsync(Guid id);
+        Task<bool> CheckInAsync(Guid id, CheckInDto? dto = null);
         Task<bool> CheckOutAsync(Guid id);
         Task<bool> AssignRoomAsync(Guid reservationId, Guid roomId);
         Task<bool> CancelAsync(Guid id, string reason);

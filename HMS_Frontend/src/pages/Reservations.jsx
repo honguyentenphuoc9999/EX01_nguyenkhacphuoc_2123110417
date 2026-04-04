@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CalendarDays, Plus, Search, Filter, CheckCircle2, 
-  XCircle, Clock, ArrowRightLeft, User, DoorOpen, X
+  XCircle, Clock, ArrowRightLeft, User, DoorOpen, X, Camera
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -168,11 +168,127 @@ const BookingModal = ({ onClose, onRefresh }) => {
     );
 };
 
+const CheckInModal = ({ reservation, onClose, onRefresh, onNotify }) => {
+    const [formData, setFormData] = useState({ idNumber: '', nationality: 'Vietnam', idCardImage: '' });
+    const [preview, setPreview] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [localErrors, setLocalErrors] = useState({});
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreview(reader.result);
+                setFormData({ ...formData, idCardImage: reader.result });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleIdChange = (val) => {
+        // Chỉ cho phép nhập số
+        const numeric = val.replace(/\D/g, '').substring(0, 12);
+        setFormData({ ...formData, idNumber: numeric });
+        
+        if (numeric.length !== 12) {
+            setLocalErrors({ idNumber: "Số CCCD phải bao gồm đúng 12 chữ số." });
+        } else {
+            setLocalErrors({});
+        }
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (formData.idNumber.length !== 12) {
+            setLocalErrors({ idNumber: "Vui lòng nhập đúng 12 số CCCD." });
+            return;
+        }
+        if (!formData.idCardImage) {
+            onNotify("Vui lòng chụp ảnh hoặc tải tệp QR CCCD!", "error");
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await api.post(`/Reservations/${reservation.reservationId}/check-in`, formData);
+            onNotify("Check-in thành công!", "success");
+            onRefresh();
+            onClose();
+        } catch (err) {
+            onNotify(err.response?.data?.message || "Lỗi khi Check-in", "error");
+        }
+        setSubmitting(false);
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 12000, padding: '20px' }} onClick={onClose}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
+                <div style={{ background: '#10b981', padding: '20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}><DoorOpen size={20} /> Thủ tục Check-in (12 số CCCD)</h2>
+                    <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+                </div>
+                <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>Yêu cầu thông tin pháp lý cho khách <b>{reservation.guestName}</b></p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Số CCCD (12 chữ số) *</label>
+                            <input required value={formData.idNumber} onChange={e => handleIdChange(e.target.value)} placeholder="Nhập 12 chữ số CCCD" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: `1px solid ${localErrors.idNumber ? '#ef4444' : '#e2e8f0'}` }} />
+                            {localErrors.idNumber && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{localErrors.idNumber}</div>}
+                        </div>
+                        
+                        <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Quốc tịch *</label>
+                            <input required value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Chụp mặt trước CCCD / QR *</label>
+                            <div style={{ position: 'relative', height: preview ? '180px' : '100px', border: '2px dashed #cbd5e1', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#f8fafc', cursor: 'pointer' }}>
+                                {preview ? (
+                                    <img src={preview} alt="CCCD Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <>
+                                        <Camera size={32} color="#94a3b8" />
+                                        <span style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Chụp hoặc tải ảnh lên</span>
+                                    </>
+                                )}
+                                <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                                {preview && (
+                                    <button type="button" onClick={() => setPreview(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}><X size={14}/></button>
+                                )}
+                            </div>
+                        </div>
+
+                        <button disabled={submitting || formData.idNumber.length !== 12 || !formData.idCardImage} type="submit" style={{ width: '100%', padding: '14px', background: submitting || formData.idNumber.length !== 12 || !formData.idCardImage ? '#94a3b8' : '#10b981', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', marginTop: '10px', cursor: submitting || formData.idNumber.length !== 12 || !formData.idCardImage ? 'not-allowed' : 'pointer' }}>
+                            {submitting ? "Đang xử lý..." : "Xác nhận & Hoàn tất nhận phòng"}
+                        </button>
+                    </div>
+                </form>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const Toast = ({ message, type, onClose }) => (
+    <motion.div initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 100, opacity: 0 }} style={{ position: 'fixed', bottom: '30px', right: '30px', background: type === 'success' ? '#10b981' : '#ef4444', color: 'white', padding: '16px 24px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 15000, fontWeight: '700' }}>
+        {type === 'success' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+        {message}
+    </motion.div>
+);
+
 const Reservations = () => {
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [checkInRes, setCheckInRes] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All');
+    const [notification, setNotification] = useState(null);
+
+    const notify = (msg, type = 'success') => {
+        setNotification({ msg, type });
+        setTimeout(() => setNotification(null), 3000);
+    };
 
     useEffect(() => {
         fetchReservations();
@@ -189,15 +305,16 @@ const Reservations = () => {
         setLoading(false);
     };
 
-    const handleCheckIn = async (id) => {
+    const handleCheckOut = async (id) => {
+        if (!window.confirm("Xác nhận khách trả phòng và xuất hóa đơn?")) return;
         try {
-            await api.post(`/Reservations/${id}/check-in`);
-            alert("Check-in thành công! Khách đã nhận phòng.");
+            await api.post(`/Reservations/${id}/check-out`);
+            notify("Check-out thành công! Hóa đơn đã được tạo.");
             fetchReservations();
         } catch (err) {
-            alert("Lỗi: Hãy đảm bảo bạn đã gán phòng cho đơn này trước khi Check-in.");
+            notify(err.response?.data || "Lỗi khi Check-out", "error");
         }
-    }
+    };
 
     const filtered = filterStatus === 'All' 
         ? reservations 
@@ -285,8 +402,13 @@ const Reservations = () => {
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
                                         {(status === 1 || status === 0) && (
-                                            <button onClick={() => handleCheckIn(rId)} style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <button onClick={() => setCheckInRes(res)} style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}>
                                                 <DoorOpen size={16} /> Check-in
+                                            </button>
+                                        )}
+                                        {status === 2 && (
+                                            <button onClick={() => handleCheckOut(rId)} style={{ background: '#f97316', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(249, 115, 22, 0.2)' }}>
+                                                <ArrowRightLeft size={16} /> Check-out
                                             </button>
                                         )}
                                     </td>
@@ -300,6 +422,14 @@ const Reservations = () => {
 
             <AnimatePresence>
                 {showModal && <BookingModal onClose={() => setShowModal(false)} onRefresh={fetchReservations} />}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {checkInRes && <CheckInModal reservation={checkInRes} onNotify={notify} onClose={() => setCheckInRes(null)} onRefresh={fetchReservations} />}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {notification && <Toast message={notification.msg} type={notification.type} />}
             </AnimatePresence>
         </div>
     );

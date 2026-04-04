@@ -56,25 +56,35 @@ namespace Demo02.Controllers
             if (dto.GuestCount > roomType.MaxOccupancy)
                 return BadRequest(new { message = $"Hạng phòng này chỉ chứa tối đa {roomType.MaxOccupancy} người!" });
 
-            // 5. Tìm phòng trống
+            // 5. Tìm phòng trống (Bắt buộc phải là phòng Sạch - VacantClean)
             var availableRoom = await _context.Rooms
                 .FirstOrDefaultAsync(r => r.RoomTypeId == dto.RoomTypeId && r.Status == RoomStatus.VacantClean);
 
             if (availableRoom == null)
-                return BadRequest(new { message = "Rất tiếc, hạng phòng này vừa hết phòng trống sạch!" });
+            {
+                // HMS Rule: Nếu phòng đang dọn (VacantDirty), chúng ta ko gán tự động cho khách Web 
+                // để tránh trường hợp khách đến mà phòng chưa dọn xong.
+                return BadRequest(new { message = "Hiện tại hạng phòng này đang trong quá trình vệ sinh. Vui lòng thử lại sau 15-30 phút hoặc liên hệ Hotline để được hỗ trợ gán phòng gấp!" });
+            }
 
             // 6. Tính toán Tổng tiền (Nights * BasePrice)
             int nights = (int)(dto.CheckOutDate.Date - dto.CheckInDate.Date).TotalDays;
+            if (nights <= 0) nights = 1; // Đảm bảo tối thiểu 1 đêm
             decimal totalPrice = nights * roomType.BasePrice;
 
             // --- ✍️ THỰC THI GIAO DỊCH ---
             var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == dto.Phone);
             if (guest == null)
             {
+                // HMS Rule: Khách web mới phải có ID tạm thời 12 số để đồng bộ hệ thống validation
+                string tempId = "99" + DateTime.Now.ToString("HHmmss") + "0000"; // Tạo 12 số tạm thời
+                if (tempId.Length > 12) tempId = tempId.Substring(0, 12);
+
                 guest = new Guest {
                     FullName = dto.FullName, Phone = dto.Phone, Nationality = "Vietnam",
-                    IdNumber = "O_" + Guid.NewGuid().ToString().Substring(0,8),
-                    Email = "", GuestType = GuestType.Individual
+                    IdNumber = tempId,
+                    Email = "", GuestType = GuestType.Individual,
+                    CreatedAt = DateTime.Now
                 };
                 _context.Guests.Add(guest);
                 await _context.SaveChangesAsync();

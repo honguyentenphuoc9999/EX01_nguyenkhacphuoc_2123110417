@@ -47,14 +47,14 @@ namespace Demo02.Controllers
 
         // POST: api/Reservations/5/check-in
         [HttpPost("{id}/check-in")]
-        public async Task<IActionResult> CheckIn(Guid id)
+        public async Task<IActionResult> CheckIn(Guid id, [FromBody] CheckInDto? dto)
         {
-            var success = await _reservationService.CheckInAsync(id);
+            var success = await _reservationService.CheckInAsync(id, dto);
             if (!success) return BadRequest("Check-in failed. Please check reservation status.");
             
             // Lấy Folio ID để trả về cho người dùng dễ test
             var folioId = await _reservationService.GetFolioIdByReservationIdAsync(id);
-            return Ok($"Check-in successful. Folio ID: {folioId}");
+            return Ok(new { message = "Check-in thành công!", folioId = folioId });
         }
 
         // POST: api/Reservations/5/cancel
