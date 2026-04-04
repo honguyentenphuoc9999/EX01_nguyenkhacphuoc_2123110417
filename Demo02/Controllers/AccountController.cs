@@ -15,15 +15,18 @@ namespace Demo02.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
+        private readonly Demo02.Data.AppDbContext _context;
 
         public AccountController(
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            Demo02.Data.AppDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _context = context;
         }
 
         // POST: api/Account/register
@@ -43,7 +46,22 @@ namespace Demo02.Controllers
 
             await _userManager.AddToRoleAsync(user, dto.Role);
 
-            return Ok(new AuthResponseDto { IsSuccess = true, Message = "User registered successfully." });
+            // --- 🔄 TỰ ĐỘNG CẬP NHẬT HỒ SƠ NHÂN VIÊN (MỚI) ---
+            if (!Enum.TryParse<Demo02.Models.StaffRole>(dto.Role, out var staffRole)) {
+                staffRole = Demo02.Models.StaffRole.Receptionist;
+            }
+
+            var staff = new Demo02.Models.Staff {
+                FullName = dto.Username,
+                Email = dto.Email,
+                Phone = "Chưa cập nhật",
+                Role = staffRole,
+                CreatedAt = DateTime.Now
+            };
+            _context.Staffs.Add(staff);
+            await _context.SaveChangesAsync();
+
+            return Ok(new AuthResponseDto { IsSuccess = true, Message = "User registered and Staff profile created successfully." });
         }
 
         // POST: api/Account/login

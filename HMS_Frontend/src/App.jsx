@@ -11,6 +11,7 @@ import Reservations from './pages/Reservations';
 import Staff from './pages/Staff';
 import RoomTypes from './pages/RoomTypes';
 import Rooms from './pages/Rooms';
+import PublicBooking from './pages/PublicBooking';
 
 // Component Bảo vệ Tuyến đường
 const PrivateRoute = ({ children }) => {
@@ -54,6 +55,8 @@ const App = () => {
                     <Route path="/rooms" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'FrontDesk']}><Rooms /></RoleProtectedRoute>} />
 
                 </Route>
+                
+                <Route path="/book" element={<PublicBooking />} />
                 
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>

@@ -69,17 +69,23 @@ const RoomTypes = () => {
                                 <button onClick={() => handleDelete(rt.roomTypeId || rt.RoomTypeId)} style={{ p: '8px', border: 'none', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Trash2 size={16} /></button>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '32px', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
                             <div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', marginBottom: '4px' }}>Giá niêm yết (Đêm)</div>
-                                <div style={{ fontSize: '22px', fontWeight: '800', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    {new Intl.NumberFormat('vi-VN').format(rt.basePrice || rt.BasePrice || 0)} <span style={{ fontSize: '14px' }}>₫</span>
+                                <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', marginBottom: '4px' }}>Giá niêm yết</div>
+                                <div style={{ fontSize: '20px', fontWeight: '800', color: '#10b981' }}>
+                                    {new Intl.NumberFormat('vi-VN').format(rt.basePrice || rt.BasePrice || 0)} <span style={{ fontSize: '12px' }}>₫</span>
                                 </div>
                             </div>
                             <div>
                                 <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', marginBottom: '4px' }}>Tối đa</div>
-                                <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <Maximize size={16} color="#64748b" /> {rt.maxOccupancy || rt.MaxOccupancy || 0} Người
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', marginBottom: '4px' }}>Số phòng</div>
+                                <div style={{ fontSize: '16px', fontWeight: '800', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Layers size={16} color="#3b82f6" /> {rt.roomCount || rt.RoomCount || 0} Phòng
                                 </div>
                             </div>
                         </div>

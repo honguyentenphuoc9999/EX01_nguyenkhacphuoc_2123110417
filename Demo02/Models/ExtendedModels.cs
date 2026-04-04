@@ -101,6 +101,10 @@ namespace Demo02.Models
         public string FullName { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty; // FrontDesk, Housekeeping, Finance...
         public string Position { get; set; } = string.Empty;
+        [Required, StringLength(100)]
+        public string Email { get; set; } = string.Empty;
+        [StringLength(20)]
+        public string Phone { get; set; } = string.Empty;
         public StaffRole Role { get; set; } = StaffRole.Receptionist; // Default role
         public DateTime HireDate { get; set; }
         [Column(TypeName = "decimal(18,2)")]

@@ -5,6 +5,7 @@ namespace Demo02.Models
         VacantClean,
         VacantDirty,
         Occupied,
+        Reserved,
         OutOfOrder,
         UnderMaintenance
     }
@@ -80,6 +81,7 @@ namespace Demo02.Models
     public enum StaffRole
     {
         Admin,
+        Manager,
         Receptionist,
         Housekeeper,
         Accountant,

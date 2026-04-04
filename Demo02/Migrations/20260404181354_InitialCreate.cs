@@ -73,7 +73,7 @@ namespace Demo02.Migrations
                 {
                     GuestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    IdNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    IdNumber = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Nationality = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
@@ -149,6 +149,8 @@ namespace Demo02.Migrations
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Department = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Position = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
                     HireDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     BaseSalary = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
@@ -328,47 +330,6 @@ namespace Demo02.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Reservations",
-                columns: table => new
-                {
-                    ReservationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BookingCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    GuestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RoomId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CheckInDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CheckOutDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ActualCheckIn = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ActualCheckOut = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Channel = table.Column<int>(type: "int", nullable: false),
-                    OtaSource = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsOtaPrepaid = table.Column<bool>(type: "bit", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    DepositAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    SpecialRequests = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CancelledBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CancellationReason = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    NoShowDetectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Reservations", x => x.ReservationId);
-                    table.ForeignKey(
-                        name: "FK_Reservations_Guests_GuestId",
-                        column: x => x.GuestId,
-                        principalTable: "Guests",
-                        principalColumn: "GuestId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Rooms",
                 columns: table => new
                 {
@@ -399,35 +360,6 @@ namespace Demo02.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Folios",
-                columns: table => new
-                {
-                    FolioId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReservationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TotalCharges = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TotalPayments = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Balance = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Folios", x => x.FolioId);
-                    table.ForeignKey(
-                        name: "FK_Folios_Reservations_ReservationId",
-                        column: x => x.ReservationId,
-                        principalTable: "Reservations",
-                        principalColumn: "ReservationId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "HousekeepingTasks",
                 columns: table => new
                 {
@@ -454,8 +386,7 @@ namespace Demo02.Migrations
                         name: "FK_HousekeepingTasks_Rooms_RoomId",
                         column: x => x.RoomId,
                         principalTable: "Rooms",
-                        principalColumn: "RoomId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RoomId");
                     table.ForeignKey(
                         name: "FK_HousekeepingTasks_Staffs_AssignedStaffId",
                         column: x => x.AssignedStaffId,
@@ -517,13 +448,87 @@ namespace Demo02.Migrations
                         name: "FK_MaintenanceTickets_Rooms_RoomId",
                         column: x => x.RoomId,
                         principalTable: "Rooms",
-                        principalColumn: "RoomId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RoomId");
                     table.ForeignKey(
                         name: "FK_MaintenanceTickets_Staffs_AssignedTechnicianId",
                         column: x => x.AssignedTechnicianId,
                         principalTable: "Staffs",
                         principalColumn: "StaffId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reservations",
+                columns: table => new
+                {
+                    ReservationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookingCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    GuestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoomId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CheckInDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CheckOutDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ActualCheckIn = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ActualCheckOut = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Channel = table.Column<int>(type: "int", nullable: false),
+                    OtaSource = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsOtaPrepaid = table.Column<bool>(type: "bit", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    DepositAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    SpecialRequests = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancelledBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CancellationReason = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NoShowDetectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reservations", x => x.ReservationId);
+                    table.ForeignKey(
+                        name: "FK_Reservations_Guests_GuestId",
+                        column: x => x.GuestId,
+                        principalTable: "Guests",
+                        principalColumn: "GuestId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reservations_Rooms_RoomId",
+                        column: x => x.RoomId,
+                        principalTable: "Rooms",
+                        principalColumn: "RoomId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Folios",
+                columns: table => new
+                {
+                    FolioId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ReservationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TotalCharges = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalPayments = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Balance = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Folios", x => x.FolioId);
+                    table.ForeignKey(
+                        name: "FK_Folios_Reservations_ReservationId",
+                        column: x => x.ReservationId,
+                        principalTable: "Reservations",
+                        principalColumn: "ReservationId");
                 });
 
             migrationBuilder.CreateTable(
@@ -558,14 +563,12 @@ namespace Demo02.Migrations
                         name: "FK_MinibarLogs_Reservations_ReservationId",
                         column: x => x.ReservationId,
                         principalTable: "Reservations",
-                        principalColumn: "ReservationId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ReservationId");
                     table.ForeignKey(
                         name: "FK_MinibarLogs_Rooms_RoomId",
                         column: x => x.RoomId,
                         principalTable: "Rooms",
-                        principalColumn: "RoomId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RoomId");
                 });
 
             migrationBuilder.CreateTable(
@@ -593,14 +596,12 @@ namespace Demo02.Migrations
                         name: "FK_ReservationRooms_Reservations_ReservationId",
                         column: x => x.ReservationId,
                         principalTable: "Reservations",
-                        principalColumn: "ReservationId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ReservationId");
                     table.ForeignKey(
                         name: "FK_ReservationRooms_RoomTypes_RoomTypeId",
                         column: x => x.RoomTypeId,
                         principalTable: "RoomTypes",
-                        principalColumn: "RoomTypeId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RoomTypeId");
                     table.ForeignKey(
                         name: "FK_ReservationRooms_Rooms_RoomId",
                         column: x => x.RoomId,
@@ -635,8 +636,7 @@ namespace Demo02.Migrations
                         name: "FK_FolioCharges_Folios_FolioId",
                         column: x => x.FolioId,
                         principalTable: "Folios",
-                        principalColumn: "FolioId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "FolioId");
                 });
 
             migrationBuilder.CreateTable(
@@ -887,6 +887,11 @@ namespace Demo02.Migrations
                 column: "GuestId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Reservations_RoomId",
+                table: "Reservations",
+                column: "RoomId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Rooms_RoomNumber",
                 table: "Rooms",
                 column: "RoomNumber",
@@ -974,16 +979,16 @@ namespace Demo02.Migrations
                 name: "Folios");
 
             migrationBuilder.DropTable(
-                name: "Rooms");
-
-            migrationBuilder.DropTable(
                 name: "Reservations");
 
             migrationBuilder.DropTable(
-                name: "RoomTypes");
+                name: "Guests");
 
             migrationBuilder.DropTable(
-                name: "Guests");
+                name: "Rooms");
+
+            migrationBuilder.DropTable(
+                name: "RoomTypes");
         }
     }
 }

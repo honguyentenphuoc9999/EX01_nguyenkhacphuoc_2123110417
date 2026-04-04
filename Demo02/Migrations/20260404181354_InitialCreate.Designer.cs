@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Demo02.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260403120804_InitialCreate")]
+    [Migration("20260404181354_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -206,8 +206,8 @@ namespace Demo02.Migrations
 
                     b.Property<string>("IdNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -923,6 +923,8 @@ namespace Demo02.Migrations
 
                     b.HasIndex("GuestId");
 
+                    b.HasIndex("RoomId");
+
                     b.ToTable("Reservations");
                 });
 
@@ -1125,6 +1127,11 @@ namespace Demo02.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("EmployeeCode")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1140,6 +1147,11 @@ namespace Demo02.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Position")
                         .IsRequired()
@@ -1366,7 +1378,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Reservation", "Reservation")
                         .WithMany()
                         .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Reservation");
@@ -1377,7 +1389,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Folio", "Folio")
                         .WithMany("Charges")
                         .HasForeignKey("FolioId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Folio");
@@ -1403,7 +1415,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AssignedStaff");
@@ -1451,7 +1463,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AssignedTechnician");
@@ -1470,13 +1482,13 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Reservation", "Reservation")
                         .WithMany()
                         .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Demo02.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Item");
@@ -1516,7 +1528,15 @@ namespace Demo02.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Demo02.Models.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Guest");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Demo02.Models.ReservationRoom", b =>
@@ -1524,7 +1544,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.Reservation", "Reservation")
                         .WithMany("ReservationRooms")
                         .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Demo02.Models.Room", "Room")
@@ -1534,7 +1554,7 @@ namespace Demo02.Migrations
                     b.HasOne("Demo02.Models.RoomType", "RoomType")
                         .WithMany()
                         .HasForeignKey("RoomTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Reservation");

@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Calendar, Users, Search, 
+    ArrowRight, Star, Coffee, 
+    Wifi, MapPin, CheckCircle2 
+} from 'lucide-react';
+import api from '../api/axios';
+
+const PublicBooking = () => {
+    const [roomTypes, setRoomTypes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedType, setSelectedType] = useState(null);
+
+    // Xử lý Responsive đơn giản bằng JS
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        fetchRoomTypes();
+    }, []);
+
+    const fetchRoomTypes = async () => {
+        try {
+            const res = await api.get('/RoomTypes'); // API công khai
+            setRoomTypes(res.data);
+        } catch (err) { console.error(err); }
+        setLoading(false);
+    };
+
+    const [searchData, setSearchData] = useState({ 
+        checkIn: new Date().toISOString().split('T')[0], 
+        checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], 
+        guests: 2 
+    });
+
+    const [guestInfo, setGuestInfo] = useState({ fullName: '', phone: '' });
+    const [searchErrors, setSearchErrors] = useState({});
+    const [errors, setErrors] = useState({});
+    const [bookingSuccess, setBookingSuccess] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleCheckAvailability = () => {
+        const newErrors = {};
+        const today = new Date().toISOString().split('T')[0];
+        if (searchData.checkIn < today) newErrors.checkIn = "Ngày nhận phòng không thể ở quá khứ!";
+        if (searchData.checkOut <= searchData.checkIn) newErrors.checkOut = "Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!";
+        
+        if (Object.keys(newErrors).length > 0) {
+            setSearchErrors(newErrors);
+            return false;
+        }
+        setSearchErrors({});
+        // Giả lập loading
+        setLoading(true);
+        setTimeout(() => setLoading(false), 800);
+        return true;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const newErrors = {};
+
+        // --- 🛡️ VALIDATE FRONTEND (NGHIỆP VỤ) ---
+        const today = new Date().toISOString().split('T')[0];
+        if (searchData.checkIn < today) newErrors.checkIn = "Ngày nhận phòng không thể ở quá khứ!";
+        if (searchData.checkOut <= searchData.checkIn) newErrors.checkOut = "Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!";
+        if (searchData.guests > selectedType.maxOccupancy) newErrors.guests = `Hạng phòng này chỉ chứa tối đa ${selectedType.maxOccupancy} người!`;
+
+        const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠưăâêôơẠ-ỹ\s]+$/;
+        if (!guestInfo.fullName.trim() || !nameRegex.test(guestInfo.fullName)) newErrors.fullName = "Tên chỉ được chứa chữ cái và khoảng trắng!";
+        
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(guestInfo.phone)) newErrors.phone = "Số điện thoại phải đúng 10 chữ số!";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setErrors({});
+        setSubmitting(true);
+        try {
+            const res = await api.post('/PublicBooking/Submit', {
+                FullName: guestInfo.fullName,
+                Phone: guestInfo.phone,
+                RoomTypeId: selectedType.roomTypeId || selectedType.RoomTypeId,
+                CheckInDate: searchData.checkIn,
+                CheckOutDate: searchData.checkOut,
+                GuestCount: parseInt(searchData.guests)
+            });
+            setBookingSuccess(res.data);
+            setSelectedType(null);
+            setGuestInfo({ fullName: '', phone: '' });
+            fetchRoomTypes();
+        } catch (err) {
+            setErrors({ submit: err.response?.data?.message || "Lỗi khi gửi yêu cầu. Vui lòng thử lại!" });
+        }
+        setSubmitting(false);
+    };
+
+    const getNights = () => {
+        const start = new Date(searchData.checkIn);
+        const end = new Date(searchData.checkOut);
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 0;
+    };
+
+    return (
+        <div style={{ background: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+            {/* Header / Hero */}
+            <div style={{ 
+                height: '400px', 
+                background: 'linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url("https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                textAlign: 'center',
+                padding: '0 20px'
+            }}>
+                <motion.h1 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ fontSize: isMobile ? '32px' : '48px', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1.2' }}
+                >
+                    HMS ROYAL LUXURY HOTEL
+                </motion.h1>
+                <motion.p 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    style={{ fontSize: isMobile ? '15px' : '18px', color: '#cbd5e1', maxWidth: '600px', marginTop: '12px' }}
+                >
+                    Trải nghiệm sự sang trọng bậc nhất giữa lòng thành phố. Đặt phòng ngay để nhận ưu đãi 20%.
+                </motion.p>
+            </div>
+
+            {/* Khung Tìm kiếm (Thanh Search "nổi") */}
+            <div style={{ maxWidth: '1000px', margin: '-50px auto 40px', background: 'white', padding: isMobile ? '20px' : '32px', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '16px', alignItems: 'flex-end', position: 'relative', zIndex: 10, width: isMobile ? '90%' : 'auto' }}>
+                <div>
+                    <label style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Ngày nhận phòng</label>
+                    <input type="date" value={searchData.checkIn} onChange={e => setSearchData({...searchData, checkIn: e.target.value})} style={{ width: '100%', padding: '14px', border: searchErrors.checkIn ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '12px' }} />
+                    {searchErrors.checkIn && <span style={{ color: '#ef4444', fontSize: '10px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{searchErrors.checkIn}</span>}
+                </div>
+                <div>
+                    <label style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Ngày trả phòng</label>
+                    <input type="date" value={searchData.checkOut} onChange={e => setSearchData({...searchData, checkOut: e.target.value})} style={{ width: '100%', padding: '14px', border: searchErrors.checkOut ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '12px' }} />
+                    {searchErrors.checkOut && <span style={{ color: '#ef4444', fontSize: '10px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{searchErrors.checkOut}</span>}
+                </div>
+                <div>
+                    <label style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Số lượng khách</label>
+                    <select value={searchData.guests} onChange={e => setSearchData({...searchData, guests: parseInt(e.target.value)})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white' }}>
+                        {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} Người</option>)}
+                    </select>
+                </div>
+                <button 
+                    onClick={handleCheckAvailability}
+                    style={{ height: '52px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Search size={20} /> Kiểm tra phòng trống
+                </button>
+            </div>
+
+            {/* Danh sách Hạng phòng */}
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px 80px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                    <h2 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: '800', color: '#1e293b' }}>Chọn hạng phòng của bạn</h2>
+                    <div style={{ width: '60px', height: '4px', background: '#3b82f6', margin: '16px auto', borderRadius: '2px' }}></div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '280px' : '380px'}, 1fr))`, gap: '32px' }}>
+                    {roomTypes.map(rt => (
+                        <motion.div 
+                            key={rt.roomTypeId || rt.RoomTypeId}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}
+                        >
+                            <div style={{ height: '240px', background: '#f1f5f9', position: 'relative' }}>
+                                <img src={`https://source.unsplash.com/800x600/?hotel,room,luxury&sig=${rt.typeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                                <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'white', padding: '6px 12px', borderRadius: '10px', fontWeight: '800', fontSize: '18px', color: '#10b981' }}>
+                                    {new Intl.NumberFormat('vi-VN').format(rt.basePrice || rt.BasePrice)} <span style={{ fontSize: '12px' }}>₫/đêm</span>
+                                </div>
+                            </div>
+                            <div style={{ padding: isMobile ? '20px' : '24px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>{rt.typeName || rt.TypeName}</h3>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />)}
+                                    </div>
+                                </div>
+                                <p style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+                                    {rt.description || rt.Description || "Tận hưởng không gian hiện đại và tiện nghi đẳng cấp 5 sao."}
+                                </p>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+                                    <Feature icon={<Wifi size={14}/>} label="Wifi miễn phí" />
+                                    <Feature icon={<Coffee size={14}/>} label="Bữa sáng miễn phí" />
+                                    <Feature icon={<Users size={14}/>} label={`Tối đa ${rt.maxOccupancy} người`} />
+                                    <Feature icon={<CheckCircle2 size={14}/>} label="Dịch vụ 24/7" />
+                                </div>
+
+                                <button onClick={() => setSelectedType(rt)} style={{ width: '100%', padding: '16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    Đặt phòng ngay <ArrowRight size={18} />
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Modal Đặt phòng */}
+            <AnimatePresence>
+                {selectedType && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px' : '20px' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)' }} onClick={() => { setSelectedType(null); setErrors({}); }} />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ position: 'relative', width: '100%', maxWidth: isMobile ? '95%' : '500px', background: 'white', borderRadius: isMobile ? '24px' : '32px', padding: isMobile ? '24px' : '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+                            <h2 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '900', marginBottom: '8px' }}>Xác nhận đặt phòng</h2>
+                            <p style={{ color: '#64748b', marginBottom: isMobile ? '20px' : '32px', fontSize: '14px' }}>Quý khách đang đặt hạng phòng: <b>{selectedType.typeName || selectedType.TypeName}</b></p>
+                            
+                            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '15px' : '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Họ và tên khách hàng *</label>
+                                    <input required value={guestInfo.fullName} onChange={e => setGuestInfo({...guestInfo, fullName: e.target.value})} placeholder="Nhập tên của bạn" style={{ width: '100%', padding: '16px', border: errors.fullName ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                    {errors.fullName && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.fullName}</span>}
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Số điện thoại liên hệ *</label>
+                                    <input required value={guestInfo.phone} onChange={e => setGuestInfo({...guestInfo, phone: e.target.value})} placeholder="Nhập SĐT của bạn" style={{ width: '100%', padding: '16px', border: errors.phone ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                    {errors.phone && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.phone}</span>}
+                                </div>
+                                <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '16px', marginTop: '12px' }}>
+                                    <div style={{ fontSize: '11px', color: '#15803d', fontWeight: '700' }}>TỔNG THANH TOÁN (DỰ KIẾN):</div>
+                                    <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '900', color: '#166534', marginTop: '4px' }}>
+                                        {new Intl.NumberFormat('vi-VN').format(getNights() * (selectedType.basePrice || selectedType.BasePrice || 0))} <span style={{ fontSize: '14px' }}>₫</span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '4px' }}>Dành cho {getNights()} đêm / {searchData.guests} người</div>
+                                </div>
+                                {errors.submit && <span style={{ color: '#ef4444', fontSize: '12px', textAlign: 'center' }}>{errors.submit}</span>}
+                                <button type="submit" disabled={submitting} style={{ padding: '18px', background: submitting ? '#94a3b8' : '#3b82f6', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '800', fontSize: '16px', cursor: 'pointer', marginTop: '12px' }}>
+                                    {submitting ? "Đang xử lý..." : "Xác nhận & Gửi yêu cầu"}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Thành công (Thay thế alert) */}
+            <AnimatePresence>
+                {bookingSuccess && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)' }} />
+                        <motion.div 
+                            initial={{ scale: 0.5, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            style={{ position: 'relative', width: '100%', maxWidth: '400px', background: 'white', borderRadius: '32px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                        >
+                            <div style={{ width: '80px', height: '80px', background: '#f0fdf4', color: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <CheckCircle2 size={48} />
+                            </div>
+                            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', marginBottom: '12px' }}>Đặt phòng thành công!</h2>
+                            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
+                                Cảm ơn quý khách đã tin tưởng HMS ROYAL. Yêu cầu của bạn đã được ghi nhận.
+                            </p>
+                            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '20px', marginBottom: '32px', textAlign: 'left' }}>
+                                <div style={{ marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', display: 'block', textTransform: 'uppercase' }}>Mã đặt phòng</span>
+                                    <span style={{ fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>{bookingSuccess.bookingCode}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', display: 'block', textTransform: 'uppercase' }}>Tổng tiền dự kiến</span>
+                                    <span style={{ fontSize: '18px', color: '#10b981', fontWeight: '800' }}>{new Intl.NumberFormat('vi-VN').format(bookingSuccess.totalPrice)} ₫</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setBookingSuccess(null)}
+                                style={{ width: '100%', padding: '16px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                                Hoàn tất
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const Feature = ({ icon, label }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
+        <div style={{ color: '#3b82f6' }}>{icon}</div>
+        {label}
+    </div>
+);
+
+export default PublicBooking;

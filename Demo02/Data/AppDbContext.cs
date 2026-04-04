@@ -81,6 +81,55 @@ public class AppDbContext : IdentityDbContext
         modelBuilder.Entity<Staff>().HasIndex(s => s.EmployeeCode).IsUnique();
         modelBuilder.Entity<InventoryItem>().HasIndex(i => i.ItemCode).IsUnique();
         modelBuilder.Entity<Invoice>().HasIndex(inv => inv.InvoiceNumber).IsUnique();
+
+        // --- NFR-10: Tránh lặp xóa dây chuyền (Fix Multiple Cascade Paths for SQL Server) ---
+        modelBuilder.Entity<MinibarLog>()
+            .HasOne(m => m.Room)
+            .WithMany()
+            .HasForeignKey(m => m.RoomId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<MinibarLog>()
+            .HasOne(m => m.Reservation)
+            .WithMany()
+            .HasForeignKey(m => m.ReservationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<HousekeepingTask>()
+            .HasOne(h => h.Room)
+            .WithMany()
+            .HasForeignKey(h => h.RoomId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<MaintenanceTicket>()
+            .HasOne(m => m.Room)
+            .WithMany()
+            .HasForeignKey(m => m.RoomId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Folio>()
+            .HasOne(f => f.Reservation)
+            .WithMany()
+            .HasForeignKey(f => f.ReservationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<ReservationRoom>()
+            .HasOne(rr => rr.Reservation)
+            .WithMany(r => r.ReservationRooms)
+            .HasForeignKey(rr => rr.ReservationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<ReservationRoom>()
+            .HasOne(rr => rr.RoomType)
+            .WithMany()
+            .HasForeignKey(rr => rr.RoomTypeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<FolioCharge>()
+            .HasOne(fc => fc.Folio)
+            .WithMany(f => f.Charges)
+            .HasForeignKey(fc => fc.FolioId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 
     // --- Ghi đè phương thức SaveChanges để tự động xử lý Audit Fields & Soft Delete ---
