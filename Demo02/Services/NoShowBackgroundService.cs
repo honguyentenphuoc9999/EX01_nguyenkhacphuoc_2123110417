@@ -33,13 +33,21 @@ namespace Demo02.Services
                         var today = DateTime.Now.Date;
                         var pendingReservations = await uow.Reservations.FindAsync(r => 
                             r.CheckInDate.Date == today && 
-                            r.Status == ReservationStatus.Pending);
+                            (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed));
 
                         foreach (var res in pendingReservations)
                         {
                             res.Status = ReservationStatus.NoShow;
-                            // Logic xử lý phạt cọc theo BR-04 có thể thêm ở đây
-                            _logger.LogWarning("Reservation {code} marked as No-Show", res.BookingCode);
+                            res.NoShowDetectedAt = DateTime.Now;
+
+                            // --- 🛡️ Smart Sync: Giải phóng phòng cho khách đặt sau ---
+                            if (res.RoomId.HasValue && res.RoomId != Guid.Empty)
+                            {
+                                var room = await uow.Rooms.GetByIdAsync(res.RoomId.Value);
+                                if (room != null) room.Status = RoomStatus.VacantClean;
+                            }
+
+                            _logger.LogWarning("Reservation {code} marked as No-Show and Room released at 18:00 cutoff", res.BookingCode);
                         }
 
                         if (pendingReservations.Any())

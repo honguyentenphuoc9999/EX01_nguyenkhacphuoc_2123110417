@@ -21,9 +21,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const res = await api.post('/Account/login', { username, password });
-      const { token, role, username: userName } = res.data;
+      const { token, role, username: userName, fullName, position, staffId } = res.data;
       
-      const sessionUser = { username: userName, role };
+      const sessionUser = { 
+        username: userName, 
+        role, 
+        fullName: fullName || userName,
+        position: position || role,
+        staffId: staffId 
+      };
       
       localStorage.setItem('hms_token', token);
       localStorage.setItem('hms_user', JSON.stringify(sessionUser));

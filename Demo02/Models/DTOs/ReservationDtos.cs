@@ -51,6 +51,8 @@ namespace Demo02.Models.DTOs
         public ReservationStatus Status { get; set; }
         public decimal DepositAmount { get; set; }
         public string RoomNumber { get; set; } = "N/A";
+        public string? CancellationReason { get; set; }
+        public bool IsDeleted { get; set; }
         // We do NOT expose CreatedAt in final production response for clients
     }
 
@@ -63,7 +65,8 @@ namespace Demo02.Models.DTOs
         [Required(ErrorMessage = "Vui lòng chọn quốc tịch.")]
         public string Nationality { get; set; } = "Vietnam";
 
-        // Trường nhận ảnh CCCD/QR dạng Base64 từ Frontend
-        public string? IdCardImage { get; set; }
+        // Dữ liệu chiết xuất từ quét QR CCCD (Bảo mật - Không lưu ảnh)
+        public string? HomeAddress { get; set; }
+        public string? ScannedFullName { get; set; }
     }
 }

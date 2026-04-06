@@ -49,6 +49,7 @@ namespace Demo02.Models
         public string? CancelledBy { get; set; }
         public string? CancellationReason { get; set; }
         public DateTime? CancelledAt { get; set; }
+        public string? PaymentQrCode { get; set; }
 
         [Timestamp]
         public byte[]? RowVersion { get; set; }

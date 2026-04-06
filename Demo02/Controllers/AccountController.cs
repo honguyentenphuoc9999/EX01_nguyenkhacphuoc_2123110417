@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // Cần thiết để dùng FirstOrDefaultAsync
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -77,6 +78,7 @@ namespace Demo02.Controllers
             var authClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.Email, user.Email!), // Cực kỳ quan trọng để Guest Portal hoạt động
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
@@ -88,13 +90,51 @@ namespace Demo02.Controllers
 
             var token = GenerateToken(authClaims);
 
+            // --- 🧠 SMART PROFILE LOOKUP ---
+            string? finalFullName = user.UserName;
+            string? finalPosition = userRoles.FirstOrDefault() ?? "Staff";
+            Guid? finalId = null;
+
+            // 1. Tìm hồ sơ nhân viên (Nếu có)
+            var userEmail = user.Email?.ToLower().Trim();
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.Email.ToLower().Trim() == userEmail);
+            
+            if (staff != null) {
+                finalFullName = staff.FullName;
+                finalPosition = staff.Position ?? staff.Role.ToString();
+                finalId = staff.StaffId;
+            } else {
+                // 2. Nếu không phải nhân viên, tìm hồ sơ Khách hàng (Dựa trên Email hoặc Phone)
+                var guest = await _context.Guests.FirstOrDefaultAsync(g => 
+                    (g.Email != null && g.Email.ToLower().Trim() == userEmail) || g.Phone == user.UserName);
+                
+                if (guest != null) {
+                    finalFullName = guest.FullName;
+                    
+                    // --- 🇻🇳 VIỆT HÓA THEO LOẠI KHÁCH HÀNG (GUEST TYPE) ---
+                    finalPosition = guest.GuestType switch {
+                        Demo02.Models.GuestType.Regular => "KHÁCH LẺ THÔNG THƯỜNG",
+                        Demo02.Models.GuestType.VIP => "KHÁCH HÀNG VIP (ƯU TIÊN)",
+                        Demo02.Models.GuestType.Corporate => "KHÁCH ĐOÀN (CÔNG TY)",
+                        Demo02.Models.GuestType.Member => "HỘI VIÊN LOYAL",
+                        Demo02.Models.GuestType.Group => "KHÁCH THEO ĐOÀN LỚN",
+                        _ => "KHÁCH HÀNG THÂN THIẾT"
+                    };
+                    
+                    finalId = guest.GuestId;
+                }
+            }
+
             return Ok(new AuthResponseDto
             {
                 IsSuccess = true,
                 Message = "Login successful.",
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 Username = user.UserName!,
-                Role = userRoles.FirstOrDefault() ?? "Staff"
+                Role = userRoles.FirstOrDefault() ?? "Staff",
+                FullName = finalFullName ?? user.UserName!,
+                Position = finalPosition,
+                StaffId = finalId
             });
         }
 

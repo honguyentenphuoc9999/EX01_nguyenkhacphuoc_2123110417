@@ -6,8 +6,11 @@ import {
     Wifi, MapPin, CheckCircle2 
 } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../auth/AuthContext';
 
 const PublicBooking = () => {
+    const { user } = useAuth();
+    const isAdminOrManager = user?.role === 'Admin' || user?.role === 'Manager';
     const [roomTypes, setRoomTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState(null);
@@ -38,7 +41,9 @@ const PublicBooking = () => {
         guests: 2 
     });
 
-    const [guestInfo, setGuestInfo] = useState({ fullName: '', phone: '' });
+    const [guestInfo, setGuestInfo] = useState({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
+    const [accountExists, setAccountExists] = useState(null); // null: chưa check, true: cũ, false: mới
+    const [hasProfile, setHasProfile] = useState(false); // Đã có hồ sơ Guests
     const [searchErrors, setSearchErrors] = useState({});
     const [errors, setErrors] = useState({});
     const [bookingSuccess, setBookingSuccess] = useState(null);
@@ -65,17 +70,39 @@ const PublicBooking = () => {
         e.preventDefault();
         const newErrors = {};
 
-        // --- 🛡️ VALIDATE FRONTEND (NGHIỆP VỤ) ---
-        const today = new Date().toISOString().split('T')[0];
-        if (searchData.checkIn < today) newErrors.checkIn = "Ngày nhận phòng không thể ở quá khứ!";
-        if (searchData.checkOut <= searchData.checkIn) newErrors.checkOut = "Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!";
-        if (searchData.guests > selectedType.maxOccupancy) newErrors.guests = `Hạng phòng này chỉ chứa tối đa ${selectedType.maxOccupancy} người!`;
+        // 🛡️ BƯỚC 1: Kiểm tra SĐT nếu chưa check
+        if (accountExists === null) {
+            const phoneRegex = /^[0-9]{10}$/;
+            if (!phoneRegex.test(guestInfo.phone)) {
+                setErrors({ phone: "Số điện thoại phải đúng 10 chữ số!" });
+                return;
+            }
+            setSubmitting(true);
+            try {
+                const res = await api.get(`/PublicBooking/CheckAccount/${guestInfo.phone}`);
+                const { exists, hasProfile, fullName } = res.data;
+                setAccountExists(exists);
+                setHasProfile(hasProfile);
+                
+                if (hasProfile && fullName) {
+                    setGuestInfo(prev => ({ ...prev, fullName: fullName }));
+                }
+                setErrors({});
+            } catch (err) {
+                setErrors({ phone: "Không thể kiểm tra tài khoản. Vui lòng thử lại!" });
+            }
+            setSubmitting(false);
+            return;
+        }
 
-        const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠưăâêôơẠ-ỹ\s]+$/;
-        if (!guestInfo.fullName.trim() || !nameRegex.test(guestInfo.fullName)) newErrors.fullName = "Tên chỉ được chứa chữ cái và khoảng trắng!";
+        // 🛡️ BƯỚC 2: Validate Thông tin & Mật khẩu
+        if (!guestInfo.fullName.trim()) newErrors.fullName = "Vui lòng nhập tên!";
+        if (!guestInfo.password) newErrors.password = "Vui lòng nhập mật khẩu!";
         
-        const phoneRegex = /^[0-9]{10}$/;
-        if (!phoneRegex.test(guestInfo.phone)) newErrors.phone = "Số điện thoại phải đúng 10 chữ số!";
+        if (accountExists === false) {
+            if (guestInfo.password !== guestInfo.confirmPassword) 
+                newErrors.confirmPassword = "Mật khẩu xác nhận không khớp!";
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -88,19 +115,20 @@ const PublicBooking = () => {
             const res = await api.post('/PublicBooking/Submit', {
                 FullName: guestInfo.fullName,
                 Phone: guestInfo.phone,
+                Email: guestInfo.email,
                 RoomTypeId: selectedType.roomTypeId || selectedType.RoomTypeId,
                 CheckInDate: searchData.checkIn,
                 CheckOutDate: searchData.checkOut,
-                GuestCount: parseInt(searchData.guests)
+                GuestCount: parseInt(searchData.guests),
+                Password: guestInfo.password,
+                ConfirmPassword: guestInfo.confirmPassword
             });
-            setBookingSuccess(res.data);
-            setSelectedType(null);
-            setGuestInfo({ fullName: '', phone: '' });
-            fetchRoomTypes();
+            // Thành công: Chuyển thẳng về Dashboard người dùng
+            window.location.href = res.data.redirect;
         } catch (err) {
             setErrors({ submit: err.response?.data?.message || "Lỗi khi gửi yêu cầu. Vui lòng thử lại!" });
+            setSubmitting(false);
         }
-        setSubmitting(false);
     };
 
     const getNights = () => {
@@ -208,9 +236,15 @@ const PublicBooking = () => {
                                     <Feature icon={<CheckCircle2 size={14}/>} label="Dịch vụ 24/7" />
                                 </div>
 
-                                <button onClick={() => setSelectedType(rt)} style={{ width: '100%', padding: '16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                    Đặt phòng ngay <ArrowRight size={18} />
-                                </button>
+                                {isAdminOrManager ? (
+                                    <div style={{ width: '100%', padding: '16px', background: '#fee2e2', color: '#dc2626', borderRadius: '14px', fontWeight: '800', textAlign: 'center', border: '1px solid #fecaca', fontSize: '12px' }}>
+                                        CHẾ ĐỘ GIÁM SÁT - KHÔNG THỂ ĐẶT ĐƠN
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setSelectedType(rt)} style={{ width: '100%', padding: '16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                        Đặt phòng ngay <ArrowRight size={18} />
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     ))}
@@ -228,15 +262,57 @@ const PublicBooking = () => {
                             
                             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '15px' : '20px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Họ và tên khách hàng *</label>
-                                    <input required value={guestInfo.fullName} onChange={e => setGuestInfo({...guestInfo, fullName: e.target.value})} placeholder="Nhập tên của bạn" style={{ width: '100%', padding: '16px', border: errors.fullName ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
-                                    {errors.fullName && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.fullName}</span>}
-                                </div>
-                                <div>
                                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Số điện thoại liên hệ *</label>
-                                    <input required value={guestInfo.phone} onChange={e => setGuestInfo({...guestInfo, phone: e.target.value})} placeholder="Nhập SĐT của bạn" style={{ width: '100%', padding: '16px', border: errors.phone ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                    <input 
+                                        required 
+                                        disabled={accountExists !== null || submitting}
+                                        value={guestInfo.phone} 
+                                        onChange={e => setGuestInfo({...guestInfo, phone: e.target.value})} 
+                                        placeholder="Nhập SĐT (10 số)" 
+                                        style={{ width: '100%', padding: '16px', border: errors.phone ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px', background: accountExists !== null ? '#f8fafc' : 'white' }} 
+                                    />
                                     {errors.phone && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.phone}</span>}
                                 </div>
+
+                                {accountExists !== null && (
+                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Họ và tên *</label>
+                                            <input required value={guestInfo.fullName} onChange={e => setGuestInfo({...guestInfo, fullName: e.target.value})} placeholder="Nhập tên đầy đủ" style={{ width: '100%', padding: '16px', border: errors.fullName ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                            {errors.fullName && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.fullName}</span>}
+                                        </div>
+
+                                        {accountExists === false && (
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Địa chỉ Email *</label>
+                                                <input type="email" required value={guestInfo.email} onChange={e => setGuestInfo({...guestInfo, email: e.target.value})} placeholder="khachhang@gmail.com" style={{ width: '100%', padding: '16px', border: errors.email ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                                {errors.email && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.email}</span>}
+                                            </div>
+                                        )}
+
+                                        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', color: accountExists ? '#0369a1' : (hasProfile ? '#1e40af' : '#15803d'), border: accountExists ? '1px solid #e0f2fe' : (hasProfile ? '1px solid #bfdbfe' : '1px solid #dcfce7') }}>
+                                            {accountExists ? "👋 Chào mừng quý khách trở lại! Vui lòng nhập mật khẩu để tiếp tục." : 
+                                             (hasProfile ? `👋 Chào mừng ${guestInfo.fullName} quay trở lại! Bạn đã có hồ sơ, hãy tạo mật khẩu Portal để đặt phòng online.` : 
+                                              "✨ Chào mừng hội viên mới! Vui lòng tạo mật khẩu cho tài khoản Royal của bạn.")
+                                            }
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>{accountExists ? "Mật khẩu của bạn *" : "Tạo mật khẩu mới *"}</label>
+                                            <input type="password" required value={guestInfo.password} onChange={e => setGuestInfo({...guestInfo, password: e.target.value})} placeholder="********" style={{ width: '100%', padding: '16px', border: errors.password ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                            {errors.password && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.password}</span>}
+                                        </div>
+
+                                        {accountExists === false && (
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Xác nhận mật khẩu *</label>
+                                                <input type="password" required value={guestInfo.confirmPassword} onChange={e => setGuestInfo({...guestInfo, confirmPassword: e.target.value})} placeholder="********" style={{ width: '100%', padding: '16px', border: errors.confirmPassword ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                                {errors.confirmPassword && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.confirmPassword}</span>}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+
                                 <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '16px', marginTop: '12px' }}>
                                     <div style={{ fontSize: '11px', color: '#15803d', fontWeight: '700' }}>TỔNG THANH TOÁN (DỰ KIẾN):</div>
                                     <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '900', color: '#166534', marginTop: '4px' }}>
@@ -244,9 +320,10 @@ const PublicBooking = () => {
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '4px' }}>Dành cho {getNights()} đêm / {searchData.guests} người</div>
                                 </div>
-                                {errors.submit && <span style={{ color: '#ef4444', fontSize: '12px', textAlign: 'center' }}>{errors.submit}</span>}
+                                {errors.submit && <span style={{ color: '#ef4444', fontSize: '12px', textAlign: 'center', fontWeight: '700' }}>{errors.submit}</span>}
+                                
                                 <button type="submit" disabled={submitting} style={{ padding: '18px', background: submitting ? '#94a3b8' : '#3b82f6', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '800', fontSize: '16px', cursor: 'pointer', marginTop: '12px' }}>
-                                    {submitting ? "Đang xử lý..." : "Xác nhận & Gửi yêu cầu"}
+                                    {submitting ? "Đang xử lý..." : (accountExists === null ? "Tiếp tục" : (accountExists ? "Đăng nhập & Đặt phòng" : "Đăng ký & Đặt phòng"))}
                                 </button>
                             </form>
                         </motion.div>
@@ -281,6 +358,14 @@ const PublicBooking = () => {
                                     <span style={{ fontSize: '18px', color: '#10b981', fontWeight: '800' }}>{new Intl.NumberFormat('vi-VN').format(bookingSuccess.totalPrice)} ₫</span>
                                 </div>
                             </div>
+                            
+                            {bookingSuccess.accountInfo && (
+                                <div style={{ background: '#f0f9ff', padding: '20px', borderRadius: '20px', marginBottom: '32px', textAlign: 'left', border: '1px solid #bae6fd' }}>
+                                    <span style={{ fontSize: '11px', color: '#0369a1', fontWeight: '800', display: 'block', textTransform: 'uppercase', marginBottom: '8px' }}>Tài khoản Portal của bạn:</span>
+                                    <div style={{ fontSize: '13px', color: '#0c4a6e', fontWeight: '600', lineHeight: '1.6' }}>{bookingSuccess.accountInfo}</div>
+                                    <div style={{ fontSize: '11px', color: '#0369a1', marginTop: '8px' }}>Hãy đăng nhập ngay để tích điểm và nhận ưu đãi!</div>
+                                </div>
+                            )}
                             <button 
                                 onClick={() => setBookingSuccess(null)}
                                 style={{ width: '100%', padding: '16px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '800', cursor: 'pointer' }}

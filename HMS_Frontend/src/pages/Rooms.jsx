@@ -59,14 +59,25 @@ const Rooms = () => {
         return type ? (type.typeName || type.TypeName) : 'Chưa xác định';
     };
 
-    const getStatusColor = (status) => {
-        // Hỗ trợ cả trường hợp status là một giá trị hoặc nằm trong object
-        const s = typeof status === 'object' ? status.status : status;
-        switch (s) {
-            case 0: return { bg: '#eff6ff', text: '#3b82f6', label: 'Trống' };
-            case 1: return { bg: '#fef2f2', text: '#ef4444', label: 'Đã đặt' };
-            case 2: return { bg: '#fefce8', text: '#ca8a04', label: 'Bận' };
-            default: return { bg: '#f8fafc', text: '#64748b', label: 'Trống' };
+    const getStatusColor = (room) => {
+        // HMS Rule: Hỗ trợ cả Số (2) và Chữ ("Occupied") + Tự động tìm cả "Status" và "status"
+        const raw = room?.status ?? room?.Status ?? 0;
+        const s = String(raw).toLowerCase();
+        
+        switch (raw) {
+            case 0: case 'vacantclean': case '0':
+                return { bg: '#eff6ff', text: '#3b82f6', label: 'Trống' };
+            case 1: case 'vacantdirty': case '1':
+                return { bg: '#fef2f2', text: '#ef4444', label: 'Chưa dọn' };
+            case 2: case 'occupied': case '2':
+                return { bg: '#fffbeb', text: '#d97706', label: 'Đang ở' };
+            case 3: case 'reserved': case '3':
+                return { bg: '#fdf2f8', text: '#db2777', label: 'Đã đặt' };
+            default:
+                // Hỗ trợ so sánh chuỗi dự phòng
+                if (s.includes('occupied') || s === '2') return { bg: '#fffbeb', text: '#d97706', label: 'Đang ở' };
+                if (s.includes('dirty') || s === '1') return { bg: '#fef2f2', text: '#ef4444', label: 'Chưa dọn' };
+                return { bg: '#eff6ff', text: '#3b82f6', label: 'Trống' };
         }
     };
 
@@ -117,8 +128,8 @@ const Rooms = () => {
                                     </div>
                                 </td>
                                 <td style={{ padding: '20px 24px' }}>
-                                    <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', background: getStatusColor(room.status !== undefined ? room.status : room.Status).bg, color: getStatusColor(room.status !== undefined ? room.status : room.Status).text }}>
-                                        {getStatusColor(room.status !== undefined ? room.status : room.Status).label}
+                                    <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', background: getStatusColor(room).bg, color: getStatusColor(room).text }}>
+                                        {getStatusColor(room).label}
                                     </span>
                                 </td>
                                 <td style={{ padding: '20px 24px', textAlign: 'right' }}>

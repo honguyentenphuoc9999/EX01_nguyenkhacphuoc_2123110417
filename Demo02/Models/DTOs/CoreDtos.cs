@@ -43,6 +43,8 @@ namespace Demo02.Models.DTOs
         public string? Email { get; set; }
         public string IdNumber { get; set; } = string.Empty; // PII Data (Exposed for Authorized Admin only)
         public GuestType GuestType { get; set; }
+        public bool IsVerified { get; set; }
+        public string? Preferences { get; set; } // 🛡️ Smart Sync: Thêm sở thích khách hàng lên Admin UI
     }
 
     public class GuestCreateDto
@@ -50,7 +52,8 @@ namespace Demo02.Models.DTOs
         [Required, StringLength(200)]
         public string FullName { get; set; } = string.Empty;
         
-        [Required]
+        [Required(ErrorMessage = "Số CCCD là bắt buộc.")]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "Số CCCD phải bao gồm đúng 12 chữ số và không chứa chữ cái.")]
         public string IdNumber { get; set; } = string.Empty; // CCCD / Passport
         
         [EmailAddress]

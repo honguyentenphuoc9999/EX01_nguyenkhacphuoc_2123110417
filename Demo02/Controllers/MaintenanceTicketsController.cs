@@ -34,6 +34,14 @@ namespace Demo02.Controllers
         public async Task<ActionResult<MaintenanceTicket>> PostMaintenanceTicket(MaintenanceTicket ticket)
         {
             _context.MaintenanceTickets.Add(ticket);
+            
+            // HMS Rule (OPS-02): Tự động chuyển trạng thái phòng sang 'Maintenance' (Đang bảo trì)
+            var room = await _context.Rooms.FindAsync(ticket.RoomId);
+            if (room != null)
+            {
+                room.Status = RoomStatus.UnderMaintenance;
+            }
+            
             await _context.SaveChangesAsync();
             return CreatedAtAction("GetMaintenanceTicket", new { id = ticket.TicketId }, ticket);
         }
@@ -43,6 +51,17 @@ namespace Demo02.Controllers
         {
             if (id != ticket.TicketId) return BadRequest();
             _context.Entry(ticket).State = EntityState.Modified;
+            
+            // HMS Rule: Nếu đã sửa xong (Resolved), chuyển phòng sang trạng thái chờ dọn dẹp để buồng phòng vào làm việc
+            if (ticket.Status == "Resolved")
+            {
+                var room = await _context.Rooms.FindAsync(ticket.RoomId);
+                if (room != null)
+                {
+                    room.Status = RoomStatus.VacantDirty;
+                }
+            }
+            
             await _context.SaveChangesAsync();
             return NoContent();
         }

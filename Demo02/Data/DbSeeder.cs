@@ -10,10 +10,16 @@ namespace Demo02.Data
         {
             // 1. Seed Roles
             try {
-                await context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Guests') AND name = 'IdCardImageUrl') ALTER TABLE Guests ADD IdCardImageUrl nvarchar(max) NULL;");
-            } catch { /* Bỏ qua nếu cột đã tồn tại hoặc DB chưa sẵn sàng */ }
+                // HMS Rule: Đảm bảo bảng Guests có đủ cột HomeAddress để trích xuất QR CCCD
+                await context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[dbo].[Guests]') AND name = 'HomeAddress') ALTER TABLE [dbo].[Guests] ADD HomeAddress nvarchar(max) NULL;");
+                
+                // HMS Rule: Thêm cột QR Code vào Hóa đơn để hỗ trợ thanh toán 5 sao
+                await context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[dbo].[Invoices]') AND name = 'PaymentQrCode') ALTER TABLE [dbo].[Invoices] ADD PaymentQrCode nvarchar(max) NULL;");
+            } catch (Exception ex) { 
+                Console.WriteLine($"HMS Schema Sync Error: {ex.Message}");
+            }
 
-            string[] roles = { "Admin", "Manager", "Receptionist", "Housekeeper", "Technician" };
+            string[] roles = { "Admin", "Manager", "Receptionist", "Housekeeper", "Technician", "Guest" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
@@ -98,7 +104,21 @@ namespace Demo02.Data
                 }
             }
 
-            // 4. Seed Room Types
+            // 4. Seed System Settings
+            if (!context.SystemSettings.Any())
+            {
+                context.SystemSettings.Add(new SystemSettings 
+                { 
+                    BankName = "OCB", 
+                    AccountNumber = "462904", 
+                    AccountHolder = "NGUYEN KHAC PHUOC",
+                    HotelAddress = "69 Royal Plaza, Ho Chi Minh",
+                    HotelPhone = "0945 123 456"
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // 5. Seed Room Types
             if (!context.RoomTypes.Any())
             {
                 var types = new List<RoomType>
@@ -121,7 +141,7 @@ namespace Demo02.Data
                 new Room { RoomNumber = "101", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
                 new Room { RoomNumber = "102", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
                 new Room { RoomNumber = "201", Floor = 2, RoomTypeId = dlxType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 850000, CreatedBy = "System" },
-                new Room { RoomNumber = "202", Floor = 2, RoomTypeId = dlxType.RoomTypeId, Status = RoomStatus.VacantDirty, BasePrice = 850000, CreatedBy = "System" },
+                new Room { RoomNumber = "202", Floor = 2, RoomTypeId = dlxType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 850000, CreatedBy = "System" },
                 new Room { RoomNumber = "301", Floor = 3, RoomTypeId = suiteType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 1500000, CreatedBy = "System" },
                 new Room { RoomNumber = "302", Floor = 3, RoomTypeId = suiteType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 1500000, CreatedBy = "System" }
             };
@@ -131,6 +151,46 @@ namespace Demo02.Data
                 if (!await context.Rooms.AnyAsync(existing => existing.RoomNumber == r.RoomNumber))
                 {
                     context.Rooms.Add(r);
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // --- HMS Rule: Đảm bảo có danh sách nhân viên & Tài khoản đăng nhập (Housekeeping) ---
+            var hkData = new List<(string Code, string Name, string Email, string Phone, string Pos)>
+            {
+                ("HK-001", "Nguyễn Thị Mai", "mai.nt@hms.com", "0901234567", "Nhân viên dọn phòng"),
+                ("HK-002", "Trần Văn Nam", "nam.tv@hms.com", "0901234568", "Nhân viên dọn phòng"),
+                ("HK-003", "Lê Thu Hà", "ha.lt@hms.com", "0901234569", "Nhân viên dọn phòng"),
+                ("HK-004", "Phạm Hồng Phúc", "phuc.ph@hms.com", "0901234570", "Trưởng ca dọn phòng")
+            };
+
+            foreach (var s in hkData)
+            {
+                if (!context.Staffs.Any(staff => staff.EmployeeCode == s.Code))
+                {
+                    // 1. Tạo tài khoản đăng nhập (Identity)
+                    var user = await userManager.FindByEmailAsync(s.Email);
+                    if (user == null)
+                    {
+                        user = new IdentityUser { UserName = s.Email.Split('@')[0], Email = s.Email, EmailConfirmed = true };
+                        await userManager.CreateAsync(user, "Hms@123");
+                        await userManager.AddToRoleAsync(user, "Housekeeper");
+                    }
+
+                    // 2. Tạo hồ sơ nhân sự (Staff Profile)
+                    context.Staffs.Add(new Staff
+                    {
+                        EmployeeCode = s.Code,
+                        FullName = s.Name,
+                        Email = s.Email,
+                        Phone = s.Phone,
+                        Department = "Housekeeping",
+                        Position = s.Pos,
+                        Role = StaffRole.Housekeeper,
+                        HireDate = DateTime.Now.AddMonths(-new Random().Next(1, 12)),
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = "System"
+                    });
                 }
             }
             await context.SaveChangesAsync();
@@ -147,6 +207,58 @@ namespace Demo02.Data
             }
 
             await context.SaveChangesAsync();
+
+            // 7. Seed Guest Member (Loyalty)
+            if (await userManager.FindByEmailAsync("member@gmail.com") == null)
+            {
+                var guestUser = new IdentityUser { 
+                    UserName = "member", 
+                    Email = "member@gmail.com", 
+                    EmailConfirmed = true,
+                    PhoneNumber = "0909000123" // 🛡️ BẮT BUỘC ĐỂ NHẬN DIỆN ID CHO GUEST
+                };
+                var result = await userManager.CreateAsync(guestUser, "Guest@123");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(guestUser, "Guest");
+                    
+                    if (!context.Guests.Any(g => g.Email == "member@gmail.com"))
+                    {
+                        var guestProfile = new Guest {
+                            GuestId = Guid.NewGuid(), // Khởi tạo Guid mới
+                            FullName = "Nguyễn Thành Viên",
+                            Email = "member@gmail.com",
+                            Phone = "0909000123",
+                            IdNumber = "123456789012",
+                            Nationality = "Vietnam",
+                            DateOfBirth = new DateTime(1995, 5, 10),
+                            GuestType = GuestType.VIP,
+                            Preferences = "",
+                            IsDeleted = false,
+                            CreatedAt = DateTime.Now,
+                            CreatedBy = "System"
+                        };
+                        context.Guests.Add(guestProfile);
+                        await context.SaveChangesAsync();
+
+                        var loyalty = new LoyaltyAccount {
+                            AccountId = Guid.NewGuid(),
+                            GuestId = guestProfile.GuestId, // Link qua Guid
+                            MemberNumber = "GOLD-8888", 
+                            Tier = LoyaltyTier.Gold, 
+                            CurrentPoints = 500,
+                            LifetimePoints = 1000,
+                            EnrolledAt = DateTime.Now,
+                            IsDeleted = false,
+                            CreatedAt = DateTime.Now,
+                            CreatedBy = "System"
+                        };
+                        context.LoyaltyAccounts.Add(loyalty);
+                        
+                        await context.SaveChangesAsync();
+                    }
+                }
+            }
         }
     }
 }

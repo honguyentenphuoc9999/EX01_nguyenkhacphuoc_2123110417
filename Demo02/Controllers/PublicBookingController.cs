@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using Demo02.Data;
 using Demo02.Models;
 using Demo02.Models.DTOs;
@@ -15,7 +16,12 @@ namespace Demo02.Controllers
         public Guid RoomTypeId { get; set; }
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
+        public string Email { get; set; } = string.Empty;
         public int GuestCount { get; set; }
+        
+        // --- 🔐 SECURITY ADDITIONS ---
+        public string? Password { get; set; }
+        public string? ConfirmPassword { get; set; }
     }
 
     [Route("api/[controller]")]
@@ -23,71 +29,95 @@ namespace Demo02.Controllers
     public class PublicBookingController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
-        public PublicBookingController(AppDbContext context)
+        public PublicBookingController(AppDbContext context, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
         {
             _context = context;
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        // 1. Kiểm tra SĐT có tồn tại chưa để Frontend "biến hình"
+        [HttpGet("CheckAccount/{phone}")]
+        public async Task<IActionResult> CheckAccount(string phone)
+        {
+            // Tìm trong Identity: Thử theo Username HOẶC PhoneNumber (phòng trường hợp DB Seed dùng username khác)
+            var identityUser = await _userManager.FindByNameAsync(phone) 
+                             ?? await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+            
+            // Tìm trong Guests (Hồ sơ hành chính)
+            var guestProfile = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == phone);
+            
+            return Ok(new { 
+                exists = identityUser != null, // Đã có tài khoản mật khẩu
+                hasProfile = guestProfile != null, // Đã từng lưu hồ sơ (Nguyễn Thành Viên)
+                fullName = guestProfile?.FullName // Tên để chào khách
+            });
         }
 
         [HttpPost("Submit")]
         public async Task<IActionResult> SubmitBooking([FromBody] PublicBookingRequestDto dto)
         {
-            // --- 🛡️ VALIDATE NGHIỆP VỤ KHÁCH SẠN (BUSINESS LOGIC) ---
-            
-            // 1. Kiểm tra Ngày (Check-in không được ở quá khứ)
-            if (dto.CheckInDate.Date < DateTime.Today)
-                return BadRequest(new { message = "Ngày nhận phòng không thể ở quá khứ!" });
+            // --- 🛡️ KIỂM TRA QUYỀN HẠN ---
+            bool isStaffBooking = false;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (User.IsInRole("Admin") || User.IsInRole("Staff") || User.IsInRole("Receptionist") || User.IsInRole("Manager"))
+                {
+                    isStaffBooking = true; // Đánh dấu đây là Admin đang đặt hộ khách
+                }
+            }
 
-            // 2. Kiểm tra Thời gian ở (Check-out phải sau Check-in)
-            if (dto.CheckOutDate.Date <= dto.CheckInDate.Date)
-                return BadRequest(new { message = "Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!" });
+            // --- 🛡️ VALIDATE NGHIỆP VỤ ---
+            if (string.IsNullOrWhiteSpace(dto.Phone) || dto.Phone.Length < 10)
+                return BadRequest(new { message = "Số điện thoại không hợp lệ!" });
 
-            // 3. Kiểm tra Tên & SĐT (Regex tiếng Việt chuẩn)
-            if (string.IsNullOrWhiteSpace(dto.FullName) || !System.Text.RegularExpressions.Regex.IsMatch(dto.FullName, @"^[a-zA-Z\sÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠưăâêôơẠ-ỹ]+$"))
-                return BadRequest(new { message = "Họ và tên không hợp lệ!" });
-
-            if (string.IsNullOrWhiteSpace(dto.Phone) || !System.Text.RegularExpressions.Regex.IsMatch(dto.Phone, @"^[0-9]{10}$"))
-                return BadRequest(new { message = "Số điện thoại phải đúng 10 số!" });
-
-            // 4. Kiểm tra Hạng phòng & Sức chứa
             var roomType = await _context.RoomTypes.FindAsync(dto.RoomTypeId);
             if (roomType == null) return NotFound(new { message = "Hạng phòng không tồn tại!" });
 
-            if (dto.GuestCount > roomType.MaxOccupancy)
-                return BadRequest(new { message = $"Hạng phòng này chỉ chứa tối đa {roomType.MaxOccupancy} người!" });
-
-            // 5. Tìm phòng trống (Bắt buộc phải là phòng Sạch - VacantClean)
             var availableRoom = await _context.Rooms
                 .FirstOrDefaultAsync(r => r.RoomTypeId == dto.RoomTypeId && r.Status == RoomStatus.VacantClean);
+            if (availableRoom == null) return BadRequest(new { message = "Hạng phòng này tạm hết phòng sạch. Vui lòng chọn hạng phòng khác!" });
 
-            if (availableRoom == null)
+            // --- ✍️ XỬ LÝ ĐĂNG KÝ / ĐĂNG NHẬP ---
+            var user = await _userManager.FindByNameAsync(dto.Phone) 
+                     ?? await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == dto.Phone);
+            if (user == null)
             {
-                // HMS Rule: Nếu phòng đang dọn (VacantDirty), chúng ta ko gán tự động cho khách Web 
-                // để tránh trường hợp khách đến mà phòng chưa dọn xong.
-                return BadRequest(new { message = "Hiện tại hạng phòng này đang trong quá trình vệ sinh. Vui lòng thử lại sau 15-30 phút hoặc liên hệ Hotline để được hỗ trợ gán phòng gấp!" });
-            }
+                // TRƯỜNG HỢP A: Người mới -> Bắt buộc nhập 2 mật khẩu
+                if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password != dto.ConfirmPassword)
+                    return BadRequest(new { message = "Vui lòng nhập và xác nhận mật khẩu cho tài khoản mới của khách!" });
 
-            // 6. Tính toán Tổng tiền (Nights * BasePrice)
-            int nights = (int)(dto.CheckOutDate.Date - dto.CheckInDate.Date).TotalDays;
-            if (nights <= 0) nights = 1; // Đảm bảo tối thiểu 1 đêm
-            decimal totalPrice = nights * roomType.BasePrice;
+                user = new IdentityUser { UserName = dto.Phone, Email = dto.Email, EmailConfirmed = true, PhoneNumber = dto.Phone };
+                var createResult = await _userManager.CreateAsync(user, dto.Password);
+                if (!createResult.Succeeded) return BadRequest(new { message = "Không thể tạo tài khoản cho khách: " + createResult.Errors.FirstOrDefault()?.Description });
+                
+                await _userManager.AddToRoleAsync(user, "Guest");
 
-            // --- ✍️ THỰC THI GIAO DỊCH ---
-            var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == dto.Phone);
-            if (guest == null)
-            {
-                // HMS Rule: Khách web mới phải có ID tạm thời 12 số để đồng bộ hệ thống validation
-                string tempId = "99" + DateTime.Now.ToString("HHmmss") + "0000"; // Tạo 12 số tạm thời
-                if (tempId.Length > 12) tempId = tempId.Substring(0, 12);
-
-                guest = new Guest {
+                // Tạo hồ sơ khách hàng ngay lập tức (Dùng user.Email thật)
+                var guestProfile = new Guest {
                     FullName = dto.FullName, Phone = dto.Phone, Nationality = "Vietnam",
-                    IdNumber = tempId,
-                    Email = "", GuestType = GuestType.Individual,
+                    IdNumber = "PENDING-" + DateTime.Now.ToString("HHmmss"),
+                    Email = dto.Email, GuestType = GuestType.Regular,
                     CreatedAt = DateTime.Now
                 };
+                _context.Guests.Add(guestProfile);
+                await _context.SaveChangesAsync(); // 🛡️ Lưu ngay để tránh lỗi lặp ở bước sau
+            }
+            else if (!isStaffBooking)
+            {
+                // TRƯỜNG HỢP B: Người quen & KHÁCH tự đặt -> Xác thực mật khẩu
+                var signResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password ?? "", false);
+                if (!signResult.Succeeded) return BadRequest(new { message = "Mật khẩu không chính xác. Vui lòng thử lại!" });
+            }
+
+            // --- ✍️ THỰC THI ĐẶT PHÒNG ---
+            var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == dto.Phone);
+            if (guest == null) {
+                guest = new Guest { FullName = dto.FullName, Phone = dto.Phone, CreatedAt = DateTime.Now };
                 _context.Guests.Add(guest);
-                await _context.SaveChangesAsync();
             }
 
             var reservation = new Reservation {
@@ -96,21 +126,30 @@ namespace Demo02.Controllers
                 BookingCode = "HMS-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 CheckInDate = dto.CheckInDate,
                 CheckOutDate = dto.CheckOutDate,
-                DepositAmount = 0,
                 Status = ReservationStatus.Pending,
                 CreatedAt = DateTime.Now
-                // Nếu bạn có cột TotalPrice trong DB, hãy gán: TotalPrice = totalPrice
             };
 
             availableRoom.Status = RoomStatus.Reserved;
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
 
+            // Nếu là KHÁCH tự đặt -> Tự động đăng nhập. Nếu Admin đặt hộ -> Giữ nguyên phiên Admin.
+            if (!isStaffBooking)
+            {
+                await _signInManager.SignInAsync(user, isPersistent: true);
+                return Ok(new { 
+                    message = "Đặt phòng thành công!", 
+                    bookingCode = reservation.BookingCode,
+                    redirect = "/guest-dashboard" 
+                });
+            }
+
             return Ok(new { 
-                message = "Yêu cầu đặt phòng đã được hệ thống ghi nhận!", 
+                message = "Hỗ trợ đặt phòng cho khách thành công! (Quyền Quản trị)", 
                 bookingCode = reservation.BookingCode,
-                totalPrice = totalPrice,
-                nights = nights
+                fullName = guest.FullName,
+                redirect = "/reservations" // Admin quay về trang quản lý đặt phòng
             });
         }
     }

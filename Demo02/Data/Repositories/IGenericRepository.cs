@@ -9,6 +9,7 @@ namespace Demo02.Data.Repositories
     public interface IGenericRepository<T> where T : class
     {
         Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes);
+        Task<IEnumerable<T>> GetAllWithDeletedAsync(params Expression<Func<T, object>>[] includes);
         Task<T?> GetByIdAsync(Guid id, params Expression<Func<T, object>>[] includes);
         Task AddAsync(T entity);
         void Add(T entity);

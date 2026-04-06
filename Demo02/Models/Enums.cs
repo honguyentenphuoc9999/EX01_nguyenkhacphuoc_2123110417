@@ -58,6 +58,7 @@ namespace Demo02.Models
     {
         Draft,
         Issued,
+        Paid,
         Cancelled
     }
 
@@ -71,11 +72,11 @@ namespace Demo02.Models
 
     public enum GuestType
     {
+        Regular,
         VIP,
         Corporate,
-        Regular,
-        Group,
-        Individual
+        Member,
+        Group
     }
 
     public enum StaffRole
@@ -92,7 +93,8 @@ namespace Demo02.Models
     {
         Silver,
         Gold,
-        Platinum
+        Platinum,
+        Diamond
     }
 
     public enum HmsTaskType
@@ -108,6 +110,7 @@ namespace Demo02.Models
     {
         Pending,
         InProgress,
+        UnderReview, // Mới: Chờ quản lý xem ảnh và duyệt
         Completed,
         Cancelled
     }

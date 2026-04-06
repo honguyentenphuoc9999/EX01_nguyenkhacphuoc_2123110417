@@ -65,6 +65,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -115,6 +116,8 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await DbSeeder.SeedAsync(context, userManager, roleManager);
+        await DbRepair.FixGuestPhoneAsync(context); // 🛡️ ÉP LIÊN KẾT SĐT CHO GUEST MẪU
+        await DbRepair.FixRoomStatusesAsync(context); // 🛡️ Đồng bộ lại trạng thái phòng nếu lỡ Check-in lỗi từ trước
     }
     catch (Exception ex)
     {

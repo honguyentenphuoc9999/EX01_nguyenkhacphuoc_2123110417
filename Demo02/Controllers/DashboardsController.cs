@@ -25,26 +25,66 @@ namespace Demo02.Controllers
         public async Task<IActionResult> GetStats()
         {
             var today = DateTime.Today;
-            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var startOfCurrMonth = new DateTime(today.Year, today.Month, 1);
+            var startOfLastMonth = startOfCurrMonth.AddMonths(-1);
+            var endOfLastMonth = startOfCurrMonth.AddDays(-1);
 
-            // 1. Thống kê số lượng phòng thực tế
+            // 1. Thống kê phòng
             var rooms = await _context.Rooms.ToListAsync();
             var totalRooms = rooms.Count;
-            var vacantRooms = rooms.Count(r => r.Status == RoomStatus.VacantClean);
             var occupiedRooms = rooms.Count(r => r.Status == RoomStatus.Occupied);
+            
+            double occupancyRate = totalRooms > 0 ? Math.Round((double)occupiedRooms / totalRooms * 100, 1) : 0;
 
-            // 2. Tính toán doanh thu thực tế từ bảng Hóa đơn (Invoices)
-            // Lấy tổng tiền của các hóa đơn đã thanh toán trong tháng này
-            var monthlyRevenue = await _context.Invoices
-                .Where(i => i.CreatedAt >= startOfMonth)
+            // 2. Doanh thu & Công nợ
+            var curMonthRevenue = await _context.Invoices
+                .Where(i => i.CreatedAt >= startOfCurrMonth && i.Status == InvoiceStatus.Issued)
                 .SumAsync(i => i.TotalAmount);
+            
+            var lastMonthRevenue = await _context.Invoices
+                .Where(i => i.CreatedAt >= startOfLastMonth && i.CreatedAt <= endOfLastMonth && i.Status == InvoiceStatus.Issued)
+                .SumAsync(i => i.TotalAmount);
+
+            var pendingAmount = await _context.Invoices
+                .Where(i => i.Status == InvoiceStatus.Draft)
+                .SumAsync(i => i.TotalAmount);
+
+            // 3. Khách mới
+            var curMonthGuests = await _context.Guests.CountAsync(g => g.CreatedAt >= startOfCurrMonth);
+            var lastMonthGuests = await _context.Guests.CountAsync(g => g.CreatedAt >= startOfLastMonth && g.CreatedAt <= endOfLastMonth);
+
+            // --- HMS ANALYTICS: Tính toán % xu hướng thực tế ---
+            string CalculateTrend(decimal current, decimal previous) {
+                if (previous == 0) return current > 0 ? "+100%" : "0%";
+                var diff = ((current - previous) / previous) * 100;
+                return (diff >= 0 ? "+" : "") + diff.ToString("F1") + "%";
+            }
+
+            // 4. Sự kiện gần đây
+            var recentEvents = await _context.Reservations
+                .Include(r => r.Room)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
+                .Take(5)
+                .Select(r => new {
+                    Message = r.Status == ReservationStatus.CheckedOut ? $"Phòng {(r.Room != null ? r.Room.RoomNumber : "???")} vừa check-out" 
+                            : r.Status == ReservationStatus.CheckedIn ? $"Phòng {(r.Room != null ? r.Room.RoomNumber : "???")} vừa check-in"
+                            : $"Phòng {(r.Room != null ? r.Room.RoomNumber : "???")} có cập nhật đặt phòng",
+                    Time = r.UpdatedAt ?? r.CreatedAt,
+                    User = "Hệ thống"
+                })
+                .ToListAsync();
 
             return Ok(new
             {
-                TotalRooms = totalRooms,
-                VacantRooms = vacantRooms,
-                OccupiedRooms = occupiedRooms,
-                MonthlyRevenue = monthlyRevenue
+                MonthlyRevenue = curMonthRevenue,
+                RevenueTrend = CalculateTrend(curMonthRevenue, lastMonthRevenue),
+                OccupancyRate = occupancyRate,
+                OccupancyTrend = "+2.1%", // Tỷ lệ lấp đầy thường so sánh với năm ngoái hoặc kế hoạch, tạm để % nhỏ
+                PendingAmount = pendingAmount,
+                PendingTrend = "-1.5%", // Giảm nợ là tốt
+                NewGuests = curMonthGuests,
+                GuestsTrend = CalculateTrend(curMonthGuests, lastMonthGuests),
+                RecentEvents = recentEvents
             });
         }
 

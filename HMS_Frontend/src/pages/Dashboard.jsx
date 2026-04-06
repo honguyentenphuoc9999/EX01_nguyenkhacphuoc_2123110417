@@ -9,24 +9,36 @@ import api from '../api/axios';
 
 const Dashboard = () => {
     const { user } = useAuth();
-    const [stats, setStats] = useState({ revenue: 0, occupancy: 0, pending: 0, arrivals: 0 });
+    const [stats, setStats] = useState({ 
+        monthlyRevenue: 0, 
+        revenueTrend: "0%",
+        occupancyRate: 0, 
+        occupancyTrend: "0%",
+        pendingAmount: 0, 
+        pendingTrend: "0%",
+        newGuests: 0,
+        guestsTrend: "0%",
+        recentEvents: []
+    });
 
     useEffect(() => {
-        // Giả lập load stats từ API
-        setStats({
-            revenue: 125000000,
-            occupancy: 85,
-            pending: 5,
-            arrivals: 8
-        });
+        const fetchDashboardData = async () => {
+            try {
+                const res = await api.get('/Dashboards/stats');
+                setStats(res.data);
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu Dashboard:", error);
+            }
+        };
+        fetchDashboardData();
     }, []);
 
     const renderAdminDashboard = () => (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
-            <StatCard icon={<TrendingUp color="#10b981"/>} label="Doanh thu tháng" value={`${stats.revenue.toLocaleString()} ₫`} trend="+12.5%" />
-            <StatCard icon={<Box color="#3b82f6"/>} label="Tỷ lệ lấp đầy" value={`${stats.occupancy}%`} trend="+2.4%" />
-            <StatCard icon={<CreditCard color="#f59e0b"/>} label="Tiền chưa thanh toán" value="12,400,000 ₫" trend="-5%" />
-            <StatCard icon={<Users color="#8b5cf6"/>} label="Khách mới" value="142" trend="+18%" />
+            <StatCard icon={<TrendingUp color="#10b981"/>} label="Doanh thu tháng" value={`${new Intl.NumberFormat('vi-VN').format(stats.monthlyRevenue)} ₫`} trend={stats.revenueTrend} />
+            <StatCard icon={<Box color="#3b82f6"/>} label="Tỷ lệ lấp đầy" value={`${stats.occupancyRate}%`} trend={stats.occupancyTrend} />
+            <StatCard icon={<CreditCard color="#f59e0b"/>} label="Tiền chưa thanh toán" value={`${new Intl.NumberFormat('vi-VN').format(stats.pendingAmount)} ₫`} trend={stats.pendingTrend} />
+            <StatCard icon={<Users color="#8b5cf6"/>} label="Khách mới" value={`${stats.newGuests}`} trend={stats.guestsTrend} />
         </div>
     );
 
@@ -63,18 +75,25 @@ const Dashboard = () => {
             <div style={{ marginTop: '40px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px' }}>Sự kiện gần đây</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {[1,2,3].map(i => (
-                        <div key={i} style={{ background: 'white', padding: '16px 24px', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                <div style={{ p: '10px', background: '#f1f5f9', borderRadius: '10px' }}><Clock size={16} color="#64748b" /></div>
-                                <div>
-                                    <div style={{ fontWeight: '700', fontSize: '14px' }}>Phòng 102 vừa check-out</div>
-                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>10 phút trước bởi Lễ tân</div>
+                    {stats.recentEvents.length === 0 ? (
+                        <div style={{ color: '#64748b' }}>Chưa có sự kiện nào gần đây.</div>
+                    ) : (
+                        stats.recentEvents.map((evt, idx) => {
+                            const timeStr = new Date(evt.time).toLocaleString('vi-VN');
+                            return (
+                                <div key={idx} style={{ background: 'white', padding: '16px 24px', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                        <div style={{ padding: '10px', background: '#f1f5f9', borderRadius: '10px' }}><Clock size={16} color="#64748b" /></div>
+                                        <div>
+                                            <div style={{ fontWeight: '700', fontSize: '14px' }}>{evt.message}</div>
+                                            <div style={{ fontSize: '12px', color: '#94a3b8' }}>{timeStr} bởi {evt.user}</div>
+                                        </div>
+                                    </div>
+                                    <button style={{ color: '#3b82f6', background: 'transparent', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}>Chi tiết</button>
                                 </div>
-                            </div>
-                            <button style={{ color: '#3b82f6', background: 'transparent', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}>Chi tiết</button>
-                        </div>
-                    ))}
+                            );
+                        })
+                    )}
                 </div>
             </div>
         </div>

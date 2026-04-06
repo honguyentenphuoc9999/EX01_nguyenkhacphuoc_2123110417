@@ -41,10 +41,25 @@ public class AppDbContext : IdentityDbContext
     public DbSet<LoyaltyAccount> LoyaltyAccounts { get; set; }
     public DbSet<InventoryItem> InventoryItems { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<SystemSettings> SystemSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // HMS Rule: Tư động lọc bỏ dữ liệu đã xóa (Soft Delete) toàn hệ thống
+        modelBuilder.Entity<Room>().HasQueryFilter(r => !r.IsDeleted);
+        modelBuilder.Entity<Guest>().HasQueryFilter(g => !g.IsDeleted);
+        modelBuilder.Entity<Reservation>().HasQueryFilter(r => !r.IsDeleted);
+        modelBuilder.Entity<Folio>().HasQueryFilter(f => !f.IsDeleted);
+        modelBuilder.Entity<Invoice>().HasQueryFilter(i => !i.IsDeleted);
+        modelBuilder.Entity<Staff>().HasQueryFilter(s => !s.IsDeleted);
+        modelBuilder.Entity<LoyaltyAccount>().HasQueryFilter(l => !l.IsDeleted);
+
+        // Cấu hình Quan hệ 1-1 cho LoyaltyAccount nếu cần
+        modelBuilder.Entity<LoyaltyAccount>()
+            .HasIndex(l => l.GuestId)
+            .IsUnique();
 
         // --- NFR-05: AES-256 Encryption for PII Data (CCCD/Passport) ---
         var encryptionConverter = new ValueConverter<string, string>(
@@ -57,22 +72,15 @@ public class AppDbContext : IdentityDbContext
 
         // --- Cài đặt Global Query Filter cho tất cả thực thể Nghiệp vụ (Soft Delete - BR 14) ---
         modelBuilder.Entity<RoomType>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Room>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Guest>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<GuestDocument>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Reservation>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<ReservationRoom>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Folio>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<FolioCharge>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<Payment>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Invoice>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<Refund>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<HousekeepingTask>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<MinibarLog>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<LostAndFound>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<Staff>().HasQueryFilter(x => !x.IsDeleted);
-        modelBuilder.Entity<LoyaltyAccount>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<InventoryItem>().HasQueryFilter(x => !x.IsDeleted);
 
         // --- Cài đặt khóa duy nhất (Unique Constraints) ---

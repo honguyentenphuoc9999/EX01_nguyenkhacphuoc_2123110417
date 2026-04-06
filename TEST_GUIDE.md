@@ -13,9 +13,45 @@ Hệ thống đã được nạp sẵn dữ liệu mẫu. Bạn có thể dùng 
 | **Quản trị viên** | `admin_phuoc` | `Admin@123` | Toàn quyền, quản lý nhân sự, cấu hình hệ thống. |
 | **Quản lý** | `manager` | `Staff@123` | Quản lý kho phòng, báo cáo kinh doanh. |
 | **Lễ tân** | `lan` | `Staff@123` | Đặt phòng, Check-in/out, thu tiền khách. |
-| **Dọn phòng** | `nam` | `Staff@123` | Cập nhật trạng thái dọn dẹp, hoàn thành task. |
 | **Kế toán** | `ke` | `Staff@123` | Quản lý hóa đơn, doanh thu, tài chính. |
 | **Kỹ thuật** | `ky` | `Staff@123` | Quản lý bảo trì, sửa chữa phòng. |
+| **Chị Mai (HK)** | `mai.nt` | `Hms@123` | Nhân viên dọn phòng. |
+| **Anh Nam (HK)** | `nam.tv` | `Hms@123` | Nhân viên dọn phòng. |
+| **Chị Hà (HK)** | `ha.lt` | `Hms@123` | Nhân viên dọn phòng. |
+| **Anh Phúc (HK)** | `phuc.ph` | `Hms@123` | Trưởng ca dọn phòng. |
+| **Hội viên VIP** | `0909000123` | `Guest@123` | Khách hàng (Nguyễn Thành Viên), truy cập Portal. |
+
+
+---
+
+## 🛠 HỆ THỐNG ENUM (TRA CỨU CƠ SỞ DỮ LIỆU)
+*Khi xem dữ liệu trực tiếp trong SQL/Database, các cột trạng thái sẽ hiển thị bằng số. Dưới đây là bảng tra cứu ý nghĩa:*
+
+### 1. GuestType (Loại khách hàng)
+| Giá trị (Int) | Loại khách | Ý nghĩa nghiệp vụ |
+| :--- | :--- | :--- |
+| **0** | Regular | Khách lẻ thông thường (Mặc định) |
+| **1** | VIP | Khách hàng quan trọng, cần dịch vụ đặc biệt |
+| **2** | Corporate | Khách đoàn từ doanh nghiệp, có giá hợp đồng |
+| **3** | Member | Khách hàng thành viên đã đăng ký Loyalty |
+| **4** | Group | Khách đi theo đoàn du lịch lớn |
+
+### 2. ReservationStatus (Trạng thái đặt phòng)
+| Giá trị (Int) | Trạng thái | Mô tả |
+| :--- | :--- | :--- |
+| **0** | Pending | Chờ xử lý (Chưa xác nhận cọc) |
+| **1** | Confirmed | Đã xác nhận (Đã thu cọc) |
+| **2** | CheckedIn | Khách đã nhận phòng và đang lưu trú |
+| **3** | CheckedOut | Khách đã trả phòng và thanh toán xong |
+| **4** | Cancelled | Đặt phòng đã bị hủy |
+
+### 3. LoyaltyTier (Hạng thành viên)
+| Giá trị (Int) | Hạng | Mô tả |
+| :--- | :--- | :--- |
+| **0** | Silver | Hạng Bạc |
+| **1** | Gold | Hạng Vàng |
+| **2** | Platinum | Hạng Bạch Kim |
+| **3** | Diamond | Hạng Kim Cương |
 
 ---
 
@@ -36,8 +72,37 @@ Hệ thống đã cấu hình sẵn các thông tin nền tảng để bạn có
 
 ## 🏗️ GIAI ĐOẠN 1: HỆ THỐNG & BẢO MẬT (Setup)
 
-### Bước 1.1: Khởi tạo dữ liệu mẫu (Auto-Seed)
-*   **Thực hiện:** Bạn không cần đăng ký thủ công. Khi chạy dự án Backend, hệ thống sẽ tự động kiểm tra và thêm các tài khoản trên.
+### 8. HỆ THỐNG MÃ TRẠNG THÁI (ENUM REFERENCE)
+
+Để quản lý Database chuyên nghiệp nhất, bạn sử dụng bảng tra cứu sau cho các cột **Status**:
+
+#### 🏨 Trạng thái Phòng (RoomStatus)
+| Số ID | Tên Trạng Thái | Ý nghĩa |
+|---|---|---|
+| **0** | **VacantClean** | Phòng Trống & Sạch (Sẵn sàng bán) |
+| **1** | **VacantDirty** | Phòng Trống & Bẩn (Đang chờ dọn) |
+| **2** | **Occupied** | Đang có khách ở (Đã Check-in) |
+| **3** | **Reserved** | Đã có người đặt (Đang chờ khách đến) |
+| **4** | **OutOfOrder** | Hỏng hóc (Không thể bán) |
+| **5** | **Maintenance** | Đang bảo trì định kỳ |
+
+#### 📅 Trạng thái Đặt phòng (ReservationStatus)
+| Số ID | Tên Trạng Thái | Ý nghĩa |
+|---|---|---|
+| **0** | **Pending** | Chờ xác nhận (Khách vừa đặt xong) |
+| **1** | **Confirmed** | Đã xác nhận (Admin đã duyệt) |
+| **2** | **CheckedIn** | Đã nhận phòng (Khách đang ở) |
+| **3** | **CheckedOut** | Đã trả phòng (Lịch sử) |
+| **4** | **Cancelled** | Đã hủy (Kèm lý do hủy) |
+| **5** | **NoShow** | Khách không đến (Sau 18:00) |
+
+#### 💰 Trạng thái Hóa đơn (InvoiceStatus)
+| Số ID | Tên Trạng Thái | Ý nghĩa |
+|---|---|---|
+| **0** | **Draft** | Nháp (Đang tính toán) |
+| **1** | **Issued** | Đã xuất (Chờ thanh toán) |
+| **2** | **Paid** | Đã thanh toán (Thành công) |
+| **3** | **Cancelled** | Hóa đơn bị hủy |
 *   **Lưu ý:** Nếu muốn đăng ký thêm tài khoản mới, hãy dùng API `POST /api/Account/register`.
 
 ### Bước 1.2: Đăng nhập (Login)

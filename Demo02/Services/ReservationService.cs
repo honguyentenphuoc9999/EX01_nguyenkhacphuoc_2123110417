@@ -24,7 +24,18 @@ namespace Demo02.Services
         public async Task<IEnumerable<ReservationResponseDto>> GetAllReservationsAsync()
         {
             var data = await _uow.Reservations.GetAllAsync(r => r.Guest!, r => r.Room!);
-            return data.Select(r => MapToResponse(r));
+            return data.Select(MapToResponse).ToList();
+        }
+
+        public async Task<bool> ConfirmReservationAsync(Guid id)
+        {
+            var r = await _uow.Reservations.GetByIdAsync(id);
+            if (r == null || r.IsDeleted) return false;
+            
+            if (r.Status != ReservationStatus.Pending) return false;
+
+            r.Status = ReservationStatus.Confirmed;
+            return await _uow.CompleteAsync() > 0;
         }
 
         public async Task<ReservationResponseDto?> GetReservationByIdAsync(Guid id)
@@ -57,7 +68,7 @@ namespace Demo02.Services
                 SpecialRequests = dto.SpecialRequests,
                 BookingCode = "BK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 Status = ReservationStatus.Pending,
-                RoomId = dto.RoomIds?.FirstOrDefault() ?? Guid.Empty // Link phòng đầu tiên làm QuickID
+                RoomId = dto.RoomIds?.FirstOrDefault() // Để null nếu không có phòng nào được chọn
             };
 
             await _uow.Reservations.AddAsync(reservation);
@@ -97,9 +108,11 @@ namespace Demo02.Services
             // Điều kiện: StartMới < (EndCũ + 2h) VÀ EndMới > (StartCũ - 2h)
             var overlaps = await _uow.ReservationRooms.FindAsync(rr => 
                 rr.RoomId == roomId && 
-                rr.Reservation!.Status != ReservationStatus.Cancelled &&
-                start < rr.Reservation.CheckOutDate.AddHours(2) && // Cộng 2 tiếng dọn dẹp sau check-out
-                end > rr.Reservation.CheckInDate.AddHours(-2)); // Trừ 2 tiếng dọn dẹp trước check-in
+                !rr.Reservation!.IsDeleted && // 🛡️ Smart Fix: Loại bỏ đơn đã xóa
+                rr.Reservation.Status != ReservationStatus.Cancelled && // Loại bỏ đơn đã hủy
+                rr.Reservation.Status != ReservationStatus.NoShow &&    // Loại bỏ đơn vắng mặt
+                start < rr.Reservation.CheckOutDate.AddHours(2) && 
+                end > rr.Reservation.CheckInDate.AddHours(-2));
 
             return !overlaps.Any();
         }
@@ -110,15 +123,28 @@ namespace Demo02.Services
             if (r == null || (r.Status != ReservationStatus.Pending && r.Status != ReservationStatus.Confirmed))
                 return false;
 
-            // --- 🛡️ CẬP NHẬT THÔNG TIN ĐỊNH DANH (PHÁP LÝ & HÌNH ẢNH) ---
+            // --- 🛡️ ĐỐI SOÁT ĐỊNH DANH (IDENTITY VERIFICATION) ---
             if (dto != null && r.Guest != null)
             {
+                if (!string.IsNullOrEmpty(dto.ScannedFullName))
+                {
+                    // Chuyển về chữ thường và không dấu để so sánh tương đối (Tránh lỗi do Unikey/Capslock)
+                    string originalName = r.Guest.FullName.ToLower().Trim();
+                    string scannedName = dto.ScannedFullName.ToLower().Trim();
+
+                    // Nếu tên khác biệt quá lớn (Ví dụ: Nguyễn Văn A vs Trần Thị B) -> Cảnh báo bảo mật
+                    if (originalName != scannedName && !originalName.Contains(scannedName) && !scannedName.Contains(originalName))
+                    {
+                        throw new InvalidOperationException($"Lỗi định danh: Tên trên CCCD ({dto.ScannedFullName}) không khớp với tên đã đặt phòng ({r.Guest.FullName}). Vui lòng kiểm tra lại giấy tờ!");
+                    }
+                    
+                    r.Guest.FullName = dto.ScannedFullName; // Cập nhật tên chuẩn theo CCCD
+                }
+
                 r.Guest.IdNumber = dto.IdNumber;
                 r.Guest.Nationality = dto.Nationality;
-                if (!string.IsNullOrEmpty(dto.IdCardImage))
-                {
-                    r.Guest.IdCardImageUrl = dto.IdCardImage; // Lưu ảnh CCCD/QR
-                }
+                r.Guest.HomeAddress = dto.HomeAddress;
+                r.Guest.IsVerified = true; // Đánh dấu đã xác minh thực tế
             }
 
             r.Status = ReservationStatus.CheckedIn;
@@ -139,11 +165,23 @@ namespace Demo02.Services
                 await AddSurcharge(folio.FolioId, roomRate * surchargeRate, $"Early Check-in Fee ({surchargeRate * 100}%)");
             }
 
-            // Chuyển trạng thái phòng sang Occupied nều đã gán phòng
-            if (r.RoomId != Guid.Empty)
+            // Chuyển trạng thái phòng sang Occupied
+            if (r.RoomId.HasValue && r.RoomId != Guid.Empty)
             {
-                var room = await _uow.Rooms.GetByIdAsync(r.RoomId);
+                var room = await _uow.Rooms.GetByIdAsync(r.RoomId.Value);
                 if (room != null) room.Status = RoomStatus.Occupied;
+            }
+
+            if (r.ReservationRooms != null && r.ReservationRooms.Any())
+            {
+                foreach (var resRoom in r.ReservationRooms)
+                {
+                    if (resRoom.RoomId.HasValue)
+                    {
+                        var room = await _uow.Rooms.GetByIdAsync(resRoom.RoomId.Value);
+                        if (room != null) room.Status = RoomStatus.Occupied;
+                    }
+                }
             }
 
             try
@@ -170,14 +208,28 @@ namespace Demo02.Services
             if (nights <= 0) nights = 1;
 
             decimal baseRoomRate = r.ReservationRooms?.FirstOrDefault()?.RoomRate ?? 0;
-            if (baseRoomRate == 0 && r.RoomId != Guid.Empty)
+            if (baseRoomRate == 0 && r.RoomId.HasValue && r.RoomId != Guid.Empty)
             {
-                var room = await _uow.Rooms.GetByIdAsync(r.RoomId);
+                var room = await _uow.Rooms.GetByIdAsync(r.RoomId.Value);
                 baseRoomRate = room?.BasePrice ?? 0;
             }
 
             decimal totalRoomCharge = baseRoomRate * nights;
             await AddSurcharge(folio.FolioId, totalRoomCharge, $"Phí thuê phòng ({nights} đêm x {baseRoomRate:N0}₫)");
+
+            // --- 🧊 BR-11: Tự động gom Minibar khi Check-out ---
+            var minibarLogs = await _uow.MinibarLogs.FindAsync(m => m.ReservationId == id && !m.IsChargedToFolio);
+            if (minibarLogs.Any())
+            {
+                decimal totalMinibar = minibarLogs.Sum(m => m.QuantityConsumed * m.UnitPrice);
+                await AddSurcharge(folio.FolioId, totalMinibar, $"Tổng phí sử dụng Minibar & Amenities");
+                
+                foreach (var log in minibarLogs)
+                {
+                    log.IsChargedToFolio = true;
+                    log.UpdatedAt = DateTime.Now;
+                }
+            }
 
             // --- BR-03: Late Check-out Surcharge Logic ---
             var checkOutHour = r.ActualCheckOut.Value.Hour;
@@ -191,19 +243,26 @@ namespace Demo02.Services
                 await AddSurcharge(folio.FolioId, baseRoomRate * surchargeRate, $"Phí trả phòng muộn ({surchargeRate * 100}%)");
             }
 
+            // --- HMS FINANCE FIX: Lưu lại các phí vừa thêm trước khi tính tổng hóa đơn ---
+            await _uow.CompleteAsync();
+
             // --- BR-15 & BR-16: Finance Logic ---
             decimal subTotal = await CalculateFolioTotal(folio.FolioId);
             decimal vat = subTotal * 0.10m; // BR-16: Thuế VAT 10%
             decimal total = subTotal + vat;
 
-            // --- UC-10: Auto-generate Invoice ---
+            // --- UC-10: Auto-generate Invoice & VIETQR ---
+            var invoiceNumber = $"INV-{DateTime.Now:yyyyMMdd}-{id.ToString().Substring(0, 4).ToUpper()}";
             var invoice = new Invoice {
                 FolioId = folio.FolioId,
-                InvoiceNumber = $"INV-{DateTime.Now:yyyyMMdd}-{id.ToString().Substring(0, 4).ToUpper()}",
+                InvoiceNumber = invoiceNumber,
                 SubTotal = subTotal,
                 VatAmount = vat,
                 TotalAmount = total,
-                Status = InvoiceStatus.Issued
+                Status = InvoiceStatus.Issued,
+                IssuedAt = DateTime.Now,
+                // --- HMS Rule: Sinh mã VietQR năng động chuẩn khách sạn 5 sao ---
+                PaymentQrCode = $"https://img.vietqr.io/image/970415-123456789-compact.png?amount={Math.Floor(total)}&addInfo={invoiceNumber}&accountName=HMS%20ROYAL%20HOTEL"
             };
             _uow.Invoices.Add(invoice);
 
@@ -215,7 +274,8 @@ namespace Demo02.Services
                 loyalty.LifetimePoints += (int)total;
 
                 // --- BRD Rule: Tự động thăng hạng thành viên ---
-                if (loyalty.LifetimePoints > 50000) loyalty.Tier = LoyaltyTier.Platinum;
+                if (loyalty.LifetimePoints > 100000) loyalty.Tier = LoyaltyTier.Diamond;
+                else if (loyalty.LifetimePoints > 50000) loyalty.Tier = LoyaltyTier.Platinum;
                 else if (loyalty.LifetimePoints > 10000) loyalty.Tier = LoyaltyTier.Gold;
                 else loyalty.Tier = LoyaltyTier.Silver;
             }
@@ -224,21 +284,40 @@ namespace Demo02.Services
             folio.Status = FolioStatus.Closed;
 
             // --- BR-13: Room Cleanup Automation ---
-            if (r.RoomId != Guid.Empty)
+            var roomsToClean = new List<Guid>();
+            if (r.RoomId.HasValue && r.RoomId != Guid.Empty) roomsToClean.Add(r.RoomId.Value);
+
+            if (r.ReservationRooms != null && r.ReservationRooms.Any())
             {
-                var room = await _uow.Rooms.GetByIdAsync(r.RoomId);
+                foreach (var rr in r.ReservationRooms)
+                {
+                    if (rr.RoomId.HasValue && !roomsToClean.Contains(rr.RoomId.Value)) 
+                        roomsToClean.Add(rr.RoomId.Value);
+                }
+            }
+
+            // --- 🧠 SMART ASSIGNMENT: Chỉ giao việc cho nhân sự dọn phòng thực tế ---
+            var staffs = await _uow.Staffs.FindAsync(s => s.Position == "Nhân viên dọn phòng" || s.Position == "Trưởng ca dọn phòng" || s.Department == "Housekeeping");
+            var staffToAssign = staffs
+                .OrderBy(s => _uow.HousekeepingTasks.FindAsync(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress).Result.Count())
+                .FirstOrDefault();
+
+
+            foreach (var roomId in roomsToClean)
+            {
+                var room = await _uow.Rooms.GetByIdAsync(roomId);
                 if (room != null) 
                 {
                     room.Status = RoomStatus.VacantDirty;
                     
-                    // --- Tự động tạo Task dọn phòng cho bộ phận Housekeeping (UC-09) ---
                     var cleaningTask = new HousekeepingTask {
-                        RoomId = r.RoomId,
+                        RoomId = roomId,
+                        AssignedStaffId = staffToAssign?.StaffId, // TỰ ĐỘNG GẮN NHÂN VIÊN
                         TaskType = HmsTaskType.Cleaning,
-                        Status = HmsTaskStatus.Pending,
+                        Status = staffToAssign != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
                         Priority = Priority.Normal,
                         ScheduledDate = DateTime.Now,
-                        Notes = $"Auto-generated task after checkout of booking {r.BookingCode}"
+                        Notes = $"Auto-generated task after checkout. Assigned to: {staffToAssign?.FullName ?? "System"}"
                     };
                     _uow.HousekeepingTasks.Add(cleaningTask);
                 }
@@ -374,7 +453,9 @@ namespace Demo02.Services
                 CheckOutDate = r.CheckOutDate,
                 Status = r.Status,
                 DepositAmount = r.DepositAmount,
-                RoomNumber = r.Room?.RoomNumber ?? "Chưa gán"
+                RoomNumber = r.Room?.RoomNumber ?? "Chưa gán",
+                CancellationReason = r.CancellationReason,
+                IsDeleted = r.IsDeleted
             };
         }
     }

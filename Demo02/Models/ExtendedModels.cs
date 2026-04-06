@@ -23,6 +23,7 @@ namespace Demo02.Models
         public Priority Priority { get; set; } = Priority.Normal;
         public DateTime ScheduledDate { get; set; } = DateTime.Now;
         public DateTime? CompletedAt { get; set; }
+        public string? ProofPhotoUrl { get; set; } // Ảnh chụp bằng chứng sau khi dọn xong
         public string? Notes { get; set; }
     }
 
@@ -94,18 +95,17 @@ namespace Demo02.Models
     {
         [Key]
         public Guid StaffId { get; set; } = Guid.NewGuid();
-
         [StringLength(20)]
         public string EmployeeCode { get; set; } = string.Empty;
         [Required, StringLength(200)]
         public string FullName { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty; // FrontDesk, Housekeeping, Finance...
+        public string Department { get; set; } = string.Empty;
         public string Position { get; set; } = string.Empty;
         [Required, StringLength(100)]
         public string Email { get; set; } = string.Empty;
         [StringLength(20)]
         public string Phone { get; set; } = string.Empty;
-        public StaffRole Role { get; set; } = StaffRole.Receptionist; // Default role
+        public StaffRole Role { get; set; } = StaffRole.Receptionist;
         public DateTime HireDate { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal BaseSalary { get; set; }

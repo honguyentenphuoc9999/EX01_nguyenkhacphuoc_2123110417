@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Demo02.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260404181354_InitialCreate")]
+    [Migration("20260406135057_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -204,12 +204,18 @@ namespace Demo02.Migrations
                     b.Property<int>("GuestType")
                         .HasColumnType("int");
 
+                    b.Property<string>("HomeAddress")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("IdNumber")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
                     b.Property<Guid?>("LoyaltyAccountId")
@@ -325,6 +331,9 @@ namespace Demo02.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
+
+                    b.Property<string>("ProofPhotoUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("RoomId")
                         .HasColumnType("uniqueidentifier");
@@ -452,6 +461,9 @@ namespace Demo02.Migrations
 
                     b.Property<DateTime?>("IssuedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentQrCode")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -594,7 +606,8 @@ namespace Demo02.Migrations
 
                     b.HasKey("AccountId");
 
-                    b.HasIndex("GuestId");
+                    b.HasIndex("GuestId")
+                        .IsUnique();
 
                     b.ToTable("LoyaltyAccounts");
                 });
@@ -894,7 +907,7 @@ namespace Demo02.Migrations
                     b.Property<string>("OtaSource")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("RoomId")
+                    b.Property<Guid?>("RoomId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -1173,6 +1186,43 @@ namespace Demo02.Migrations
                         .IsUnique();
 
                     b.ToTable("Staffs");
+                });
+
+            modelBuilder.Entity("Demo02.Models.SystemSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountHolder")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("HotelAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HotelLogoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HotelPhone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1530,9 +1580,7 @@ namespace Demo02.Migrations
 
                     b.HasOne("Demo02.Models.Room", "Room")
                         .WithMany()
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RoomId");
 
                     b.Navigation("Guest");
 

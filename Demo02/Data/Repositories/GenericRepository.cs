@@ -28,6 +28,17 @@ namespace Demo02.Data.Repositories
             return await query.ToListAsync();
         }
 
+        public async Task<IEnumerable<T>> GetAllWithDeletedAsync(params Expression<Func<T, object>>[] includes)
+        {
+            // --- 🛡️ Bỏ qua bộ lọc Soft-Delete để lấy TOÀN BỘ lịch sử cho Admin ---
+            IQueryable<T> query = _dbSet.IgnoreQueryFilters();
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
+        }
+
         public async Task<T?> GetByIdAsync(Guid id, params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = _dbSet;

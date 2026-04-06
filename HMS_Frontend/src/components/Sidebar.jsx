@@ -17,17 +17,32 @@ import { useAuth } from '../auth/AuthContext';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
+    
+    // --- 🇻🇳 VIỆT HÓA VAI TRÒ ---
+    const getDisplayRole = () => {
+        const roleMap = {
+            'Admin': 'QUẢN TRỊ VIÊN',
+            'Manager': 'QUẢN LÝ KHÁCH SẠN',
+            'Receptionist': 'BỘ PHẬN LỄ TÂN',
+            'Housekeeper': 'BỘ PHẬN BUỒNG PHÒNG',
+            'Accountant': 'BỘ PHẬN KẾ TOÁN',
+            'Technician': 'KỸ THUẬT VIÊN',
+            'Guest': 'HỘI VIÊN VIP'
+        };
+        return user?.position || roleMap[user?.role] || user?.role || 'NHÂN VIÊN';
+    };
 
     // Định nghĩa menu dựa theo Quyền Hạn (RBAC)
     const navItems = [
         { name: 'Tổng quan', icon: <BarChart2 size={22} />, path: '/', roles: ['Admin', 'Manager'] },
-        { name: 'Đặt phòng', icon: <Calendar size={22} />, path: '/reservations', roles: ['Admin', 'Manager', 'FrontDesk'] },
-        { name: 'Khách hàng', icon: <Users size={22} />, path: '/guests', roles: ['Admin', 'Manager', 'FrontDesk'] },
-        { name: 'Hóa đơn', icon: <FileText size={22} />, path: '/invoices', roles: ['Admin', 'Manager', 'FrontDesk'] },
-        { name: 'Dọn phòng', icon: <Sparkles size={22} />, path: '/housekeeping', roles: ['Admin', 'Manager', 'Housekeeping', 'FrontDesk'] },
+        { name: 'Cổng khách hàng', icon: <ShieldCheck size={22} />, path: '/guest-portal', roles: ['Guest'] },
+        { name: 'Đặt phòng', icon: <Calendar size={22} />, path: '/reservations', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Khách hàng', icon: <Users size={22} />, path: '/guests', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Hóa đơn', icon: <FileText size={22} />, path: '/invoices', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Dọn phòng', icon: <Sparkles size={22} />, path: '/housekeeping', roles: ['Admin', 'Manager', 'Housekeeper', 'Receptionist'] },
         { name: 'Hạng phòng', icon: <Layers size={22} />, path: '/room-types', roles: ['Admin', 'Manager'] },
-        { name: 'Danh sách Phòng', icon: <LayoutGrid size={22} />, path: '/rooms', roles: ['Admin', 'Manager', 'FrontDesk'] },
-        { name: 'Nhân viên', icon: <StaffIcon size={22} />, path: '/staff', roles: ['Admin'] }, // Chỉ Admin tối cao mới thấy Nhân viên
+        { name: 'Danh sách Phòng', icon: <LayoutGrid size={22} />, path: '/rooms', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Nhân viên', icon: <StaffIcon size={22} />, path: '/staff', roles: ['Admin'] },
     ];
 
     return (
@@ -74,8 +89,8 @@ const Sidebar = () => {
                         {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#f1f5f9' }}>{user?.fullName}</div>
-                        <div style={{ fontSize: '11px', color: user?.role === 'Admin' ? '#f87171' : '#3b82f6', fontWeight: '700', textTransform: 'uppercase' }}>{user?.role}</div>
+                        <div style={{ fontSize: '14px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#f1f5f9' }}>{user?.fullName || user?.username}</div>
+                        <div style={{ fontSize: '11px', color: user?.role === 'Admin' ? '#f87171' : '#3b82f6', fontWeight: '700', textTransform: 'uppercase' }}>{getDisplayRole()}</div>
                     </div>
                 </div>
                 <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none', background: '#fef2f205', color: '#f87171', cursor: 'pointer', fontWeight: '700', transition: 'all 0.2s' }}>

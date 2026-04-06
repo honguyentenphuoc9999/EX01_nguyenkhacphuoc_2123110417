@@ -31,8 +31,9 @@ namespace Demo02.Models
         [StringLength(1000)]
         public string? Preferences { get; set; }
 
-        // Mới: Lưu ảnh CMND/CCCD/Passport để khai báo cư trú (UC-21)
-        public string? IdCardImageUrl { get; set; }
+        // Mới: Địa chỉ thường trú lấy từ QR CCCD (Tự động chiết xuất)
+        public string? HomeAddress { get; set; }
+        public bool IsVerified { get; set; } = false; // Đánh dấu đã xác minh CCCD thực tế
 
         public ICollection<Reservation>? Reservations { get; set; }
         public ICollection<GuestDocument>? GuestDocuments { get; set; }

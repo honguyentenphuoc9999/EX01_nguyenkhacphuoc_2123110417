@@ -12,6 +12,8 @@ import Staff from './pages/Staff';
 import RoomTypes from './pages/RoomTypes';
 import Rooms from './pages/Rooms';
 import PublicBooking from './pages/PublicBooking';
+import GuestDashboard from './pages/GuestDashboard';
+import Settings from './pages/Settings';
 
 // Component Bảo vệ Tuyến đường
 const PrivateRoute = ({ children }) => {
@@ -22,7 +24,8 @@ const PrivateRoute = ({ children }) => {
 
 const HomePage = () => {
     const { user } = useAuth();
-    if (user?.role === 'Housekeeping') return <Navigate to="/housekeeping" />;
+    if (user?.role === 'Housekeeper') return <Navigate to="/housekeeping" />;
+    if (user?.role === 'Guest') return <Navigate to="/guest-portal" />;
     return <Dashboard />;
 };
 
@@ -39,21 +42,60 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
 const App = () => {
   return (
     <AuthProvider>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
                 <Route path="/login" element={<Login />} />
                 
                 {/* Tất cả các trang bên trong PrivateRoute đều dùng Layout chung */}
                 <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
                     <Route path="/" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager']}><HomePage /></RoleProtectedRoute>} />
-                    <Route path="/guests" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'FrontDesk']}><Guests /></RoleProtectedRoute>} />
-                    <Route path="/staff" element={<RoleProtectedRoute allowedRoles={['Admin']}><Staff /></RoleProtectedRoute>} />
-                    <Route path="/invoices" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'FrontDesk']}><Invoices /></RoleProtectedRoute>} />
-                    <Route path="/housekeeping" element={<Housekeeping />} />
-                    <Route path="/reservations" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'FrontDesk']}><Reservations /></RoleProtectedRoute>} />
-                    <Route path="/room-types" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager']}><RoomTypes /></RoleProtectedRoute>} />
-                    <Route path="/rooms" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'FrontDesk']}><Rooms /></RoleProtectedRoute>} />
-
+                    <Route path="/guests" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Guests />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/staff" element={
+                        <RoleProtectedRoute allowedRoles={['Admin']}>
+                            <Staff />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/invoices" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Invoices />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/housekeeping" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Housekeeper']}>
+                            <Housekeeping />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/reservations" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Reservations />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/room-types" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                            <RoomTypes />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/rooms" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Rooms />
+                        </RoleProtectedRoute>
+                    } />
+                    
+                    <Route path="/guest-portal" element={
+                        <RoleProtectedRoute allowedRoles={['Guest']}>
+                            <GuestDashboard />
+                        </RoleProtectedRoute>
+                    } />
+                    
+                    <Route path="/settings" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                            <Settings />
+                        </RoleProtectedRoute>
+                    } />
                 </Route>
                 
                 <Route path="/book" element={<PublicBooking />} />

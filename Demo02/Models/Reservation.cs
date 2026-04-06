@@ -15,7 +15,7 @@ namespace Demo02.Models
         [ForeignKey("GuestId")]
         public Guest? Guest { get; set; }
         
-        public Guid RoomId { get; set; } // Hỗ trợ gán 1 phòng nhanh
+        public Guid? RoomId { get; set; } // Hỗ trợ gán 1 phòng nhanh
         [ForeignKey("RoomId")]
         public Room? Room { get; set; }
 

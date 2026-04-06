@@ -13,7 +13,7 @@ namespace Demo02.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,FrontDesk")] // Chỉ Lễ tân và Admin mới xem được danh sách khách (Mục 2.1)
+    [Authorize(Roles = "Admin,Manager,Receptionist")] // Cho phép Quản lý & Lễ tân thực hiện các nghiệp vụ Master Data về khách
     public class GuestsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -27,16 +27,23 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GuestResponseDto>>> GetGuests()
         {
-            return await _context.Guests
-                .Select(g => new GuestResponseDto {
-                    GuestId = g.GuestId,
-                    FullName = g.FullName,
-                    Nationality = g.Nationality,
-                    Phone = g.Phone,
-                    Email = g.Email,
-                    IdNumber = g.IdNumber,
-                    GuestType = g.GuestType
-                }).ToListAsync();
+            var guests = await _context.Guests
+                .Where(g => !g.IsDeleted)
+                .ToListAsync();
+
+            var response = guests.Select(g => new GuestResponseDto {
+                GuestId = g.GuestId,
+                FullName = g.FullName,
+                Nationality = g.Nationality,
+                Phone = g.Phone,
+                Email = g.Email,
+                IdNumber = g.IdNumber,
+                GuestType = g.GuestType,
+                IsVerified = g.IsVerified, // 🛡️ HMS Fix: Lấy trực tiếp từ trạng thái đã xác minh QR
+                Preferences = g.Preferences
+            }).ToList();
+
+            return response;
         }
 
         // GET: api/Guests/5
@@ -44,7 +51,6 @@ namespace Demo02.Controllers
         public async Task<ActionResult<GuestResponseDto>> GetGuest(Guid id)
         {
             var g = await _context.Guests.FindAsync(id);
-
             if (g == null) return NotFound();
 
             return new GuestResponseDto {
@@ -54,7 +60,9 @@ namespace Demo02.Controllers
                 Phone = g.Phone,
                 Email = g.Email,
                 IdNumber = g.IdNumber,
-                GuestType = g.GuestType
+                GuestType = g.GuestType,
+                IsVerified = g.IsVerified, // 🛡️ HMS Fix: Tăng tính nhất quán dữ liệu
+                Preferences = g.Preferences
             };
         }
 
@@ -81,19 +89,23 @@ namespace Demo02.Controllers
                 Phone = guest.Phone,
                 Email = guest.Email,
                 IdNumber = guest.IdNumber,
-                GuestType = guest.GuestType
+                GuestType = guest.GuestType,
+                Preferences = guest.Preferences // 🛡️ Smart Sync: Hồ sơ khởi tạo mới
             });
         }
 
-        // DELETE: api/Guests/5
+        // DELETE: api/Guests/5 (Soft Delete)
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> DeleteGuest(Guid id)
         {
             var guest = await _context.Guests.FindAsync(id);
             if (guest == null) return NotFound();
 
-            _context.Guests.Remove(guest);
+            // HMS Soft Delete: Giữ lại dữ liệu cho kế toán & báo cáo nhưng ẩn khỏi danh sách
+            guest.IsDeleted = true; 
+            guest.UpdatedAt = DateTime.Now;
+            
             await _context.SaveChangesAsync();
             return NoContent();
         }

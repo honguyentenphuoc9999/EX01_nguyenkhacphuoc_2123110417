@@ -81,6 +81,8 @@ namespace Demo02.Migrations
                     GuestType = table.Column<int>(type: "int", nullable: false),
                     LoyaltyAccountId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Preferences = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    HomeAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsVerified = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -164,6 +166,24 @@ namespace Demo02.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Staffs", x => x.StaffId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SystemSettings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BankName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    AccountNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    AccountHolder = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    HotelLogoUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HotelAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HotelPhone = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SystemSettings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -371,6 +391,7 @@ namespace Demo02.Migrations
                     Priority = table.Column<int>(type: "int", nullable: false),
                     ScheduledDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ProofPhotoUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
@@ -463,7 +484,7 @@ namespace Demo02.Migrations
                     ReservationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BookingCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     GuestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RoomId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoomId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CheckInDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CheckOutDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ActualCheckIn = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -499,8 +520,7 @@ namespace Demo02.Migrations
                         name: "FK_Reservations_Rooms_RoomId",
                         column: x => x.RoomId,
                         principalTable: "Rooms",
-                        principalColumn: "RoomId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RoomId");
                 });
 
             migrationBuilder.CreateTable(
@@ -656,6 +676,7 @@ namespace Demo02.Migrations
                     CancelledBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CancellationReason = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PaymentQrCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
@@ -823,7 +844,8 @@ namespace Demo02.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_LoyaltyAccounts_GuestId",
                 table: "LoyaltyAccounts",
-                column: "GuestId");
+                column: "GuestId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceTickets_AssignedTechnicianId",
@@ -962,6 +984,9 @@ namespace Demo02.Migrations
 
             migrationBuilder.DropTable(
                 name: "ReservationRooms");
+
+            migrationBuilder.DropTable(
+                name: "SystemSettings");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
