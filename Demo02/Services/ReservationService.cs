@@ -23,7 +23,14 @@ namespace Demo02.Services
 
         public async Task<IEnumerable<ReservationResponseDto>> GetAllReservationsAsync()
         {
-            var data = await _uow.Reservations.GetAllAsync(r => r.Guest!, r => r.Room!);
+            // HMS STANDARD: Sử dụng ThenInclude để lấy dữ liệu đa tầng Đặt phòng -> Folio -> Hóa đơn
+            var data = await _uow.Query<Reservation>()
+                .Include(r => r.Guest)
+                .Include(r => r.Room)
+                .Include(r => r.Folios!)
+                    .ThenInclude(f => f.Invoices)
+                .ToListAsync();
+
             return data.Select(MapToResponse).ToList();
         }
 
@@ -40,7 +47,13 @@ namespace Demo02.Services
 
         public async Task<ReservationResponseDto?> GetReservationByIdAsync(Guid id)
         {
-            var r = await _uow.Reservations.GetByIdAsync(id, r => r.Guest!, r => r.Room!);
+            var r = await _uow.Query<Reservation>()
+                .Include(r => r.Guest)
+                .Include(r => r.Room)
+                .Include(r => r.Folios!)
+                    .ThenInclude(f => f.Invoices)
+                .FirstOrDefaultAsync(r => r.ReservationId == id);
+
             return r != null ? MapToResponse(r) : null;
         }
 
@@ -141,10 +154,22 @@ namespace Demo02.Services
                     r.Guest.FullName = dto.ScannedFullName; // Cập nhật tên chuẩn theo CCCD
                 }
 
+                // 🛡️ HMS STRICT IDENTITY VALIDATION 🛡️
+                // Nếu khách hàng đã được xác minh danh tính trước đó (Verified)
+                if (r.Guest.IsVerified && !string.IsNullOrEmpty(r.Guest.IdNumber))
+                {
+                    // Kiểm tra số CCCD mới có trùng khớp với số CCCD đã xác minh không
+                    if (r.Guest.IdNumber != dto.IdNumber)
+                    {
+                        throw new InvalidOperationException($"CẢNH BÁO BẢO MẬT: Khách hàng {r.Guest.FullName} đã được xác minh trước đó với số CCCD {r.Guest.IdNumber}. " +
+                            $"Số CCCD mới ({dto.IdNumber}) không trùng khớp. Hệ thống từ chối Check-in để đảm bảo an ninh!");
+                    }
+                }
+
                 r.Guest.IdNumber = dto.IdNumber;
                 r.Guest.Nationality = dto.Nationality;
                 r.Guest.HomeAddress = dto.HomeAddress;
-                r.Guest.IsVerified = true; // Đánh dấu đã xác minh thực tế
+                r.Guest.IsVerified = true; // Xác minh lại trạng thái
             }
 
             r.Status = ReservationStatus.CheckedIn;
@@ -197,8 +222,14 @@ namespace Demo02.Services
 
         public async Task<bool> CheckOutAsync(Guid id)
         {
-            var r = await _uow.Reservations.GetByIdAsync(id, res => res.ReservationRooms!);
-            if (r == null || r.Status != ReservationStatus.CheckedIn) return false;
+            var r = await _uow.Reservations.GetByIdAsync(id, res => res.ReservationRooms!, res => res.Guest!);
+            if (r == null) return false;
+            
+            // 🛡️ HMS SAFETY GATE: Không được trả phòng nếu chưa nhận phòng hoặc đơn đã hủy
+            if (r.Status != ReservationStatus.CheckedIn)
+            {
+                throw new InvalidOperationException("Không thể trả phòng cho đơn hàng chưa được 'Nhận phòng' (Checked-In)!");
+            }
 
             r.ActualCheckOut = DateTime.Now;
             var folio = await GetOrCreateFolio(r.ReservationId);
@@ -207,15 +238,22 @@ namespace Demo02.Services
             int nights = (r.CheckOutDate.Date - r.CheckInDate.Date).Days;
             if (nights <= 0) nights = 1;
 
+            // --- HMS FINANCE FIX: Ưu tiên sử dụng TotalPrice từ Reservation (Đã tính chiết khấu VIP) ---
+            decimal totalRoomCharge = r.TotalPrice;
             decimal baseRoomRate = r.ReservationRooms?.FirstOrDefault()?.RoomRate ?? 0;
+
             if (baseRoomRate == 0 && r.RoomId.HasValue && r.RoomId != Guid.Empty)
             {
                 var room = await _uow.Rooms.GetByIdAsync(r.RoomId.Value);
                 baseRoomRate = room?.BasePrice ?? 0;
             }
 
-            decimal totalRoomCharge = baseRoomRate * nights;
-            await AddSurcharge(folio.FolioId, totalRoomCharge, $"Phí thuê phòng ({nights} đêm x {baseRoomRate:N0}₫)");
+            if (totalRoomCharge <= 0)
+            {
+                totalRoomCharge = baseRoomRate * nights;
+            }
+
+            await AddSurcharge(folio.FolioId, totalRoomCharge, $"Phí thuê phòng (Trọn gói {nights} đêm)");
 
             // --- 🧊 BR-11: Tự động gom Minibar khi Check-out ---
             var minibarLogs = await _uow.MinibarLogs.FindAsync(m => m.ReservationId == id && !m.IsChargedToFolio);
@@ -296,11 +334,23 @@ namespace Demo02.Services
                 }
             }
 
-            // --- 🧠 SMART ASSIGNMENT: Chỉ giao việc cho nhân sự dọn phòng thực tế ---
-            var staffs = await _uow.Staffs.FindAsync(s => s.Position == "Nhân viên dọn phòng" || s.Position == "Trưởng ca dọn phòng" || s.Department == "Housekeeping");
+            // --- 🧠 SMART ASSIGNMENT: Tối ưu hóa tìm nhân sự ít việc nhất (Tránh lỗi .Result gây treo hệ thống) ---
+            var staffs = await _uow.Staffs.FindAsync(s => s.Role == StaffRole.Housekeeper && !s.IsDeleted);
+            
+            // Lấy danh sách số lượng task đang thực hiện của từng nhân viên dọn phòng
+            var activeTaskCounts = await _uow.Query<HousekeepingTask>()
+                .Where(t => t.Status == HmsTaskStatus.InProgress && t.AssignedStaffId != null)
+                .GroupBy(t => t.AssignedStaffId)
+                .Select(g => new { StaffId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
             var staffToAssign = staffs
-                .OrderBy(s => _uow.HousekeepingTasks.FindAsync(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress).Result.Count())
-                .FirstOrDefault();
+                .Select(s => new { 
+                    Staff = s, 
+                    Count = activeTaskCounts.FirstOrDefault(at => at.StaffId == s.StaffId)?.Count ?? 0 
+                })
+                .OrderBy(x => x.Count)
+                .FirstOrDefault()?.Staff;
 
 
             foreach (var roomId in roomsToClean)
@@ -308,11 +358,11 @@ namespace Demo02.Services
                 var room = await _uow.Rooms.GetByIdAsync(roomId);
                 if (room != null) 
                 {
-                    room.Status = RoomStatus.VacantDirty;
+                    room.Status = RoomStatus.VacantDirty; // 🛡️ CHỐT TRẠNG THÁI: Bắt buộc phải là Chưa dọn
                     
                     var cleaningTask = new HousekeepingTask {
                         RoomId = roomId,
-                        AssignedStaffId = staffToAssign?.StaffId, // TỰ ĐỘNG GẮN NHÂN VIÊN
+                        AssignedStaffId = staffToAssign?.StaffId, 
                         TaskType = HmsTaskType.Cleaning,
                         Status = staffToAssign != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
                         Priority = Priority.Normal,
@@ -455,7 +505,16 @@ namespace Demo02.Services
                 DepositAmount = r.DepositAmount,
                 RoomNumber = r.Room?.RoomNumber ?? "Chưa gán",
                 CancellationReason = r.CancellationReason,
-                IsDeleted = r.IsDeleted
+                IsDeleted = r.IsDeleted,
+                // Chuyển đổi Invoices từ Folios (nếu đã được Include) sang DTO an toàn
+                Invoices = r.Folios?.Where(f => f.Invoices != null)
+                    .SelectMany(f => f.Invoices!)
+                    .Select(i => new InvoiceMinimalDto {
+                        InvoiceId = i.InvoiceId,
+                        InvoiceNumber = i.InvoiceNumber,
+                        Status = i.Status,
+                        TotalAmount = i.TotalAmount
+                    }).ToList() ?? new List<InvoiceMinimalDto>()
             };
         }
     }

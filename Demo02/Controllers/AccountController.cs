@@ -131,7 +131,7 @@ namespace Demo02.Controllers
                 Message = "Login successful.",
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 Username = user.UserName!,
-                Role = userRoles.FirstOrDefault() ?? "Staff",
+                Role = userRoles.FirstOrDefault()?.ToString() ?? "Staff",
                 FullName = finalFullName ?? user.UserName!,
                 Position = finalPosition,
                 StaffId = finalId

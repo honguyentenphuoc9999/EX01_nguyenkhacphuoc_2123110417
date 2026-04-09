@@ -11,7 +11,8 @@ import {
     CreditCard, 
     ShieldCheck, 
     ExternalLink,
-    Search
+    Search,
+    Clock
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -80,14 +81,14 @@ const PrintInvoiceModal = ({ invoice, onClose }) => {
                     <div style={{ textAlign: 'right' }}>
                         <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
                         <p style={{ color: '#64748b' }}>Số: {invoice.invoiceNumber}</p>
-                        <p style={{ color: '#64748b' }}>Ngày: {new Date(invoice.issuedAt).toLocaleDateString('vi-VN')}</p>
+                        <p style={{ color: '#64748b' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
                     </div>
                 </div>
 
                 <div style={{ marginBottom: '40px' }}>
-                    <div style={{ fontWeight: '800', color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px' }}>KHÁCH HÀNG</div>
-                    <p style={{ fontWeight: '700' }}>Tên: {invoice.reservation?.guest?.fullName || "Khách vãng lai"}</p>
-                    <p>Phòng: {invoice.reservation?.room?.roomNumber}</p>
+                    <div style={{ fontWeight: '800', color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px' }}>KHÁCH HÀNG & PHÒNG</div>
+                    <p style={{ fontWeight: '700', fontSize: '18px' }}>Khách hàng: {invoice.folio?.reservation?.guest?.fullName || "Khách vãng lai"}</p>
+                    <p style={{ fontWeight: '700', color: '#3b82f6' }}>Phòng lưu trú: {invoice.folio?.reservation?.room?.roomNumber || "N/A"}</p>
                 </div>
 
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
@@ -98,14 +99,12 @@ const PrintInvoiceModal = ({ invoice, onClose }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td style={{ padding: '16px 12px' }}>Dịch vụ lưu trú khách sạn</td>
-                            <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(invoice.subTotal)} đ</td>
-                        </tr>
-                        <tr>
-                            <td style={{ padding: '16px 12px' }}>Phí dịch vụ</td>
-                            <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(invoice.serviceCharge)} đ</td>
-                        </tr>
+                        {invoice.folio?.charges?.map((charge, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '16px 12px' }}>{charge.description}</td>
+                                <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(charge.totalAmount)} đ</td>
+                            </tr>
+                        ))}
                         <tr style={{ borderTop: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '16px 12px', textAlign: 'right', fontWeight: '700' }}>VAT (10%)</td>
                             <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(invoice.vatAmount)} đ</td>
@@ -225,8 +224,9 @@ const Invoices = () => {
                             <tr><td colSpan="5" style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>Chưa có hóa đơn nào được lập.</td></tr>
                         ) : (
                             invoices.map((inv) => {
-                                const style = getStatusStyle(inv.status);
-                                const isPaid = inv.status === 'Paid' || inv.status === 1;
+                                const currentStatus = inv.status !== undefined ? inv.status : inv.Status;
+                                const style = getStatusStyle(currentStatus);
+                                const isPaid = currentStatus === 'Paid' || currentStatus === 1 || String(currentStatus).toLowerCase() === 'paid';
                                 return (
                                     <tr key={inv.invoiceId} style={{ borderBottom: '1px solid #f1f5f9', transition: '0.2s' }}>
                                         <td style={{ padding: '24px' }}>
@@ -235,15 +235,32 @@ const Invoices = () => {
                                                 <span style={{ fontWeight: '800', color: '#0f172a' }}>{inv.invoiceNumber}</span>
                                             </div>
                                         </td>
-                                        <td style={{ padding: '24px', color: '#64748b', fontWeight: '600' }}>{new Date(inv.issuedAt).toLocaleDateString('vi-VN')}</td>
+                                        <td style={{ padding: '24px', color: '#0f172a', fontWeight: '700' }}>
+                                            <div style={{ fontSize: '15px' }}>{new Date(inv.issuedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                                            <div style={{ fontSize: '13px', color: '#1e293b', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                                                <Clock size={12} />
+                                                {new Date(inv.issuedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                                            </div>
+                                        </td>
                                         <td style={{ padding: '24px' }}>
                                             <div style={{ fontWeight: '900', color: '#0f172a', fontSize: '16px' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(inv.totalAmount)}</div>
                                             <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>GỐC: {new Intl.NumberFormat('vi-VN').format(inv.subTotal)}đ</div>
                                         </td>
                                         <td style={{ padding: '24px' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '12px', background: style.bg, color: style.text, fontWeight: '800', fontSize: '12px' }}>
+                                            <div style={{ 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                gap: '8px', 
+                                                padding: '6px 14px', 
+                                                borderRadius: '12px', 
+                                                background: isPaid ? '#f0fdf4' : '#eff6ff', 
+                                                color: isPaid ? '#10b981' : '#3b82f6', 
+                                                border: `1px solid ${isPaid ? '#10b981' : '#3b82f6'}44`,
+                                                fontWeight: '800', 
+                                                fontSize: '12px' 
+                                            }}>
                                                 {isPaid ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
-                                                {style.label.toUpperCase()}
+                                                {isPaid ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'}
                                             </div>
                                         </td>
                                         <td style={{ padding: '24px' }}>

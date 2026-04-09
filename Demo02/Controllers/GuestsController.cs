@@ -70,6 +70,14 @@ namespace Demo02.Controllers
         [HttpPost]
         public async Task<ActionResult<GuestResponseDto>> PostGuest(GuestCreateDto dto)
         {
+            var existing = await _context.Guests
+                .FirstOrDefaultAsync(g => (g.Email == dto.Email || g.Phone == dto.Phone) && !g.IsDeleted);
+
+            if (existing != null && existing.IsVerified && existing.IdNumber != dto.IdNumber)
+            {
+                return BadRequest("LỖI BẢO MẬT: Email/SĐT này đã được xác minh với số CCCD khác!");
+            }
+
             var guest = new Guest {
                 FullName = dto.FullName,
                 IdNumber = dto.IdNumber,

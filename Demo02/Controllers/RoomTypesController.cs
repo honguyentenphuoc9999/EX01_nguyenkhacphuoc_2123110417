@@ -33,7 +33,8 @@ namespace Demo02.Controllers
                     BasePrice = rt.BasePrice,
                     Description = rt.Description,
                     MaxOccupancy = rt.MaxOccupancy,
-                    RoomCount = rt.Rooms != null ? rt.Rooms.Count() : 0
+                    RoomCount = rt.Rooms != null ? rt.Rooms.Count() : 0,
+                    AvailableRooms = rt.Rooms != null ? rt.Rooms.Count(r => r.Status == RoomStatus.VacantClean) : 0
                 })
                 .ToListAsync();
         }

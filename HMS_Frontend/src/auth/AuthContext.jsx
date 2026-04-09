@@ -7,13 +7,29 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const normalizeRole = (role) => {
+    const roleMap = {
+        0: 'Admin',
+        1: 'Manager',
+        2: 'Receptionist',
+        3: 'Housekeeper',
+        4: 'Accountant',
+        5: 'Technician',
+        6: 'RoomAttendant',
+        'Guest': 'Guest'
+    };
+    return roleMap[role] || role;
+  };
+
   useEffect(() => {
     // Khôi phục Session khi tải trang
     const storedUser = localStorage.getItem('hms_user');
     const token = localStorage.getItem('hms_token');
     
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      parsedUser.role = normalizeRole(parsedUser.role);
+      setUser(parsedUser);
     }
     setLoading(false);
   }, []);
@@ -25,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       
       const sessionUser = { 
         username: userName, 
-        role, 
+        role: normalizeRole(role), 
         fullName: fullName || userName,
         position: position || role,
         staffId: staffId 

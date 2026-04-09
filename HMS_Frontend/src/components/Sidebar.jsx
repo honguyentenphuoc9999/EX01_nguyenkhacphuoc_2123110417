@@ -11,7 +11,13 @@ import {
     Layers,
     LayoutGrid,
     Users as StaffIcon,
-    ShieldCheck
+    ShieldCheck,
+    Gift,
+    Box,
+    Utensils,
+    Megaphone,
+    Globe,
+    Send
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
@@ -25,6 +31,8 @@ const Sidebar = () => {
             'Manager': 'QUẢN LÝ KHÁCH SẠN',
             'Receptionist': 'BỘ PHẬN LỄ TÂN',
             'Housekeeper': 'BỘ PHẬN BUỒNG PHÒNG',
+            'RoomAttendant': 'NHÂN VIÊN PHỤC VỤ',
+            '6': 'NHÂN VIÊN PHỤC VỤ',
             'Accountant': 'BỘ PHẬN KẾ TOÁN',
             'Technician': 'KỸ THUẬT VIÊN',
             'Guest': 'HỘI VIÊN VIP'
@@ -34,15 +42,31 @@ const Sidebar = () => {
 
     // Định nghĩa menu dựa theo Quyền Hạn (RBAC)
     const navItems = [
-        { name: 'Tổng quan', icon: <BarChart2 size={22} />, path: '/', roles: ['Admin', 'Manager'] },
+        { name: 'Tổng quan', icon: <BarChart2 size={22} />, path: '/dashboard', roles: ['Admin', 'Manager'] },
         { name: 'Cổng khách hàng', icon: <ShieldCheck size={22} />, path: '/guest-portal', roles: ['Guest'] },
         { name: 'Đặt phòng', icon: <Calendar size={22} />, path: '/reservations', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Khách hàng', icon: <Users size={22} />, path: '/guests', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Hóa đơn', icon: <FileText size={22} />, path: '/invoices', roles: ['Admin', 'Manager', 'Receptionist'] },
-        { name: 'Dọn phòng', icon: <Sparkles size={22} />, path: '/housekeeping', roles: ['Admin', 'Manager', 'Housekeeper', 'Receptionist'] },
+        { 
+            name: 'Hệ thống Dọn dẹp', 
+            icon: <Sparkles size={22} />, 
+            path: '/housekeeping', 
+            roles: ['Admin', 'Manager', 'Housekeeper', 3] 
+        },
+        { 
+            name: 'Hệ thống Phục vụ', 
+            icon: <Send size={22} />, 
+            path: '/delivery-tasks', 
+            roles: ['Admin', 'Manager', 'RoomAttendant', 'Room Attendant', 'Room_Attendant', 6, '6'] 
+        },
         { name: 'Hạng phòng', icon: <Layers size={22} />, path: '/room-types', roles: ['Admin', 'Manager'] },
         { name: 'Danh sách Phòng', icon: <LayoutGrid size={22} />, path: '/rooms', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Nhân viên', icon: <StaffIcon size={22} />, path: '/staff', roles: ['Admin'] },
+        { name: 'CRM & Loyalty', icon: <Gift size={22} />, path: '/loyalty', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Quản lý Kho', icon: <Box size={22} />, path: '/inventory', roles: ['Admin', 'Manager'] },
+        { name: 'F&B & Dịch vụ', icon: <Utensils size={22} />, path: '/services', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Marketing', icon: <Megaphone size={22} />, path: '/marketing', roles: ['Admin', 'Manager'] },
+        { name: 'Cổng OTA', icon: <Globe size={22} />, path: '/ota', roles: ['Admin', 'Manager'] },
     ];
 
     return (
@@ -54,10 +78,22 @@ const Sidebar = () => {
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '1px' }}>Management System</div>
             </div>
 
-            <nav style={{ flex: 1 }}>
+            <nav style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {navItems.map((item) => (
-                        item.roles.includes(user?.role) && (
+                    {navItems.map((item) => {
+                        const userRole = String(user?.role || '').toLowerCase();
+                        const userPos = String(user?.position || '').toLowerCase();
+                        
+                        // Kiểm tra quyền: Theo Role chuẩn HOẶC Theo từ khóa trong chức vụ (fallback)
+                        let isAllowed = item.roles.some(r => String(r).toLowerCase() === userRole);
+                        
+                        if (item.path === '/delivery-tasks' && !isAllowed) {
+                            if (userPos.includes('phục vụ') || userPos.includes('attendant') || userRole.includes('attendant')) {
+                                isAllowed = true;
+                            }
+                        }
+                        
+                        return isAllowed && (
                             <NavLink
                                 key={item.path}
                                 to={item.path}
@@ -78,8 +114,8 @@ const Sidebar = () => {
                                 {item.icon}
                                 {item.name}
                             </NavLink>
-                        )
-                    ))}
+                        );
+                    })}
                 </div>
             </nav>
 

@@ -4,18 +4,36 @@ Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp từ 
 
 ---
 
-## 🚀 1. Hướng dẫn Chạy dự án (Quick Start)
+## 🚀 1. HƯỚNG DẪN TRIỂN KHAI NHANH (QUICK START GUIDE)
 
-1. **Chuẩn bị:** Mở thư mục dự án bằng Visual Studio Code hoặc Visual Studio 2022.
-2. **Cơ sở dữ liệu:** Hệ thống sử dụng SQL Server. Chạy lệnh sau trong Terminal / Package Manager Console để cập nhật DB:
-   ```powershell
-   dotnet ef database update
-   ```
-3. **Chạy ứng dụng:**
-   ```powershell
-   dotnet run
-   ```
-4. **Truy cập Swagger:** Mở trình duyệt và vào địa chỉ `https://localhost:<port>/swagger/index.html`.
+### A. Khởi tạo Cơ sở dữ liệu (EF Core Migrations)
+Nếu bạn triển khai trên máy mới hoặc thư mục `Migrations` bị xóa, hãy mở **Package Manager Console** trong Visual Studio và chạy các lệnh sau:
+
+**1. Cho Hệ thống vận hành (AppDbContext):**
+```powershell
+# Tạo bản thiết kế (Migration)
+Add-Migration InitialFinalUpgrade -Context AppDbContext
+
+# Cập nhật vào SQL Server
+Update-Database -Context AppDbContext
+```
+
+**2. Cho Kho dữ liệu phân tích (WarehouseDbContext):**
+```powershell
+# Tạo bản thiết kế phân tích
+Add-Migration WarehouseInit -Context WarehouseDbContext
+
+# Cập nhật vào SQL Server
+Update-Database -Context WarehouseDbContext
+```
+
+### B. Khởi động Giao diện (Frontend - React)
+Dự án sử dụng React + Vite. Cấu hình sẵn kết nối API tại `src/api/api.js`.
+```bash
+cd HMS_Frontend
+npm install
+npm run dev
+```
 
 ---
 
@@ -23,16 +41,21 @@ Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp từ 
 
 Hệ thống đã được nạp sẵn dữ liệu mẫu. Bạn có thể dùng các tài khoản sau để đăng nhập ngay lập tức tại API `/api/Account/login`:
 
-| Vai trò | Username | Password | Quyền hạn chính |
-| :--- | :--- | :--- | :--- |
-| **Quản trị viên** | `admin_phuoc` | `Admin@123` | Toàn quyền, quản lý nhân sự, cấu hình hệ thống. |
-| **Quản lý** | `manager` | `Staff@123` | Quản lý kho phòng, báo cáo kinh doanh. |
-| **Lễ tân** | `lan` | `Staff@123` | Đặt phòng, Check-in/out, thu tiền khách. |
-| **Chị Mai (HK)** | `mai.nt` | `Hms@123` | Nhân viên dọn phòng. |
-| **Anh Nam (HK)** | `nam.tv` | `Hms@123` | Nhân viên dọn phòng. |
-| **Hội viên VIP** | `0909000123` | `Guest@123` | Khách hàng (Nguyễn Thành Viên), truy cập Portal. |
+| Nhân viên / Khách | Username | Password | Email | Mã NV | Chức vụ |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Nguyễn Khắc Phước** | `admin_phuoc` | `Admin@123` | `admin@hms.com` | `NV001` | **CEO (Admin)** |
+| **Trần Văn Quản** | `manager` | `Staff@123` | `manager@hms.com` | `NV002` | **Hotel Manager** |
+| **Nguyễn Thị Lan** | `lan` | `Staff@123` | `lan@hms.com` | `NV003` | **Receptionist** |
+| **Lê Văn Nam** | `nam` | `Staff@123` | `nam@hms.com` | `NV004` | **Room Attendant (Phục vụ phòng)** |
+| **Nguyễn Thị Mai** | `mai.nt` | `Hms@123` | `mai.nt@hms.com` | `HK-001` | **Housekeeper (Dọn phòng)** |
+| **Trần Văn Nam** | `nam.tv` | `Hms@123` | `nam.tv@hms.com` | `HK-002` | **Housekeeper (Dọn phòng)** |
+| **Nguyễn Thành Viên** | `member` | `Guest@123` | `member@gmail.com` | `Guest` | **VIP Member** |
 
 *Lưu ý:* Sau khi Login thành công, copy chuỗi `token`, nhấn nút **Authorize** trên cùng của trang Swagger và điền cú pháp: `Bearer <token của bạn>`.
+
+> [!TIP]
+> **Cơ chế Đồng bộ Nhân viên (Staff-Identity Sync):**
+> Hệ thống sử dụng kiến trúc kép: `IdentityUser` quản lý việc Đăng nhập/Mật khẩu/Quyền, trong khi bảng `Staff` quản lý hồ sơ nhân sự (Lương, Phòng ban, Mã NV). Hai bảng này được đồng bộ thông qua trường **Email**. Nếu bạn tạo tài khoản nhân viên mới, hãy đảm bảo Email trùng khớp để hệ thống tự động ánh xạ hồ sơ.
 
 Bạn cũng có thể tự đăng ký tài khoản mới qua API `POST /api/Account/register`.
 

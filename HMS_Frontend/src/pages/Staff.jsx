@@ -14,7 +14,7 @@ const Staff = () => {
     const [roleFilter, setRoleFilter] = useState('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState(null);
-    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', role: 2 });
+    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', role: '' });
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
@@ -92,12 +92,19 @@ const Staff = () => {
             const realData = res.data;
             const rawRole = realData.role !== undefined ? realData.role : realData.Role;
             
+            // Map từ tên String sang Số nếu cần
+            const ROLE_REVERSE_MAP = { 'Admin': 0, 'Manager': 1, 'Receptionist': 2, 'Housekeeper': 3, 'Accountant': 4, 'Technician': 5 };
+            let finalRole = rawRole;
+            if (typeof rawRole === 'string' && ROLE_REVERSE_MAP[rawRole] !== undefined) {
+                finalRole = ROLE_REVERSE_MAP[rawRole];
+            }
+
             setEditingStaff(realData); 
             setFormData({ 
                 fullName: realData.fullName || realData.FullName || '', 
                 email: realData.email || realData.Email || '', 
                 phone: realData.phone || realData.Phone || '', 
-                role: typeof rawRole === 'number' ? rawRole : 2 
+                role: finalRole ?? ''
             }); 
             setIsModalOpen(true); 
         } catch (err) {
@@ -111,7 +118,8 @@ const Staff = () => {
         2: 'Receptionist',
         3: 'Housekeeper',
         4: 'Accountant',
-        5: 'Technician'
+        5: 'Technician',
+        6: 'RoomAttendant'
     };
 
     const getRoleColor = (roleInput) => {
@@ -122,7 +130,8 @@ const Staff = () => {
             'Receptionist': { bg: '#dcfce7', text: '#16a34a', label: 'Lễ tân' },
             'Housekeeper': { bg: '#e0f2fe', text: '#0284c7', label: 'Dọn phòng' },
             'Accountant': { bg: '#f3e8ff', text: '#9333ea', label: 'Kế toán' },
-            'Technician': { bg: '#ffedd5', text: '#ea580c', label: 'Kỹ thuật' }
+            'Technician': { bg: '#ffedd5', text: '#ea580c', label: 'Kỹ thuật' },
+            'RoomAttendant': { bg: '#fae8ff', text: '#a21caf', label: 'Phục vụ phòng' }
         };
         return colors[role] || { bg: '#f3f4f6', text: '#4b5563', label: role || 'Nhân viên' };
     };
@@ -145,7 +154,7 @@ const Staff = () => {
                     <p style={{ color: '#64748b', marginTop: '4px' }}>Admin có quyền quản lý toàn bộ nhân viên từ các bộ phận.</p>
                 </div>
                 <button 
-                    onClick={() => { setEditingStaff(null); setFormData({ fullName: '', email: '', phone: '', role: 'Receptionist' }); setIsModalOpen(true); }}
+                    onClick={() => { setEditingStaff(null); setFormData({ fullName: '', email: '', phone: '', role: '' }); setIsModalOpen(true); }}
                     style={{ background: '#3b82f6', color: 'white', padding: '14px 28px', borderRadius: '16px', border: 'none', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)' }}
                 >
                     <Plus size={20} /> Thêm nhân viên mới
@@ -257,13 +266,15 @@ const Staff = () => {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Bộ phận / Vai trò *</label>
-                                    <select value={formData.role} onChange={e => setFormData({...formData, role: parseInt(e.target.value)})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '14px', background: 'white', cursor: 'pointer', outline: 'none' }}>
+                                    <select required value={formData.role} onChange={e => setFormData({...formData, role: e.target.value === "" ? "" : parseInt(e.target.value)})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '14px', background: 'white', cursor: 'pointer', outline: 'none' }}>
+                                        <option value="">-- Chọn bộ phận / vai trò --</option>
                                         <option value={0}>Quản trị hệ thống (Admin)</option>
                                         <option value={1}>Quản lý chuyên môn</option>
                                         <option value={2}>Bộ phận Lễ tân</option>
                                         <option value={3}>Bộ phận Dọn phòng</option>
                                         <option value={4}>Bộ phận Kế toán</option>
                                         <option value={5}>Cán bộ Kỹ thuật</option>
+                                        <option value={6}>Phục vụ phòng (Room Service)</option>
                                     </select>
                                 </div>
                                 <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>

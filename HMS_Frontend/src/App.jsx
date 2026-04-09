@@ -14,6 +14,12 @@ import Rooms from './pages/Rooms';
 import PublicBooking from './pages/PublicBooking';
 import GuestDashboard from './pages/GuestDashboard';
 import Settings from './pages/Settings';
+import Loyalty from './pages/Loyalty';
+import Inventory from './pages/Inventory';
+import Services from './pages/Services';
+import Marketing from './pages/Marketing';
+import Ota from './pages/Ota';
+import DeliveryTasks from './pages/DeliveryTasks';
 
 // Component Bảo vệ Tuyến đường
 const PrivateRoute = ({ children }) => {
@@ -24,8 +30,12 @@ const PrivateRoute = ({ children }) => {
 
 const HomePage = () => {
     const { user } = useAuth();
-    if (user?.role === 'Housekeeper') return <Navigate to="/housekeeping" />;
-    if (user?.role === 'Guest') return <Navigate to="/guest-portal" />;
+    const role = String(user?.role || '').toLowerCase();
+    const pos = String(user?.position || '').toLowerCase();
+    
+    if (role === 'housekeeper' || role === '3' || pos.includes('dọn phòng')) return <Navigate to="/housekeeping" />;
+    if (role === 'roomattendant' || role === '6' || pos.includes('phục vụ') || pos.includes('attendant')) return <Navigate to="/delivery-tasks" />;
+    if (role === 'guest') return <Navigate to="/guest-portal" />;
     return <Dashboard />;
 };
 
@@ -33,8 +43,20 @@ const HomePage = () => {
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
     const { user, loading } = useAuth();
     if (loading) return null;
-    if (!allowedRoles.includes(user?.role)) {
-        return <Navigate to="/" />; // Ném ngược về Trang chủ nếu không đủ quyền
+    const userRole = String(user?.role || '').toLowerCase();
+    const userPos = String(user?.position || '').toLowerCase();
+    
+    let hasAccess = allowedRoles.some(r => String(r).toLowerCase() === userRole);
+    
+    // Fallback cho Phục vụ
+    if (!hasAccess && allowedRoles.includes('RoomAttendant')) {
+        if (userPos.includes('phục vụ') || userPos.includes('attendant') || userRole.includes('attendant')) {
+            hasAccess = true;
+        }
+    }
+    
+    if (!hasAccess) {
+        return <Navigate to="/dashboard" />; // Ném ngược về Trang Dashboard nếu không đủ quyền
     }
     return children;
 };
@@ -44,11 +66,16 @@ const App = () => {
     <AuthProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
+                {/* Trang mặc định mở đầu tiên là trang Đặt phòng nội bộ công khai */}
+                <Route path="/" element={<PublicBooking />} />
+                
                 <Route path="/login" element={<Login />} />
                 
                 {/* Tất cả các trang bên trong PrivateRoute đều dùng Layout chung */}
                 <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-                    <Route path="/" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager']}><HomePage /></RoleProtectedRoute>} />
+                    {/* Trang chủ cho Nhân viên và Khách đã đăng nhập */}
+                    <Route path="/dashboard" element={<RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist', 'Housekeeper', 'Guest', 'RoomAttendant', 6]}><HomePage /></RoleProtectedRoute>} />
+                    
                     <Route path="/guests" element={
                         <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
                             <Guests />
@@ -65,8 +92,13 @@ const App = () => {
                         </RoleProtectedRoute>
                     } />
                     <Route path="/housekeeping" element={
-                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Housekeeper']}>
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Housekeeper', 3]}>
                             <Housekeeping />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="/delivery-tasks" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'RoomAttendant', 6]}>
+                            <DeliveryTasks />
                         </RoleProtectedRoute>
                     } />
                     <Route path="/reservations" element={
@@ -96,10 +128,39 @@ const App = () => {
                             <Settings />
                         </RoleProtectedRoute>
                     } />
+
+                    <Route path="/loyalty" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Loyalty />
+                        </RoleProtectedRoute>
+                    } />
+
+                    <Route path="/inventory" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                            <Inventory />
+                        </RoleProtectedRoute>
+                    } />
+
+                    <Route path="/services" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager', 'Receptionist']}>
+                            <Services />
+                        </RoleProtectedRoute>
+                    } />
+
+                    <Route path="/marketing" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                            <Marketing />
+                        </RoleProtectedRoute>
+                    } />
+
+                    <Route path="/ota" element={
+                        <RoleProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                            <Ota />
+                        </RoleProtectedRoute>
+                    } />
                 </Route>
                 
-                <Route path="/book" element={<PublicBooking />} />
-                
+                {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </Router>

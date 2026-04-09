@@ -25,6 +25,8 @@ namespace Demo02.Models
         public DateTime? CompletedAt { get; set; }
         public string? ProofPhotoUrl { get; set; } // Ảnh chụp bằng chứng sau khi dọn xong
         public string? Notes { get; set; }
+        [NotMapped]
+        public int ProofPhotoCount { get; set; }
     }
 
     public class MaintenanceTicket : BaseEntity
@@ -99,8 +101,10 @@ namespace Demo02.Models
         public string EmployeeCode { get; set; } = string.Empty;
         [Required, StringLength(200)]
         public string FullName { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
+        public Department Department { get; set; } = Department.FrontDesk;
         public string Position { get; set; } = string.Empty;
+        public ContractType ContractType { get; set; } = ContractType.FullTime;
+
         [Required, StringLength(100)]
         public string Email { get; set; } = string.Empty;
         [StringLength(20)]
@@ -109,6 +113,8 @@ namespace Demo02.Models
         public DateTime HireDate { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal BaseSalary { get; set; }
+
+        public virtual ICollection<ShiftAssignment> ShiftAssignments { get; set; } = new List<ShiftAssignment>();
     }
 
     // --- Nhóm CRM & Loyalty ---
@@ -141,12 +147,49 @@ namespace Demo02.Models
         public string ItemCode { get; set; } = string.Empty;
         [Required, StringLength(200)]
         public string ItemName { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty; // Minibar, Amenity, Linen...
+        public ItemCategory Category { get; set; } = ItemCategory.Other;
         public string Unit { get; set; } = string.Empty; // cái, chai, kg...
         
         [Column(TypeName = "decimal(10,2)")]
         public decimal CurrentStock { get; set; }
         [Column(TypeName = "decimal(10,2)")]
         public decimal MinimumStock { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal UnitCost { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal SellingPrice { get; set; } // Giá bán cho khách
+
+        public bool IsForSale { get; set; } = false; // Có hiển thị lên menu gọi món không?
+    }
+
+    // --- Nhóm Room Service (F&B) ---
+    public class RoomServiceOrder : BaseEntity
+    {
+        [Key]
+        public Guid OrderId { get; set; } = Guid.NewGuid();
+
+        public Guid ReservationId { get; set; }
+        [ForeignKey("ReservationId")]
+        public Reservation? Reservation { get; set; }
+
+        public Guid RoomId { get; set; }
+        [ForeignKey("RoomId")]
+        public Room? Room { get; set; }
+
+        [Required]
+        public string OrderItems { get; set; } = string.Empty; // Danh sách món dạng JSON hoặc Text
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; }
+        
+        public string Status { get; set; } = "Pending"; // Pending, Preparing, Delivering, Completed, Cancelled
+        
+        public Guid? AssignedStaffId { get; set; } // Nhân viên phục vụ phòng (Room Attendant)
+        [ForeignKey("AssignedStaffId")]
+        public Staff? AssignedStaff { get; set; }
+
+        public bool IsPaid { get; set; } = false; // Đã thanh toán (Cộng vào hóa đơn hay chưa)
+        public string? Notes { get; set; }
     }
 }

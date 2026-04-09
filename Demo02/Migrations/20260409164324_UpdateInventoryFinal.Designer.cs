@@ -4,6 +4,7 @@ using Demo02.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Demo02.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260409164324_UpdateInventoryFinal")]
+    partial class UpdateInventoryFinal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1224,9 +1227,6 @@ namespace Demo02.Migrations
                     b.Property<DateTime?>("NoShowDetectedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("NumberOfGuests")
-                        .HasColumnType("int");
-
                     b.Property<string>("OtaSource")
                         .HasColumnType("nvarchar(max)");
 
@@ -1244,9 +1244,6 @@ namespace Demo02.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1384,70 +1381,6 @@ namespace Demo02.Migrations
                     b.HasIndex("RoomTypeId");
 
                     b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("Demo02.Models.RoomServiceOrder", b =>
-                {
-                    b.Property<Guid>("OrderId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AssignedStaffId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPaid")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OrderItems")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ReservationId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("RoomId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("OrderId");
-
-                    b.HasIndex("AssignedStaffId");
-
-                    b.HasIndex("ReservationId");
-
-                    b.HasIndex("RoomId");
-
-                    b.ToTable("RoomServiceOrders");
                 });
 
             modelBuilder.Entity("Demo02.Models.RoomType", b =>
@@ -2198,31 +2131,6 @@ namespace Demo02.Migrations
                         .IsRequired();
 
                     b.Navigation("RoomType");
-                });
-
-            modelBuilder.Entity("Demo02.Models.RoomServiceOrder", b =>
-                {
-                    b.HasOne("Demo02.Models.Staff", "AssignedStaff")
-                        .WithMany()
-                        .HasForeignKey("AssignedStaffId");
-
-                    b.HasOne("Demo02.Models.Reservation", "Reservation")
-                        .WithMany()
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Demo02.Models.Room", "Room")
-                        .WithMany()
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AssignedStaff");
-
-                    b.Navigation("Reservation");
-
-                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Demo02.Models.SeasonalPrice", b =>

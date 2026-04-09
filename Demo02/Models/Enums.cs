@@ -86,15 +86,18 @@ namespace Demo02.Models
         Receptionist,
         Housekeeper,
         Accountant,
-        Technician
+        Technician,
+        RoomAttendant // Mới: Nhân viên Phục vụ phòng (Service)
     }
 
     public enum LoyaltyTier
     {
-        Silver,
-        Gold,
-        Platinum,
-        Diamond
+        Bronze,     // 0-999
+        Silver,     // 1,000-2,999
+        Gold,       // 3,000-9,999
+        Platinum,   // 10,000-24,999
+        Diamond,    // 25,000-49,999
+        Royal       // 50,000+
     }
 
     public enum HmsTaskType
@@ -103,7 +106,8 @@ namespace Demo02.Models
         Turndown,
         Inspection,
         Maintenance,
-        Repair
+        Repair,
+        Delivery // Mới: Giao đồ theo yêu cầu khách (Dành cho Room Attendant)
     }
 
     public enum HmsTaskStatus
@@ -121,5 +125,49 @@ namespace Demo02.Models
         Normal,
         High,
         Critical
+    }
+
+    // --- Enums bổ sung theo BRD 8.7 ---
+    public enum LoyaltyTxType
+    {
+        Earn, 
+        Redeem, 
+        Expire, 
+        Adjustment
+    }
+
+    public enum ItemCategory
+    {
+        Minibar, 
+        Amenity, 
+        Linen, 
+        Cleaning, 
+        Maintenance, 
+        Other
+    }
+
+    public enum Department
+    {
+        FrontDesk, 
+        Housekeeping, 
+        FB, 
+        Finance, 
+        Technical, 
+        HR, 
+        Management
+    }
+
+    public enum ContractType
+    {
+        FullTime, 
+        PartTime, 
+        Seasonal
+    }
+
+    public enum MarketingChannel
+    {
+        Email, 
+        SMS, 
+        AppNotification
     }
 }

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Calendar, Users, Search, 
     ArrowRight, Star, Coffee, 
-    Wifi, MapPin, CheckCircle2 
+    Wifi, MapPin, CheckCircle2, Eye, EyeOff
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../auth/AuthContext';
@@ -44,10 +44,12 @@ const PublicBooking = () => {
     const [guestInfo, setGuestInfo] = useState({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
     const [accountExists, setAccountExists] = useState(null); // null: chưa check, true: cũ, false: mới
     const [hasProfile, setHasProfile] = useState(false); // Đã có hồ sơ Guests
+    const [vipInfo, setVipInfo] = useState({ tier: 'None', discountRate: 0 }); // 💎 HMS VIP
     const [searchErrors, setSearchErrors] = useState({});
     const [errors, setErrors] = useState({});
     const [bookingSuccess, setBookingSuccess] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [showPass, setShowPass] = useState(false);
 
     const handleCheckAvailability = () => {
         const newErrors = {};
@@ -60,7 +62,6 @@ const PublicBooking = () => {
             return false;
         }
         setSearchErrors({});
-        // Giả lập loading
         setLoading(true);
         setTimeout(() => setLoading(false), 800);
         return true;
@@ -70,7 +71,7 @@ const PublicBooking = () => {
         e.preventDefault();
         const newErrors = {};
 
-        // 🛡️ BƯỚC 1: Kiểm tra SĐT nếu chưa check
+        // 🛡️ BƯỚC 1: Kiểm tra SĐT & Lấy Ưu đãi VIP
         if (accountExists === null) {
             const phoneRegex = /^[0-9]{10}$/;
             if (!phoneRegex.test(guestInfo.phone)) {
@@ -80,9 +81,10 @@ const PublicBooking = () => {
             setSubmitting(true);
             try {
                 const res = await api.get(`/PublicBooking/CheckAccount/${guestInfo.phone}`);
-                const { exists, hasProfile, fullName } = res.data;
+                const { exists, hasProfile, fullName, tier, discountRate } = res.data;
                 setAccountExists(exists);
                 setHasProfile(hasProfile);
+                setVipInfo({ tier, discountRate }); // 💎 Lưu thông tin VIP
                 
                 if (hasProfile && fullName) {
                     setGuestInfo(prev => ({ ...prev, fullName: fullName }));
@@ -152,8 +154,19 @@ const PublicBooking = () => {
                 justifyContent: 'center',
                 color: 'white',
                 textAlign: 'center',
-                padding: '0 20px'
+                padding: '0 20px',
+                position: 'relative' // Quan trọng để đặt nút tuyệt đối
             }}>
+                {/* Nút Đăng nhập góc trên phải */}
+                <div style={{ position: 'absolute', top: '24px', right: '24px' }}>
+                    <button 
+                        onClick={() => window.location.href = '/login'}
+                        style={{ padding: '10px 24px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: 'white', fontWeight: '800', cursor: 'pointer', fontSize: '14px', transition: '0.2s' }}
+                    >
+                        Quý khách đã có tài khoản? Đăng nhập
+                    </button>
+                </div>
+
                 <motion.h1 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }}
@@ -204,7 +217,9 @@ const PublicBooking = () => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '280px' : '380px'}, 1fr))`, gap: '32px' }}>
-                    {roomTypes.map(rt => (
+                    {roomTypes
+                        .filter(rt => (rt.maxOccupancy || rt.MaxOccupancy) >= searchData.guests) // Lọc phòng chứa được số khách
+                        .map(rt => (
                         <motion.div 
                             key={rt.roomTypeId || rt.RoomTypeId}
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -213,9 +228,27 @@ const PublicBooking = () => {
                             style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}
                         >
                             <div style={{ height: '240px', background: '#f1f5f9', position: 'relative' }}>
-                                <img src={`https://source.unsplash.com/800x600/?hotel,room,luxury&sig=${rt.typeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                                <img src={`https://images.unsplash.com/photo-1590490360182-c33d597353a0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60&sig=${rt.typeName || rt.TypeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
                                 <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'white', padding: '6px 12px', borderRadius: '10px', fontWeight: '800', fontSize: '18px', color: '#10b981' }}>
                                     {new Intl.NumberFormat('vi-VN').format(rt.basePrice || rt.BasePrice)} <span style={{ fontSize: '12px' }}>₫/đêm</span>
+                                </div>
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    bottom: '16px', 
+                                    left: '16px', 
+                                    background: (rt.availableRooms || rt.AvailableRooms) > 3 ? 'rgba(16, 185, 129, 0.9)' : (rt.availableRooms || rt.AvailableRooms) > 0 ? 'rgba(245, 158, 11, 0.9)' : 'rgba(239, 68, 68, 0.9)', 
+                                    color: 'white', 
+                                    padding: '6px 14px', 
+                                    borderRadius: '8px', 
+                                    fontSize: '12px', 
+                                    fontWeight: '800',
+                                    backdropFilter: 'blur(4px)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
+                                    <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></div>
+                                    CÒN {(rt.availableRooms || rt.AvailableRooms)} / {(rt.roomCount || rt.RoomCount)} PHÒNG
                                 </div>
                             </div>
                             <div style={{ padding: isMobile ? '20px' : '24px' }}>
@@ -248,6 +281,19 @@ const PublicBooking = () => {
                             </div>
                         </motion.div>
                     ))}
+                    
+                    {roomTypes.filter(rt => (rt.maxOccupancy || rt.MaxOccupancy) >= searchData.guests).length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', background: 'white', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏘️</div>
+                            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>Đoàn của bạn quá đông?</h3>
+                            <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto 24px' }}>
+                                Hiện không có hạng phòng nào chứa đủ {searchData.guests} người. Bạn có muốn chia đoàn thành nhiều phòng nhỏ hơn không?
+                            </p>
+                            <button onClick={() => setSearchData({...searchData, guests: 2})} style={{ padding: '12px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                                Thử đặt 2 người/phòng
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -299,24 +345,77 @@ const PublicBooking = () => {
 
                                         <div>
                                             <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>{accountExists ? "Mật khẩu của bạn *" : "Tạo mật khẩu mới *"}</label>
-                                            <input type="password" required value={guestInfo.password} onChange={e => setGuestInfo({...guestInfo, password: e.target.value})} placeholder="********" style={{ width: '100%', padding: '16px', border: errors.password ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                            <div style={{ position: 'relative' }}>
+                                                <input 
+                                                    type={showPass ? "text" : "password"} 
+                                                    required 
+                                                    value={guestInfo.password} 
+                                                    onChange={e => setGuestInfo({...guestInfo, password: e.target.value})} 
+                                                    placeholder="********" 
+                                                    style={{ width: '100%', padding: '16px', paddingRight: '48px', border: errors.password ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} 
+                                                />
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setShowPass(!showPass)} 
+                                                    style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}
+                                                >
+                                                    {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </button>
+                                            </div>
                                             {errors.password && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.password}</span>}
                                         </div>
 
                                         {accountExists === false && (
                                             <div>
                                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>Xác nhận mật khẩu *</label>
-                                                <input type="password" required value={guestInfo.confirmPassword} onChange={e => setGuestInfo({...guestInfo, confirmPassword: e.target.value})} placeholder="********" style={{ width: '100%', padding: '16px', border: errors.confirmPassword ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} />
+                                                <div style={{ position: 'relative' }}>
+                                                    <input 
+                                                        type={showPass ? "text" : "password"} 
+                                                        required 
+                                                        value={guestInfo.confirmPassword} 
+                                                        onChange={e => setGuestInfo({...guestInfo, confirmPassword: e.target.value})} 
+                                                        placeholder="********" 
+                                                        style={{ width: '100%', padding: '16px', paddingRight: '48px', border: errors.confirmPassword ? '1px solid #ef4444' : '1px solid #e2e8f0', borderRadius: '14px' }} 
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setShowPass(!showPass)} 
+                                                        style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}
+                                                    >
+                                                        {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                    </button>
+                                                </div>
                                                 {errors.confirmPassword && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: '600', display: 'block' }}>{errors.confirmPassword}</span>}
                                             </div>
                                         )}
                                     </motion.div>
                                 )}
 
-                                <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '16px', marginTop: '12px' }}>
+                                {vipInfo.discountRate > 0 && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }} 
+                                        animate={{ opacity: 1, scale: 1 }} 
+                                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', padding: '16px', borderRadius: '16px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}
+                                    >
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '10px' }}>
+                                            <Star fill="white" size={20} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '11px', fontWeight: '800', opacity: 0.9 }}>ƯU ĐÃI HỘI VIÊN {vipInfo.tier.toUpperCase()}</div>
+                                            <div style={{ fontSize: '14px', fontWeight: '800' }}>Giảm giá ngay {vipInfo.discountRate * 100}% cho đặt phòng này!</div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '16px', marginTop: '4px' }}>
                                     <div style={{ fontSize: '11px', color: '#15803d', fontWeight: '700' }}>TỔNG THANH TOÁN (DỰ KIẾN):</div>
+                                    {vipInfo.discountRate > 0 && (
+                                        <div style={{ fontSize: '14px', color: '#94a3b8', textDecoration: 'line-through', fontWeight: '600' }}>
+                                            {new Intl.NumberFormat('vi-VN').format(getNights() * (selectedType.basePrice || selectedType.BasePrice || 0))} ₫
+                                        </div>
+                                    )}
                                     <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '900', color: '#166534', marginTop: '4px' }}>
-                                        {new Intl.NumberFormat('vi-VN').format(getNights() * (selectedType.basePrice || selectedType.BasePrice || 0))} <span style={{ fontSize: '14px' }}>₫</span>
+                                        {new Intl.NumberFormat('vi-VN').format(getNights() * (selectedType.basePrice || selectedType.BasePrice || 0) * (1 - vipInfo.discountRate))} <span style={{ fontSize: '14px' }}>₫</span>
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '4px' }}>Dành cho {getNights()} đêm / {searchData.guests} người</div>
                                 </div>

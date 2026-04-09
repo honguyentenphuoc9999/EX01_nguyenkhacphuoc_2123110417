@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddDbContext<WarehouseDbContext>(options =>
+options.UseSqlServer(builder.Configuration.GetConnectionString("WarehouseConnection")));
+
 // --- HMS Rule: Cấu hình CORS để Frontend (React) có thể gọi API ---
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Demo02.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260409090936_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260409163521_InitialFinalUpgrade")]
+    partial class InitialFinalUpgrade
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -369,9 +369,8 @@ namespace Demo02.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -407,6 +406,9 @@ namespace Demo02.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -420,6 +422,58 @@ namespace Demo02.Migrations
                         .IsUnique();
 
                     b.ToTable("InventoryItems");
+                });
+
+            modelBuilder.Entity("Demo02.Models.InventoryTransaction", b =>
+                {
+                    b.Property<Guid>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("QuantityChanged")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ReferenceNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("TransactionId");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("InventoryTransactions");
                 });
 
             modelBuilder.Entity("Demo02.Models.Invoice", b =>
@@ -480,7 +534,9 @@ namespace Demo02.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("decimal(18,2)")
+                        .HasComputedColumnSql("[SubTotal] + ([SubTotal] * [VatRate])");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -490,7 +546,9 @@ namespace Demo02.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("VatAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("decimal(18,2)")
+                        .HasComputedColumnSql("[SubTotal] * [VatRate]");
 
                     b.Property<decimal>("VatRate")
                         .HasColumnType("decimal(5,4)");
@@ -609,7 +667,64 @@ namespace Demo02.Migrations
                     b.HasIndex("GuestId")
                         .IsUnique();
 
+                    b.HasIndex("MemberNumber")
+                        .IsUnique();
+
                     b.ToTable("LoyaltyAccounts");
+                });
+
+            modelBuilder.Entity("Demo02.Models.LoyaltyTransaction", b =>
+                {
+                    b.Property<Guid>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LoyaltyAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("AccountId");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("TransactionId");
+
+                    b.HasIndex("LoyaltyAccountId");
+
+                    b.ToTable("LoyaltyTransactions");
                 });
 
             modelBuilder.Entity("Demo02.Models.MaintenanceTicket", b =>
@@ -675,6 +790,63 @@ namespace Demo02.Migrations
                     b.ToTable("MaintenanceTickets");
                 });
 
+            modelBuilder.Entity("Demo02.Models.MarketingCampaign", b =>
+                {
+                    b.Property<Guid>("CampaignId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CampaignName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetSegment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("CampaignId");
+
+                    b.ToTable("MarketingCampaigns");
+                });
+
             modelBuilder.Entity("Demo02.Models.MinibarLog", b =>
                 {
                     b.Property<Guid>("LogId")
@@ -734,6 +906,98 @@ namespace Demo02.Migrations
                     b.ToTable("MinibarLogs");
                 });
 
+            modelBuilder.Entity("Demo02.Models.OtaConfig", b =>
+                {
+                    b.Property<Guid>("ConfigId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecretKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("ConfigId");
+
+                    b.ToTable("OtaConfigs");
+                });
+
+            modelBuilder.Entity("Demo02.Models.OtaSyncLog", b =>
+                {
+                    b.Property<Guid>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalBookingCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("LogId");
+
+                    b.ToTable("OtaSyncLogs");
+                });
+
             modelBuilder.Entity("Demo02.Models.Payment", b =>
                 {
                     b.Property<Guid>("PaymentId")
@@ -785,6 +1049,59 @@ namespace Demo02.Migrations
                     b.HasIndex("FolioId");
 
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("Demo02.Models.PurchaseOrder", b =>
+                {
+                    b.Property<Guid>("PoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PoNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Supplier")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("PoId");
+
+                    b.HasIndex("PoNumber")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseOrders");
                 });
 
             modelBuilder.Entity("Demo02.Models.Refund", b =>
@@ -1116,14 +1433,11 @@ namespace Demo02.Migrations
                     b.ToTable("RoomTypes");
                 });
 
-            modelBuilder.Entity("Demo02.Models.Staff", b =>
+            modelBuilder.Entity("Demo02.Models.SeasonalPrice", b =>
                 {
-                    b.Property<Guid>("StaffId")
+                    b.Property<Guid>("PriceId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("BaseSalary")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1136,9 +1450,177 @@ namespace Demo02.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Department")
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("RoomTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SeasonName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("PriceId");
+
+                    b.HasIndex("RoomTypeId");
+
+                    b.ToTable("SeasonalPrices");
+                });
+
+            modelBuilder.Entity("Demo02.Models.ServiceBooking", b =>
+                {
+                    b.Property<Guid>("BookingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NumberOfPersons")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResourceName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpecialRequests")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("BookingId");
+
+                    b.HasIndex("GuestId");
+
+                    b.ToTable("ServiceBookings");
+                });
+
+            modelBuilder.Entity("Demo02.Models.ShiftAssignment", b =>
+                {
+                    b.Property<Guid>("AssignmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ShiftEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ShiftStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("AssignmentId");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("ShiftAssignments");
+                });
+
+            modelBuilder.Entity("Demo02.Models.Staff", b =>
+                {
+                    b.Property<Guid>("StaffId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ContractType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Department")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -1473,6 +1955,17 @@ namespace Demo02.Migrations
                     b.Navigation("Room");
                 });
 
+            modelBuilder.Entity("Demo02.Models.InventoryTransaction", b =>
+                {
+                    b.HasOne("Demo02.Models.InventoryItem", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
             modelBuilder.Entity("Demo02.Models.Invoice", b =>
                 {
                     b.HasOne("Demo02.Models.Folio", "Folio")
@@ -1502,6 +1995,17 @@ namespace Demo02.Migrations
                         .IsRequired();
 
                     b.Navigation("Guest");
+                });
+
+            modelBuilder.Entity("Demo02.Models.LoyaltyTransaction", b =>
+                {
+                    b.HasOne("Demo02.Models.LoyaltyAccount", "Account")
+                        .WithMany()
+                        .HasForeignKey("LoyaltyAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("Demo02.Models.MaintenanceTicket", b =>
@@ -1623,6 +2127,37 @@ namespace Demo02.Migrations
                     b.Navigation("RoomType");
                 });
 
+            modelBuilder.Entity("Demo02.Models.SeasonalPrice", b =>
+                {
+                    b.HasOne("Demo02.Models.RoomType", "RoomType")
+                        .WithMany()
+                        .HasForeignKey("RoomTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RoomType");
+                });
+
+            modelBuilder.Entity("Demo02.Models.ServiceBooking", b =>
+                {
+                    b.HasOne("Demo02.Models.Guest", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId");
+
+                    b.Navigation("Guest");
+                });
+
+            modelBuilder.Entity("Demo02.Models.ShiftAssignment", b =>
+                {
+                    b.HasOne("Demo02.Models.Staff", "Staff")
+                        .WithMany("ShiftAssignments")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Staff");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1700,6 +2235,11 @@ namespace Demo02.Migrations
             modelBuilder.Entity("Demo02.Models.RoomType", b =>
                 {
                     b.Navigation("Rooms");
+                });
+
+            modelBuilder.Entity("Demo02.Models.Staff", b =>
+                {
+                    b.Navigation("ShiftAssignments");
                 });
 #pragma warning restore 612, 618
         }

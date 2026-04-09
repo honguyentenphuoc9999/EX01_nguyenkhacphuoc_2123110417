@@ -46,6 +46,11 @@ namespace Demo02.Data.Repositories
         public IGenericRepository<Refund> Refunds { get; private set; }
         public IGenericRepository<ReservationRoom> ReservationRooms { get; private set; }
 
+        public IQueryable<T> Query<T>() where T : class
+        {
+            return _context.Set<T>();
+        }
+
         public async Task<int> CompleteAsync()
         {
             return await _context.SaveChangesAsync();

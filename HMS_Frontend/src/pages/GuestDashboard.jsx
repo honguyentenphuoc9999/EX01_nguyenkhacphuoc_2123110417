@@ -4,7 +4,9 @@ import {
     User, Calendar, Star,
     ShieldCheck, MapPin,
     LogOut, Trash2, Heart,
-    AlertCircle, X
+    AlertCircle, X, Search, ArrowRight,
+    Wifi, Coffee, Users, CheckCircle2,
+    Utensils, ShoppingBag, Plus, Minus
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../auth/AuthContext';
@@ -13,7 +15,19 @@ const GuestDashboard = () => {
     const { logout } = useAuth();
     const [profile, setProfile] = useState(null);
     const [reservations, setReservations] = useState([]);
+    const [roomTypes, setRoomTypes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [bookingLoading, setBookingLoading] = useState(false);
+    const [serviceLoading, setServiceLoading] = useState(false);
+    const [selectedType, setSelectedType] = useState(null);
+    const [cart, setCart] = useState({});
+    const [menuItems, setMenuItems] = useState([]);
+
+    const [searchData, setSearchData] = useState({ 
+        checkIn: new Date().toISOString().split('T')[0], 
+        checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], 
+        guests: 2 
+    });
 
     const cancelReasons = [
         "Thay đổi lịch trình đột xuất", "Tìm được giá phòng tốt hơn", "Sự cố sức khỏe / gia đình",
@@ -54,8 +68,14 @@ const GuestDashboard = () => {
             const initialPrefs = res.data.preferences ? res.data.preferences.split(", ") : [];
             setTempPrefs(initialPrefs);
 
-            const res2 = await api.get('/GuestPortal/reservations');
+            const [res2, res3, res4] = await Promise.all([
+                api.get('/GuestPortal/reservations'),
+                api.get('/RoomTypes'),
+                api.get('/Inventory/sale-menu')
+            ]);
             setReservations(res2.data);
+            setRoomTypes(res3.data);
+            setMenuItems(res4.data);
         } catch (err) {
             console.error(err);
         }
@@ -83,6 +103,64 @@ const GuestDashboard = () => {
         setIsSaving(false);
     };
 
+    const handleQuickBook = async () => {
+        if (!selectedType) return;
+        setBookingLoading(true);
+        try {
+            await api.post('/GuestPortal/quick-book', {
+                roomTypeId: selectedType.roomTypeId || selectedType.RoomTypeId,
+                checkIn: searchData.checkIn,
+                checkOut: searchData.checkOut,
+                numberOfGuests: parseInt(searchData.guests)
+            });
+            setShowToast("Chúc mừng! Đặt phòng nhanh thành công.");
+            setSelectedType(null);
+            fetchProfile();
+        } catch (err) {
+            setShowToast("Lỗi đặt phòng: " + (err.response?.data || err.message));
+        }
+        setBookingLoading(false);
+    };
+
+    const handleOrderService = async () => {
+        const orderText = Object.entries(cart)
+            .filter(([_, qty]) => qty > 0)
+            .map(([id, qty]) => `${qty}x ${menuItems.find(m => (m.itemId || m.ItemId) === id).itemName}`)
+            .join(", ");
+        
+        if (!orderText) {
+            setShowToast("Vui lòng chọn ít nhất một món!");
+            return;
+        }
+
+        const total = Object.entries(cart).reduce((sum, [id, qty]) => {
+            const item = menuItems.find(m => (m.itemId || m.ItemId) === id);
+            return sum + (item.sellingPrice * qty);
+        }, 0);
+
+        const currentRes = reservations.find(r => (r.status === 2 || String(r.status).toLowerCase() === 'checkedin'));
+        if (!currentRes) {
+            setShowToast("Bạn chỉ có thể gọi món khi đã nhận phòng (Checked-in)!");
+            return;
+        }
+
+        setServiceLoading(true);
+        try {
+            await api.post('/RoomService/Order', {
+                ReservationId: currentRes.reservationId || currentRes.ReservationId,
+                RoomId: currentRes.roomId || currentRes.RoomId,
+                OrderItems: orderText,
+                TotalAmount: total,
+                Notes: "Khách gọi từ Dashboard"
+            });
+            setShowToast("Đã gửi đơn gọi món! Nhân viên sẽ giao đến phòng bạn ngay.");
+            setCart({});
+        } catch (err) {
+            setShowToast("Lỗi gọi món: " + (err.response?.data || err.message));
+        }
+        setServiceLoading(false);
+    };
+
     const handleCancelRoom = async () => {
         const finalReason = selectedCancelReason === "Lý do khác" ? customCancelReason : selectedCancelReason;
         if (!finalReason) {
@@ -97,6 +175,13 @@ const GuestDashboard = () => {
             setShowCancelModal(null);
             fetchProfile();
         } catch (err) { setShowToast("Lỗi: " + (err.response?.data?.message || err.message)); }
+    };
+
+    const getNights = () => {
+        const start = new Date(searchData.checkIn);
+        const end = new Date(searchData.checkOut);
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 0;
     };
 
     if (loading) return (
@@ -124,6 +209,126 @@ const GuestDashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
                 {/* Main Content */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    
+                    {/* --- NEW: QUICK BOOKING SECTION (ĐẶT PHÒNG NHANH) --- */}
+                    <div style={{ background: 'white', borderRadius: '32px', padding: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Calendar size={24} color="#3b82f6" /> Đặt kỳ nghỉ tiếp theo
+                            </h2>
+                        </div>
+                        
+                        {/* Search Bar Inline */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '20px', marginBottom: '24px' }}>
+                            <div>
+                                <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Nhận phòng</label>
+                                <input type="date" value={searchData.checkIn} onChange={e => setSearchData({...searchData, checkIn: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Trả phòng</label>
+                                <input type="date" value={searchData.checkOut} onChange={e => setSearchData({...searchData, checkOut: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Số khách</label>
+                                <select value={searchData.guests} onChange={e => setSearchData({...searchData, guests: parseInt(e.target.value)})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', background: 'white' }}>
+                                    {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} Khách</option>)}
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                <button style={{ width: '100%', height: '42px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                                    Tìm phòng
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Room Types Horizontal Scroll */}
+                        <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '16px' }} className="no-scrollbar">
+                            {roomTypes.map(rt => (
+                                <motion.div 
+                                    key={rt.roomTypeId || rt.RoomTypeId} 
+                                    whileHover={{ y: -5 }}
+                                    style={{ flex: '0 0 280px', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}
+                                >
+                                    <div style={{ height: '140px', position: 'relative' }}>
+                                        <img src={`https://images.unsplash.com/photo-1590490360182-c33d597353a0?auto=format&fit=crop&w=400&q=60&sig=${rt.typeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'white', padding: '4px 10px', borderRadius: '8px', fontWeight: '800', color: '#10b981', fontSize: '14px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                            {(() => {
+                                                const level = profile?.membershipLevel || 'Bronze';
+                                                const rates = { 'Royal': 0.25, 'Diamond': 0.20, 'Platinum': 0.15, 'Gold': 0.10, 'Silver': 0.05, 'Bronze': 0 };
+                                                const discount = rates[level] || 0;
+                                                const finalPrice = rt.basePrice * (1 - discount);
+                                                return (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                        {discount > 0 && <span style={{ fontSize: '10px', color: '#94a3b8', textDecoration: 'line-through', fontWeight: '600', marginBottom: '-4px' }}>{new Intl.NumberFormat('vi-VN').format(rt.basePrice)}₫</span>}
+                                                        <span>{new Intl.NumberFormat('vi-VN').format(finalPrice)}₫</span>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: '16px' }}>
+                                        <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '4px' }}>{rt.typeName}</h3>
+                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                           <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={12}/> {rt.maxOccupancy} người</span>
+                                           <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Wifi size={12}/> Wifi</span>
+                                           {(rt.availableRooms > 0 || rt.AvailableRooms > 0) ? (
+                                                <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', background: '#fff7ed', padding: '2px 8px', borderRadius: '6px' }}>
+                                                    Còn {rt.availableRooms || rt.AvailableRooms} phòng
+                                                </span>
+                                           ) : (
+                                                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '800', background: '#fef2f2', padding: '2px 8px', borderRadius: '6px' }}>Hết phòng</span>
+                                           )}
+                                        </div>
+                                        <button 
+                                            onClick={() => setSelectedType(rt)}
+                                            style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #3b82f6', color: '#3b82f6', background: 'white', fontWeight: '700', fontSize: '12px', cursor: 'pointer', transition: '0.2s' }}
+                                        >
+                                            Đặt nhanh
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* --- NEW: ROOM SERVICE (F&B) --- */}
+                    <div style={{ background: '#0f172a', borderRadius: '32px', padding: '32px', color: 'white', border: '1px solid #1e293b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '20px', fontWeight: '900', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Utensils size={24} color="#f59e0b" /> Dịch vụ phòng 24/7
+                            </h2>
+                            <ShoppingBag size={24} color={Object.values(cart).some(q => q > 0) ? "#10b981" : "#475569"} />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                            {menuItems.map(item => (
+                                <div key={item.itemId || item.ItemId} style={{ background: '#1e293b', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ fontSize: '32px', textAlign: 'center' }}>{item.category === 0 ? '🍔' : '🧼'}</div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '14px' }}>{item.itemName}</div>
+                                        <div style={{ color: '#f59e0b', fontWeight: '900', fontSize: '12px' }}>{new Intl.NumberFormat('vi-VN').format(item.sellingPrice)}₫</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', background: '#0f172a', padding: '6px', borderRadius: '12px' }}>
+                                        <button onClick={() => setCart(p => ({...p, [item.itemId || item.ItemId]: Math.max(0, (p[item.itemId || item.ItemId] || 0) - 1)}))} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Minus size={14}/></button>
+                                        <span style={{ fontWeight: '900', minWidth: '20px', textAlign: 'center' }}>{cart[item.itemId || item.ItemId] || 0}</span>
+                                        <button onClick={() => setCart(p => ({...p, [item.itemId || item.ItemId]: (p[item.itemId || item.ItemId] || 0) + 1}))} style={{ background: 'none', border: 'none', color: '#f59e0b', cursor: 'pointer' }}><Plus size={14}/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {Object.values(cart).some(q => q > 0) && (
+                            <motion.button 
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                onClick={handleOrderService}
+                                disabled={serviceLoading}
+                                style={{ width: '100%', padding: '16px', borderRadius: '18px', border: 'none', background: '#f59e0b', color: 'white', fontWeight: '900', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '10px' }}
+                            >
+                                {serviceLoading ? "ĐANG GỬI ĐƠN..." : "ĐẶT MÓN NGAY"}
+                            </motion.button>
+                        )}
+                    </div>
+
                     {/* Reservations List */}
                     <div style={{ background: 'white', borderRadius: '32px', padding: '32px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -195,13 +400,69 @@ const GuestDashboard = () => {
 
                 {/* Sidebar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                    {/* Loyalty Card */}
-                    <div style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', padding: '32px', borderRadius: '32px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px rgba(245, 158, 11, 0.3)' }}>
-                        <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-20px', opacity: 0.15 }} />
-                        <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.8, marginBottom: '24px' }}>Royal Member</div>
-                        <div style={{ fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{profile?.membershipLevel || 'Silver'}</div>
-                        <div style={{ fontSize: '15px' }}>Số điểm tích lũy: <b>{profile?.loyaltyPoints || 0} PTS</b></div>
-                    </div>
+                    {/* Loyalty Card - Styled by Membership Level */}
+                    {(() => {
+                        const level = profile?.membershipLevel || 'Bronze';
+                        const styles = {
+                            'Royal': {
+                                gradient: 'linear-gradient(135deg, #7e22ce, #a855f7)',
+                                shadow: '0 20px 40px rgba(168, 85, 247, 0.3)',
+                                badge: 'ROYAL MEMBER',
+                                main: 'Royal VVIP'
+                            },
+                            'Diamond': {
+                                gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)',
+                                shadow: '0 20px 40px rgba(6, 182, 212, 0.3)',
+                                badge: 'DIAMOND MEMBER',
+                                main: 'Diamond Elite'
+                            },
+                            'Platinum': {
+                                gradient: 'linear-gradient(135deg, #0f172a, #334155)',
+                                shadow: '0 20px 40px rgba(15, 23, 42, 0.3)',
+                                badge: 'PLATINUM MEMBER',
+                                main: 'Platinum'
+                            },
+                            'Gold': {
+                                gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                shadow: '0 20px 40px rgba(245, 158, 11, 0.3)',
+                                badge: 'GOLD MEMBER',
+                                main: 'Gold'
+                            },
+                            'Silver': {
+                                gradient: 'linear-gradient(135deg, #94a3b8, #64748b)',
+                                shadow: '0 20px 40px rgba(148, 163, 184, 0.3)',
+                                badge: 'SILVER MEMBER',
+                                main: 'Silver'
+                            },
+                            'Bronze': {
+                                gradient: 'linear-gradient(135deg, #ea580c, #c2410c)',
+                                shadow: '0 20px 40px rgba(234, 88, 12, 0.3)',
+                                badge: 'BRONZE MEMBER',
+                                main: 'Bronze'
+                            }
+                        };
+                        const s = styles[level] || styles['Bronze'];
+
+                        return (
+                            <div style={{ 
+                                background: s.gradient, 
+                                padding: '32px', 
+                                borderRadius: '32px', 
+                                color: 'white', 
+                                position: 'relative', 
+                                overflow: 'hidden', 
+                                boxShadow: s.shadow,
+                                transition: 'all 0.4s ease'
+                            }}>
+                                <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-20px', opacity: 0.15 }} />
+                                <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.8, marginBottom: '24px' }}>
+                                    {s.badge}
+                                </div>
+                                <div style={{ fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{s.main}</div>
+                                <div style={{ fontSize: '15px' }}>Số điểm tích lũy: <b>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b></div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Verification Status */}
                     <div style={{ background: 'white', border: '1px solid #e2e8f0', padding: '32px', borderRadius: '32px' }}>
@@ -258,6 +519,70 @@ const GuestDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Quick Booking Confirmation Modal */}
+            <AnimatePresence>
+                {selectedType && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(10px)' }} onClick={() => setSelectedType(null)} />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ position: 'relative', width: '100%', maxWidth: '440px', background: 'white', borderRadius: '32px', padding: '32px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                <div style={{ width: '64px', height: '64px', background: '#f0fdf4', color: '#10b981', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                    <CheckCircle2 size={32} />
+                                </div>
+                                <h2 style={{ fontSize: '22px', fontWeight: '900' }}>Xác nhận đặt phòng</h2>
+                                <p style={{ color: '#64748b', fontSize: '14px' }}>Kỳ nghỉ đẳng cấp đang chờ đón quý khách.</p>
+                            </div>
+
+                            <div style={{ background: '#f8fafc', borderRadius: '20px', padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: '13px' }}>Hạng phòng:</span>
+                                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{selectedType.typeName}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#64748b', fontSize: '13px' }}>Thời gian:</span>
+                                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{getNights()} đêm</span>
+                                </div>
+                                <div style={{ height: '1px', background: '#e2e8f0', margin: '4px 0' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: '#1e293b', fontWeight: '800' }}>Tổng cộng:</span>
+                                    <span style={{ textAlign: 'right' }}>
+                                        {(() => {
+                                            const level = profile?.membershipLevel || 'Bronze';
+                                            const rates = { 'Royal': 0.25, 'Diamond': 0.20, 'Platinum': 0.15, 'Gold': 0.10, 'Silver': 0.05, 'Bronze': 0 };
+                                            const discount = rates[level] || 0;
+                                            const originalPrice = getNights() * selectedType.basePrice;
+                                            const finalPrice = originalPrice * (1 - discount);
+                                            return (
+                                                <>
+                                                    {discount > 0 && <div style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>{new Intl.NumberFormat('vi-VN').format(originalPrice)}₫</div>}
+                                                    <div style={{ fontWeight: '900', fontSize: '20px', color: '#10b981' }}>{new Intl.NumberFormat('vi-VN').format(finalPrice)}₫</div>
+                                                </>
+                                            );
+                                        })()}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginBottom: '24px' }}>
+                                Thông tin người đặt: <b>{profile?.fullName}</b> ({profile?.phone}) <br/>
+                                <span style={{ color: '#10b981' }}>✨ Dữ liệu hội viên đã được tự động áp dụng.</span>
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button onClick={() => setSelectedType(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Quay lại</button>
+                                <button 
+                                    onClick={handleQuickBook} 
+                                    disabled={bookingLoading}
+                                    style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: '700', cursor: 'pointer', opacity: bookingLoading ? 0.5 : 1 }}
+                                >
+                                    {bookingLoading ? "Đang xử lý..." : "Xác nhận đặt"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Cancellation Modal */}
             <AnimatePresence>

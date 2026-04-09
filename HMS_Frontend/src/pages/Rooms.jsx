@@ -134,7 +134,17 @@ const Rooms = () => {
                                 </td>
                                 <td style={{ padding: '20px 24px', textAlign: 'right' }}>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                        <button onClick={() => { setModalData(room); setIsModalOpen(true); }} style={{ p: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Edit2 size={16} /></button>
+                                        <button onClick={() => { 
+                                            const normalizedRoom = {
+                                                ...room,
+                                                roomNumber: room.roomNumber || room.RoomNumber,
+                                                floor: room.floor || room.Floor,
+                                                roomTypeId: room.roomTypeId || room.RoomTypeId,
+                                                roomId: room.roomId || room.RoomId
+                                            };
+                                            setModalData(normalizedRoom); 
+                                            setIsModalOpen(true); 
+                                        }} style={{ p: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Edit2 size={16} /></button>
                                         <button onClick={() => handleDelete(room.roomId)} style={{ p: '8px', border: 'none', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Trash2 size={16} /></button>
                                     </div>
                                 </td>

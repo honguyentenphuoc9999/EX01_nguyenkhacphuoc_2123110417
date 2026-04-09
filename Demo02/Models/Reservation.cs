@@ -41,10 +41,16 @@ namespace Demo02.Models
         public string? CancellationReason { get; set; }
         public DateTime? NoShowDetectedAt { get; set; }
 
+        public int NumberOfGuests { get; set; }
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalPrice { get; set; }
+
         [Timestamp]
         public byte[]? RowVersion { get; set; }
 
         // Bảng trung gian ReservationRoom (Vì 1 booking có thể đặt nhiều phòng)
         public ICollection<ReservationRoom>? ReservationRooms { get; set; }
+        public virtual ICollection<Folio>? Folios { get; set; }
     }
 }

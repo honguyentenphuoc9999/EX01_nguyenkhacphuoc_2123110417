@@ -53,7 +53,16 @@ namespace Demo02.Models.DTOs
         public string RoomNumber { get; set; } = "N/A";
         public string? CancellationReason { get; set; }
         public bool IsDeleted { get; set; }
+        public List<InvoiceMinimalDto>? Invoices { get; set; }
         // We do NOT expose CreatedAt in final production response for clients
+    }
+
+    public class InvoiceMinimalDto
+    {
+        public Guid InvoiceId { get; set; }
+        public string InvoiceNumber { get; set; } = string.Empty;
+        public InvoiceStatus Status { get; set; }
+        public decimal TotalAmount { get; set; }
     }
 
     public class CheckInDto

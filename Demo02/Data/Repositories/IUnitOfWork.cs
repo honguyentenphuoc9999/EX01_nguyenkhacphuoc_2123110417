@@ -22,8 +22,7 @@ namespace Demo02.Data.Repositories
         IGenericRepository<MinibarLog> MinibarLogs { get; }
         IGenericRepository<Refund> Refunds { get; }
         IGenericRepository<ReservationRoom> ReservationRooms { get; }
-        // Add other repositories as needed
-        
+        IQueryable<T> Query<T>() where T : class;
         Task<int> CompleteAsync();
     }
 }

@@ -39,21 +39,43 @@ namespace Demo02.Controllers
             _signInManager = signInManager;
         }
 
-        // 1. Kiểm tra SĐT có tồn tại chưa để Frontend "biến hình"
+        // 1. Kiểm tra SĐT có tồn tại chưa để Frontend "biến hình" & Áp dụng Ưu đãi VIP
         [HttpGet("CheckAccount/{phone}")]
         public async Task<IActionResult> CheckAccount(string phone)
         {
-            // Tìm trong Identity: Thử theo Username HOẶC PhoneNumber (phòng trường hợp DB Seed dùng username khác)
             var identityUser = await _userManager.FindByNameAsync(phone) 
                              ?? await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
             
-            // Tìm trong Guests (Hồ sơ hành chính)
             var guestProfile = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == phone);
             
+            // --- 💎 HMS VIP LOGIC ---
+            var loyalty = guestProfile != null 
+                ? await _context.LoyaltyAccounts.FirstOrDefaultAsync(l => l.GuestId == guestProfile.GuestId)
+                : null;
+
+            double discountRate = 0;
+            string tierName = "None";
+
+            if (loyalty != null)
+            {
+                tierName = loyalty.Tier.ToString();
+                discountRate = loyalty.Tier switch
+                {
+                    LoyaltyTier.Royal => 0.25,
+                    LoyaltyTier.Diamond => 0.20,
+                    LoyaltyTier.Platinum => 0.15,
+                    LoyaltyTier.Gold => 0.10,
+                    LoyaltyTier.Silver => 0.05,
+                    _ => 0
+                };
+            }
+
             return Ok(new { 
-                exists = identityUser != null, // Đã có tài khoản mật khẩu
-                hasProfile = guestProfile != null, // Đã từng lưu hồ sơ (Nguyễn Thành Viên)
-                fullName = guestProfile?.FullName // Tên để chào khách
+                exists = identityUser != null,
+                hasProfile = guestProfile != null,
+                fullName = guestProfile?.FullName,
+                tier = tierName,
+                discountRate = discountRate
             });
         }
 
@@ -66,27 +88,46 @@ namespace Demo02.Controllers
             {
                 if (User.IsInRole("Admin") || User.IsInRole("Staff") || User.IsInRole("Receptionist") || User.IsInRole("Manager"))
                 {
-                    isStaffBooking = true; // Đánh dấu đây là Admin đang đặt hộ khách
+                    isStaffBooking = true;
                 }
             }
 
-            // --- 🛡️ VALIDATE NGHIỆP VỤ ---
             if (string.IsNullOrWhiteSpace(dto.Phone) || dto.Phone.Length < 10)
                 return BadRequest(new { message = "Số điện thoại không hợp lệ!" });
 
             var roomType = await _context.RoomTypes.FindAsync(dto.RoomTypeId);
             if (roomType == null) return NotFound(new { message = "Hạng phòng không tồn tại!" });
 
-            var availableRoom = await _context.Rooms
-                .FirstOrDefaultAsync(r => r.RoomTypeId == dto.RoomTypeId && r.Status == RoomStatus.VacantClean);
-            if (availableRoom == null) return BadRequest(new { message = "Hạng phòng này tạm hết phòng sạch. Vui lòng chọn hạng phòng khác!" });
+            // --- HMS SMART AVAILABILITY: Tìm phòng thực sự trống trong khoảng thời gian yêu cầu ---
+            var allRoomsOfType = await _context.Rooms
+                .Where(r => r.RoomTypeId == dto.RoomTypeId && !r.IsDeleted)
+                .ToListAsync();
+
+            Room? targetRoom = null;
+            foreach (var r in allRoomsOfType)
+            {
+                var isBusy = await _context.Reservations.AnyAsync(res => 
+                    res.RoomId == r.RoomId && 
+                    res.Status != ReservationStatus.Cancelled &&
+                    ((dto.CheckInDate >= res.CheckInDate && dto.CheckInDate < res.CheckOutDate) || 
+                     (dto.CheckOutDate > res.CheckInDate && dto.CheckOutDate <= res.CheckOutDate) ||
+                     (dto.CheckInDate <= res.CheckInDate && dto.CheckOutDate >= res.CheckOutDate)));
+                
+                if (!isBusy) {
+                    targetRoom = r;
+                    break;
+                }
+            }
+
+            if (targetRoom == null) 
+                return BadRequest(new { message = "Rất tiếc, hạng phòng này đã hết phòng trong khoảng thời gian bạn chọn!" });
 
             // --- ✍️ XỬ LÝ ĐĂNG KÝ / ĐĂNG NHẬP ---
             var user = await _userManager.FindByNameAsync(dto.Phone) 
                      ?? await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == dto.Phone);
+            
             if (user == null)
             {
-                // TRƯỜNG HỢP A: Người mới -> Bắt buộc nhập 2 mật khẩu
                 if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password != dto.ConfirmPassword)
                     return BadRequest(new { message = "Vui lòng nhập và xác nhận mật khẩu cho tài khoản mới của khách!" });
 
@@ -96,7 +137,6 @@ namespace Demo02.Controllers
                 
                 await _userManager.AddToRoleAsync(user, "Guest");
 
-                // Tạo hồ sơ khách hàng ngay lập tức (Dùng user.Email thật)
                 var guestProfile = new Guest {
                     FullName = dto.FullName, Phone = dto.Phone, Nationality = "Vietnam",
                     IdNumber = "PENDING-" + DateTime.Now.ToString("HHmmss"),
@@ -104,11 +144,10 @@ namespace Demo02.Controllers
                     CreatedAt = DateTime.Now
                 };
                 _context.Guests.Add(guestProfile);
-                await _context.SaveChangesAsync(); // 🛡️ Lưu ngay để tránh lỗi lặp ở bước sau
+                await _context.SaveChangesAsync();
             }
             else if (!isStaffBooking)
             {
-                // TRƯỜNG HỢP B: Người quen & KHÁCH tự đặt -> Xác thực mật khẩu
                 var signResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password ?? "", false);
                 if (!signResult.Succeeded) return BadRequest(new { message = "Mật khẩu không chính xác. Vui lòng thử lại!" });
             }
@@ -118,38 +157,64 @@ namespace Demo02.Controllers
             if (guest == null) {
                 guest = new Guest { FullName = dto.FullName, Phone = dto.Phone, CreatedAt = DateTime.Now };
                 _context.Guests.Add(guest);
+                await _context.SaveChangesAsync();
             }
+
+            // 💎 TÍNH TOÁN GIÁ DỰA TRÊN HẠNG THÀNH VIÊN
+            var loyalty = await _context.LoyaltyAccounts.FirstOrDefaultAsync(l => l.GuestId == guest.GuestId);
+            decimal discountMultiplier = 1;
+            if (loyalty != null)
+            {
+                decimal rate = loyalty.Tier switch {
+                    LoyaltyTier.Royal => 0.25m,
+                    LoyaltyTier.Diamond => 0.20m,
+                    LoyaltyTier.Platinum => 0.15m,
+                    LoyaltyTier.Gold => 0.10m,
+                    LoyaltyTier.Silver => 0.05m,
+                    _ => 0
+                };
+                discountMultiplier = 1 - rate;
+            }
+
+            int nights = (int)(dto.CheckOutDate - dto.CheckInDate).TotalDays;
+            if (nights <= 0) nights = 1;
 
             var reservation = new Reservation {
                 GuestId = guest.GuestId,
-                RoomId = availableRoom.RoomId,
+                RoomId = targetRoom.RoomId,
                 BookingCode = "HMS-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 CheckInDate = dto.CheckInDate,
                 CheckOutDate = dto.CheckOutDate,
                 Status = ReservationStatus.Pending,
+                TotalPrice = roomType.BasePrice * nights * discountMultiplier,
                 CreatedAt = DateTime.Now
             };
 
-            availableRoom.Status = RoomStatus.Reserved;
+            // 🛡️ CHỈ cập nhật Status nếu đây là đặt phòng cho HÔM NAY
+            if (dto.CheckInDate.Date == DateTime.Today)
+            {
+                targetRoom.Status = RoomStatus.Reserved;
+            }
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
 
-            // Nếu là KHÁCH tự đặt -> Tự động đăng nhập. Nếu Admin đặt hộ -> Giữ nguyên phiên Admin.
             if (!isStaffBooking)
             {
                 await _signInManager.SignInAsync(user, isPersistent: true);
                 return Ok(new { 
                     message = "Đặt phòng thành công!", 
                     bookingCode = reservation.BookingCode,
-                    redirect = "/guest-dashboard" 
+                    totalPrice = reservation.TotalPrice,
+                    redirect = "/guest-portal" 
                 });
             }
 
             return Ok(new { 
                 message = "Hỗ trợ đặt phòng cho khách thành công! (Quyền Quản trị)", 
                 bookingCode = reservation.BookingCode,
+                totalPrice = reservation.TotalPrice,
                 fullName = guest.FullName,
-                redirect = "/reservations" // Admin quay về trang quản lý đặt phòng
+                redirect = "/dashboard" 
             });
         }
     }

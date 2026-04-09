@@ -47,7 +47,7 @@ namespace Demo02.Data
                         Email = adminEmail,
                         Phone = "0901234567",
                         Role = StaffRole.Admin,
-                        Department = "Management",
+                        Department = Department.Management,
                         Position = "CEO",
                         HireDate = DateTime.Now,
                         BaseSalary = 5000,
@@ -58,13 +58,13 @@ namespace Demo02.Data
             }
 
             // 3. Seed Staff for All Departments
-            var staffList = new List<(string Name, string Email, string Code, StaffRole Role, string Dept, string Pos)>
+            var staffList = new List<(string Name, string Email, string Code, StaffRole Role, Department Dept, string Pos)>
             {
-                ("Trần Văn Quản", "manager@hms.com", "NV002", StaffRole.Manager, "Management", "Hotel Manager"),
-                ("Nguyễn Thị Lan", "lan@hms.com", "NV003", StaffRole.Receptionist, "FrontDesk", "Receptionist"),
-                ("Lê Văn Nam", "nam@hms.com", "NV004", StaffRole.Housekeeper, "Housekeeping", "Room Attendant")
+                ("Trần Văn Quản", "manager@hms.com", "NV002", StaffRole.Manager, Department.Management, "Quản lý khách sạn"),
+                ("Nguyễn Thị Lan", "lan@hms.com", "NV003", StaffRole.Receptionist, Department.FrontDesk, "Nhân viên lễ tân"),
+                ("Lê Văn Nam", "nam@hms.com", "NV004", StaffRole.RoomAttendant, Department.Housekeeping, "Nhân viên phục vụ phòng")
             };
-
+            
             foreach (var s in staffList)
             {
                 if (!context.Staffs.Any(staff => staff.EmployeeCode == s.Code))
@@ -180,7 +180,7 @@ namespace Demo02.Data
                         FullName = s.Name,
                         Email = s.Email,
                         Phone = s.Phone,
-                        Department = "Housekeeping",
+                        Department = Department.Housekeeping,
                         Position = s.Pos,
                         Role = StaffRole.Housekeeper,
                         HireDate = DateTime.Now.AddMonths(-new Random().Next(1, 12)),
@@ -196,9 +196,9 @@ namespace Demo02.Data
             {
                 context.InventoryItems.AddRange(new List<InventoryItem>
                 {
-                    new InventoryItem { ItemCode = "INV-001", ItemName = "Coca Cola", Category = "Minibar", Unit = "Lon", CurrentStock = 100, MinimumStock = 20, CreatedBy = "System" },
-                    new InventoryItem { ItemCode = "INV-002", ItemName = "Nước suối", Category = "Minibar", Unit = "Chai", CurrentStock = 200, MinimumStock = 50, CreatedBy = "System" },
-                    new InventoryItem { ItemCode = "INV-003", ItemName = "Khăn tắm", Category = "Linen", Unit = "Cái", CurrentStock = 50, MinimumStock = 10, CreatedBy = "System" }
+                    new InventoryItem { ItemCode = "INV-001", ItemName = "Coca Cola", Category = ItemCategory.Minibar, Unit = "Lon", CurrentStock = 100, MinimumStock = 20, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-002", ItemName = "Nước suối", Category = ItemCategory.Minibar, Unit = "Chai", CurrentStock = 200, MinimumStock = 50, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-003", ItemName = "Khăn tắm", Category = ItemCategory.Linen, Unit = "Cái", CurrentStock = 50, MinimumStock = 10, CreatedBy = "System" }
                 });
             }
 
@@ -255,6 +255,39 @@ namespace Demo02.Data
                     }
                 }
             }
+
+            // 8. Seed OTA Configs
+            if (!context.OtaConfigs.Any())
+            {
+                context.OtaConfigs.AddRange(new List<OtaConfig>
+                {
+                    new OtaConfig { Channel = BookingChannel.OTA, ApiKey = "AG-888-999", SecretKey = "XXX", IsActive = true, CreatedBy = "System" },
+                    new OtaConfig { Channel = BookingChannel.OTA, ApiKey = "BK-111-222", SecretKey = "YYY", IsActive = true, CreatedBy = "System" }
+                });
+            }
+
+            // 9. Seed Marketing Campaigns
+            if (!context.MarketingCampaigns.Any())
+            {
+                context.MarketingCampaigns.AddRange(new List<MarketingCampaign>
+                {
+                    new MarketingCampaign { CampaignName = "Summer Retreat 2024", Channel = MarketingChannel.Email, TargetSegment = "VIP Guests", Content = "Giảm giá 20% cho kỳ nghỉ hè", StartDate = DateTime.Now, Status = "Active", CreatedBy = "System" },
+                    new MarketingCampaign { CampaignName = "Loyalty Anniversary", Channel = MarketingChannel.SMS, TargetSegment = "Platinum Members", Content = "Tặng Voucher Spa cho thành viên Platinum", StartDate = DateTime.Now, Status = "Active", CreatedBy = "System" }
+                });
+            }
+
+            // 10. Seed Service Bookings (Restaurant/Spa)
+            if (!context.ServiceBookings.Any())
+            {
+                var guest = await context.Guests.FirstOrDefaultAsync();
+                context.ServiceBookings.AddRange(new List<ServiceBooking>
+                {
+                    new ServiceBooking { GuestId = guest?.GuestId, ServiceType = "Restaurant", ResourceName = "Bàn số 05 - View Biển", StartTime = DateTime.Now.AddHours(2), EndTime = DateTime.Now.AddHours(4), NumberOfPersons = 4, Status = "Reserved", CreatedBy = "System" },
+                    new ServiceBooking { GuestId = guest?.GuestId, ServiceType = "Spa", ResourceName = "Phòng Massage VIP 1", StartTime = DateTime.Now.AddHours(5), EndTime = DateTime.Now.AddHours(6), NumberOfPersons = 1, Status = "Reserved", CreatedBy = "System" }
+                });
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 }

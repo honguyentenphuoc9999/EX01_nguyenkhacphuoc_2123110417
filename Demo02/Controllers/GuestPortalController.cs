@@ -78,6 +78,7 @@ namespace Demo02.Controllers
                     r.BookingCode,
                     r.CheckInDate,
                     r.CheckOutDate,
+                    RoomId = r.RoomId,
                     RoomNumber = r.Room != null ? r.Room.RoomNumber : "N/A", // Xử lý nếu chưa gán phòng
                     r.Status,
                     r.CancellationReason,
@@ -174,5 +175,99 @@ namespace Demo02.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Đã cập nhật sở thích thành công." });
         }
+
+        // 6. Đặt phòng nhanh (Quick Booking)
+        [HttpPost("quick-book")]
+        public async Task<IActionResult> QuickBook([FromBody] QuickBookRequest request)
+        {
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(userEmail)) return Unauthorized();
+
+            var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Email != null && g.Email.ToLower() == userEmail.ToLower());
+            if (guest == null) return NotFound("Hồ sơ khách hàng không đầy đủ.");
+
+            var roomType = await _context.RoomTypes.FindAsync(request.RoomTypeId);
+            if (roomType == null) return NotFound("Loại phòng không hợp lệ.");
+
+            // --- HMS SMART AVAILABILITY: Tìm phòng thực sự rảnh trong khoảng thời gian này ---
+            var allRoomsOfType = await _context.Rooms
+                .Where(r => r.RoomTypeId == request.RoomTypeId && !r.IsDeleted)
+                .ToListAsync();
+
+            Room? availableRoom = null;
+            foreach (var r in allRoomsOfType)
+            {
+                var isBusy = await _context.Reservations.AnyAsync(res => 
+                    res.RoomId == r.RoomId && 
+                    res.Status != ReservationStatus.Cancelled &&
+                    ((request.CheckIn >= res.CheckInDate && request.CheckIn < res.CheckOutDate) || 
+                     (request.CheckOut > res.CheckInDate && request.CheckOut <= res.CheckOutDate) ||
+                     (request.CheckIn <= res.CheckInDate && request.CheckOut >= res.CheckOutDate)));
+                
+                if (!isBusy) {
+                    availableRoom = r;
+                    break;
+                }
+            }
+
+            if (availableRoom == null) 
+                return BadRequest("Rất tiếc, hiện tại hạng phòng này đã hết chỗ trong khoảng thời gian bạn chọn.");
+
+            // 💎 HMS VIP LOGIC: Áp dụng giảm giá thực tế khi lưu vào DB
+            var loyalty = await _context.LoyaltyAccounts.FirstOrDefaultAsync(l => l.GuestId == guest.GuestId && !l.IsDeleted);
+            decimal discountMultiplier = 1;
+            if (loyalty != null)
+            {
+                decimal rate = loyalty.Tier switch {
+                    LoyaltyTier.Royal => 0.25m,
+                    LoyaltyTier.Diamond => 0.20m,
+                    LoyaltyTier.Platinum => 0.15m,
+                    LoyaltyTier.Gold => 0.10m,
+                    LoyaltyTier.Silver => 0.05m,
+                    _ => 0
+                };
+                discountMultiplier = 1 - rate;
+            }
+            // 🛡️ CHỈ cập nhật Status nếu đây là đặt phòng cho HÔM NAY
+            if (request.CheckIn.Date == DateTime.Today)
+            {
+                availableRoom.Status = RoomStatus.Reserved;
+            }
+
+            // 3. Tính toán 
+            int nights = (int)(request.CheckOut - request.CheckIn).TotalDays;
+            if (nights <= 0) nights = 1;
+
+            decimal totalPrice = roomType.BasePrice * nights * discountMultiplier;
+
+            var reservation = new Reservation
+            {
+                GuestId = guest.GuestId,
+                RoomId = availableRoom.RoomId,
+                BookingCode = "QB" + DateTime.Now.Ticks.ToString().Substring(10),
+                CheckInDate = request.CheckIn,
+                CheckOutDate = request.CheckOut,
+                NumberOfGuests = request.NumberOfGuests,
+                Status = ReservationStatus.Pending,
+                TotalPrice = totalPrice, // 🛡️ Đã tính VIP discount ở trên
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Reservations.Add(reservation);
+            
+            // Tự động chuyển trạng thái phòng sang Reserved (Hoặc Occupied nếu cần)
+            availableRoom.Status = RoomStatus.VacantClean; // Giữ trạng thái bận
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đặt phòng nhanh thành công! Hãy chờ email xác nhận.", bookingCode = reservation.BookingCode });
+        }
+    }
+
+    public class QuickBookRequest
+    {
+        public Guid RoomTypeId { get; set; }
+        public DateTime CheckIn { get; set; }
+        public DateTime CheckOut { get; set; }
+        public int NumberOfGuests { get; set; }
     }
 }

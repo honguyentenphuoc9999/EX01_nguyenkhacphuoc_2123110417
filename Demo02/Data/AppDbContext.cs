@@ -28,6 +28,7 @@ public class AppDbContext : IdentityDbContext
     public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
     public DbSet<MinibarLog> MinibarLogs { get; set; }
     public DbSet<LostAndFound> LostAndFounds { get; set; }
+    public DbSet<RoomServiceOrder> RoomServiceOrders { get; set; }
 
     // --- Nhóm Tài chính: Thanh toán & Thu hút (UC-13 to UC-17, FIN-01 to FIN-03) ---
     public DbSet<Folio> Folios { get; set; }
@@ -43,9 +44,29 @@ public class AppDbContext : IdentityDbContext
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<SystemSettings> SystemSettings { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // --- Mở rộng: CRM, Marketing, Logistics, F&B, OTA (Nâng cấp) ---
+    public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
+    public DbSet<MarketingCampaign> MarketingCampaigns { get; set; }
+    public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+    public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<ServiceBooking> ServiceBookings { get; set; }
+    public DbSet<OtaConfig> OtaConfigs { get; set; }
+    public DbSet<OtaSyncLog> OtaSyncLogs { get; set; }
+    public DbSet<SeasonalPrice> SeasonalPrices { get; set; }
+    public DbSet<ShiftAssignment> ShiftAssignments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // --- HMS Standard: Cấu hình độ chính xác mặc định cho TOÀN BỘ cột Decimal (18, 2) ---
+        foreach (var property in modelBuilder.Model.GetEntityTypes()
+            .SelectMany(t => t.GetProperties())
+            .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+        {
+            property.SetPrecision(18);
+            property.SetScale(2);
+        }
 
         // HMS Rule: Tư động lọc bỏ dữ liệu đã xóa (Soft Delete) toàn hệ thống
         modelBuilder.Entity<Room>().HasQueryFilter(r => !r.IsDeleted);
@@ -83,12 +104,35 @@ public class AppDbContext : IdentityDbContext
         modelBuilder.Entity<LostAndFound>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<InventoryItem>().HasQueryFilter(x => !x.IsDeleted);
 
+        // Filters cho các thực thể mới
+        modelBuilder.Entity<LoyaltyTransaction>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<MarketingCampaign>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<ServiceBooking>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<SeasonalPrice>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<OtaConfig>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<OtaSyncLog>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<RoomServiceOrder>().HasQueryFilter(x => !x.IsDeleted);
+
         // --- Cài đặt khóa duy nhất (Unique Constraints) ---
         modelBuilder.Entity<Room>().HasIndex(r => r.RoomNumber).IsUnique();
         modelBuilder.Entity<Reservation>().HasIndex(r => r.BookingCode).IsUnique();
         modelBuilder.Entity<Staff>().HasIndex(s => s.EmployeeCode).IsUnique();
         modelBuilder.Entity<InventoryItem>().HasIndex(i => i.ItemCode).IsUnique();
         modelBuilder.Entity<Invoice>().HasIndex(inv => inv.InvoiceNumber).IsUnique();
+        modelBuilder.Entity<PurchaseOrder>().HasIndex(p => p.PoNumber).IsUnique();
+        modelBuilder.Entity<LoyaltyAccount>().HasIndex(l => l.MemberNumber).IsUnique();
+        
+        // --- Cấu hình Tự động tính toán (Computed Columns - BR-16) ---
+        modelBuilder.Entity<Invoice>()
+            .Property(i => i.VatAmount)
+            .HasComputedColumnSql("[SubTotal] * [VatRate]");
+
+        modelBuilder.Entity<Invoice>()
+            .Property(i => i.TotalAmount)
+            .HasComputedColumnSql("[SubTotal] + ([SubTotal] * [VatRate])");
 
         // --- NFR-10: Tránh lặp xóa dây chuyền (Fix Multiple Cascade Paths for SQL Server) ---
         modelBuilder.Entity<MinibarLog>()
@@ -117,7 +161,7 @@ public class AppDbContext : IdentityDbContext
 
         modelBuilder.Entity<Folio>()
             .HasOne(f => f.Reservation)
-            .WithMany()
+            .WithMany(r => r.Folios)
             .HasForeignKey(f => f.ReservationId)
             .OnDelete(DeleteBehavior.NoAction);
 
@@ -137,6 +181,13 @@ public class AppDbContext : IdentityDbContext
             .HasOne(fc => fc.Folio)
             .WithMany(f => f.Charges)
             .HasForeignKey(fc => fc.FolioId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // --- Hỗ trợ HRM: Tránh lặp xóa ca làm việc ---
+        modelBuilder.Entity<ShiftAssignment>()
+            .HasOne(s => s.Staff)
+            .WithMany(st => st.ShiftAssignments)
+            .HasForeignKey(s => s.StaffId)
             .OnDelete(DeleteBehavior.NoAction);
     }
 

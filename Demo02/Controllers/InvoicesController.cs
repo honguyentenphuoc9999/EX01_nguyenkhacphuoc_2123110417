@@ -25,14 +25,28 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Invoice>>> GetInvoices()
         {
-            return await _context.Invoices.ToListAsync();
+            return await _context.Invoices
+                .Include(i => i.Folio!)
+                    .ThenInclude(f => f.Reservation!)
+                        .ThenInclude(r => r.Guest!)
+                .Include(i => i.Folio!)
+                    .ThenInclude(f => f.Reservation!)
+                        .ThenInclude(r => r.Room!)
+                .Include(i => i.Folio!)
+                    .ThenInclude(f => f.Charges)
+                .OrderByDescending(i => i.IssuedAt)
+                .ToListAsync();
         }
 
         // GET: api/Invoices/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Invoice>> GetInvoice(Guid id)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
+            var invoice = await _context.Invoices
+                .Include(i => i.Folio!).ThenInclude(f => f.Reservation!).ThenInclude(r => r.Guest!)
+                .Include(i => i.Folio!).ThenInclude(f => f.Reservation!).ThenInclude(r => r.Room!)
+                .Include(i => i.Folio!).ThenInclude(f => f.Charges)
+                .FirstOrDefaultAsync(i => i.InvoiceId == id);
 
             if (invoice == null)
             {
@@ -155,20 +169,118 @@ namespace Demo02.Controllers
             if (invoice == null) return NotFound();
 
             invoice.Status = InvoiceStatus.Paid; 
+            
+            // --- TỰ ĐỘNG ĐỒNG BỘ: Chuyển Reservation sang Checked-Out khi đã thanh toán ---
+            var detailedInvoice = await _context.Invoices
+                .Include(i => i.Folio!)
+                    .ThenInclude(f => f.Reservation!)
+                        .ThenInclude(r => r.Guest)
+                .FirstOrDefaultAsync(i => i.InvoiceId == id);
+
+            if (detailedInvoice?.Folio?.Reservation != null)
+            {
+                var res = detailedInvoice.Folio.Reservation;
+                
+                // 1. Đồng bộ trạng thái đặt phòng
+                if (res.Status == ReservationStatus.CheckedIn || res.Status == ReservationStatus.Confirmed)
+                {
+                    res.Status = ReservationStatus.CheckedOut;
+                    res.ActualCheckOut = DateTime.Now;
+                }
+
+                // 2. GIẢI PHÓNG PHÒNG & TẠO VIỆC DỌN DẸP (Luôn thực hiện nếu thanh toán xong mà chưa dọn)
+                if (res.RoomId.HasValue)
+                {
+                    var room = await _context.Rooms.FindAsync(res.RoomId.Value);
+                    if (room != null && room.Status != RoomStatus.VacantDirty && room.Status != RoomStatus.VacantClean)
+                    {
+                        room.Status = RoomStatus.VacantDirty;
+                        
+                        // Kiểm tra xem đã có task dọn dẹp chưa (tránh tạo trùng)
+                        bool hasTask = await _context.HousekeepingTasks.AnyAsync(t => t.RoomId == room.RoomId && t.Status != HmsTaskStatus.Completed);
+                        if (!hasTask)
+                        {
+                            var cleaningTask = new HousekeepingTask {
+                                RoomId = res.RoomId.Value,
+                                TaskType = HmsTaskType.Cleaning,
+                                Status = HmsTaskStatus.Pending,
+                                Priority = Priority.Normal,
+                                ScheduledDate = DateTime.Now,
+                                Notes = $"Dọn phòng tự động sau khi hóa đơn {invoice.InvoiceNumber} thanh toán."
+                            };
+                            _context.HousekeepingTasks.Add(cleaningTask);
+                        }
+                    }
+                }
+                
+                // 3. Đóng hồ sơ Folio
+                detailedInvoice.Folio.Status = FolioStatus.Closed;
+            }
+
             await _context.SaveChangesAsync();
+
+            // --- TỰ ĐỘNG CỘNG ĐIỂM LOYALTY (CRM) ---
+            if (detailedInvoice?.Folio?.Reservation?.Guest != null)
+            {
+                var guest = detailedInvoice.Folio.Reservation.Guest;
+                // Tìm tài khoản thành viên của khách
+                var loyaltyAccount = await _context.LoyaltyAccounts.FirstOrDefaultAsync(a => a.GuestId == guest.GuestId);
+                
+                // --- TỰ ĐỘNG TẠO TÀI KHOẢN LOYALTY NẾU CHƯA CÓ ---
+                if (loyaltyAccount == null)
+                {
+                    loyaltyAccount = new LoyaltyAccount
+                    {
+                        GuestId = guest.GuestId,
+                        MemberNumber = "M-" + DateTime.Now.Ticks.ToString().Substring(10), // Sinh mã hội viên tạm thời
+                        Tier = LoyaltyTier.Silver,
+                        CurrentPoints = 0,
+                        LifetimePoints = 0,
+                        EnrolledAt = DateTime.Now,
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = "System_Auto"
+                    };
+                    _context.LoyaltyAccounts.Add(loyaltyAccount);
+                    await _context.SaveChangesAsync();
+                }
+
+                if (loyaltyAccount != null)
+                {
+                    // Tỷ lệ: 10,000 VNĐ = 1 điểm
+                    int pointsToAdd = (int)(detailedInvoice.TotalAmount / 10000);
+                    
+                    if (pointsToAdd > 0)
+                    {
+                        loyaltyAccount.CurrentPoints += pointsToAdd;
+                        loyaltyAccount.LifetimePoints += pointsToAdd;
+                        
+                        // Ghi lại lịch sử giao dịch điểm 
+                        _context.LoyaltyTransactions.Add(new LoyaltyTransaction
+                        {
+                            LoyaltyAccountId = loyaltyAccount.AccountId,
+                            Points = pointsToAdd,
+                            Type = LoyaltyTxType.Earn,
+                            Description = $"Tích điểm từ hóa đơn {detailedInvoice.InvoiceNumber}",
+                            TransactionDate = DateTime.Now,
+                            CreatedAt = DateTime.Now,
+                            CreatedBy = "System"
+                        });
+                    }
+                }
+            }
 
             // Create Audit Log
             _context.AuditLogs.Add(new AuditLog {
-                Action = "PaymentConfirmed",
+                Action = "PaymentConfirmed_WithLoyalty",
                 EntityName = "Invoice",
                 EntityId = invoice.InvoiceId.ToString(),
                 Timestamp = DateTime.UtcNow,
                 UserId = "System", 
-                Changes = $"Invoice {invoice.InvoiceNumber} marked as Paid."
+                Changes = $"Invoice {invoice.InvoiceNumber} marked as Paid. Points added to guest."
             });
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Thanh toán đã được xác nhận thành công!" });
+            return Ok(new { message = "Thanh toán thành công và đã tích điểm cho khách hàng!" });
         }
 
         // DELETE: api/Invoices/5/safety-delete

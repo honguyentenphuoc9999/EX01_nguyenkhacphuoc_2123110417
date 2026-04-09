@@ -31,6 +31,7 @@ namespace Demo02.Models.DTOs
         public string? Description { get; set; }
         public int MaxOccupancy { get; set; }
         public int RoomCount { get; set; }
+        public int AvailableRooms { get; set; }
     }
 
     // --- Guest DTOs (BRD Rule PI) ---

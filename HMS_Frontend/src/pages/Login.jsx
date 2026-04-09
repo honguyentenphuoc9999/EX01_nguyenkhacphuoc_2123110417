@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, Hotel, AlertCircle } from 'lucide-react';
+import { LogIn, Hotel, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -22,7 +23,12 @@ const Login = () => {
         setLoading(false);
         
         if (result.success) {
-            navigate('/');
+            // Lấy role từ localStorage sau khi AuthContext đã lưu
+            const storedUser = JSON.parse(localStorage.getItem('hms_user'));
+            const role = storedUser?.role;
+
+            // Chuyển hướng về cổng điều phối trung tâm dựa theo vai trò
+            navigate('/dashboard');
         } else {
             setError(result.message);
         }
@@ -69,13 +75,23 @@ const Login = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>Mật khẩu</label>
-                        <input 
-                            type="password" 
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required 
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                style={{ width: '100%', padding: '12px', paddingRight: '45px', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                                required 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', display: 'flex', zIndex: 10, padding: '4px' }}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
 
                     <motion.button

@@ -28,6 +28,7 @@ namespace Demo02.Controllers
         public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetRooms()
         {
             return await _context.Rooms
+                .AsNoTracking()
                 .Include(r => r.RoomType)
                 .Select(r => new RoomResponseDto {
                     RoomId = r.RoomId,
