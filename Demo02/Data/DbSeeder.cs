@@ -62,9 +62,7 @@ namespace Demo02.Data
             {
                 ("Trần Văn Quản", "manager@hms.com", "NV002", StaffRole.Manager, "Management", "Hotel Manager"),
                 ("Nguyễn Thị Lan", "lan@hms.com", "NV003", StaffRole.Receptionist, "FrontDesk", "Receptionist"),
-                ("Lê Văn Nam", "nam@hms.com", "NV004", StaffRole.Housekeeper, "Housekeeping", "Room Attendant"),
-                ("Phạm Minh Kế", "ke@hms.com", "NV005", StaffRole.Accountant, "Finance", "Accountant"),
-                ("Võ Văn Kỹ", "ky@hms.com", "NV006", StaffRole.Technician, "Maintenance", "Technician")
+                ("Lê Văn Nam", "nam@hms.com", "NV004", StaffRole.Housekeeper, "Housekeeping", "Room Attendant")
             };
 
             foreach (var s in staffList)
@@ -159,9 +157,7 @@ namespace Demo02.Data
             var hkData = new List<(string Code, string Name, string Email, string Phone, string Pos)>
             {
                 ("HK-001", "Nguyễn Thị Mai", "mai.nt@hms.com", "0901234567", "Nhân viên dọn phòng"),
-                ("HK-002", "Trần Văn Nam", "nam.tv@hms.com", "0901234568", "Nhân viên dọn phòng"),
-                ("HK-003", "Lê Thu Hà", "ha.lt@hms.com", "0901234569", "Nhân viên dọn phòng"),
-                ("HK-004", "Phạm Hồng Phúc", "phuc.ph@hms.com", "0901234570", "Trưởng ca dọn phòng")
+                ("HK-002", "Trần Văn Nam", "nam.tv@hms.com", "0901234568", "Nhân viên dọn phòng")
             };
 
             foreach (var s in hkData)
