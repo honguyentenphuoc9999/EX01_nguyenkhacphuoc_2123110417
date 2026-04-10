@@ -126,6 +126,5 @@ namespace Demo02.Controllers
                 _ => entity
             };
         }
-        }
     }
 }
