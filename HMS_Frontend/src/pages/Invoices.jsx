@@ -95,6 +95,7 @@ const PrintInvoiceModal = ({ invoice, onClose }) => {
                         <div style={{ textAlign: 'right' }}>
                             <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
                             <p style={{ color: '#64748b', fontSize: '13px' }}>Số: {invoice.invoiceNumber}</p>
+                            <p style={{ color: '#10b981', fontWeight: '900', fontSize: '14px' }}>TRẠNG THÁI: ĐÃ THANH TOÁN</p>
                             <p style={{ color: '#64748b', fontSize: '12px' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
                         </div>
                     </div>
@@ -163,6 +164,7 @@ const PrintInvoiceModal = ({ invoice, onClose }) => {
                         <div style={{ textAlign: 'right' }}>
                             <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
                             <p style={{ color: '#64748b', fontSize: '13px' }}>Số: {invoice.invoiceNumber}</p>
+                            <p style={{ color: '#10b981', fontWeight: '900', fontSize: '14px' }}>TRẠNG THÁI: ĐÃ THANH TOÁN</p>
                             <p style={{ color: '#64748b', fontSize: '12px' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
                         </div>
                     </div>
