@@ -69,76 +69,145 @@ const PaymentModal = ({ invoice, onClose, onConfirm }) => {
 };
 
 // --- MODAL IN HÓA ĐƠN ---
-const PrintInvoiceModal = ({ invoice, onClose }) => {
-    return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.98)', zIndex: 3000, overflowY: 'auto' }}>
-                <div className="print-invoice-area" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px', background: 'white' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '50px' }}>
+            {/* Vùng chứa hóa đơn (Có class để in) */}
+            <div className="print-invoice-area">
+                
+                {/* LIÊN 1: CHO KHÁCH HÀNG */}
+                <div className="invoice-copy">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
                         <div>
-                            <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0f172a' }}>HMS PHUOC PREMIER</h1>
-                            <p style={{ color: '#64748b' }}>Hệ thống quản lý khách sạn chuyên nghiệp</p>
+                            <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a' }}>HMS PHUOC PREMIER</h1>
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>Hệ thống quản lý khách sạn chuyên nghiệp</p>
+                            <p style={{ color: '#0f172a', fontWeight: '700', fontSize: '12px' }}>LIÊN 1: DÀNH CHO KHÁCH HÀNG</p>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
-                            <p style={{ color: '#64748b' }}>Số: {invoice.invoiceNumber}</p>
-                            <p style={{ color: '#64748b' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
+                            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>Số: {invoice.invoiceNumber}</p>
+                            <p style={{ color: '#64748b', fontSize: '12px' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '40px' }}>
-                        <div style={{ fontWeight: '800', color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px' }}>KHÁCH HÀNG & PHÒNG</div>
-                        <p style={{ fontWeight: '700', fontSize: '18px' }}>Khách hàng: {invoice.folio?.reservation?.guest?.fullName || "Khách vãng lai"}</p>
-                        <p style={{ fontWeight: '700', color: '#3b82f6' }}>Phòng lưu trú: {invoice.folio?.reservation?.room?.roomNumber || "N/A"}</p>
+                    <div style={{ marginBottom: '25px', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                        <div>
+                            <div style={{ fontWeight: '800', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>KHÁCH HÀNG</div>
+                            <p style={{ fontWeight: '700' }}>{invoice.folio?.reservation?.guest?.fullName || "Khách vãng lai"}</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: '800', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>PHÒNG</div>
+                            <p style={{ fontWeight: '700', color: '#3b82f6' }}>P.{invoice.folio?.reservation?.room?.roomNumber || "N/A"}</p>
+                        </div>
                     </div>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
                         <thead>
-                            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                                <th style={{ padding: '12px', textAlign: 'left' }}>NỘI DUNG</th>
-                                <th style={{ padding: '12px', textAlign: 'right' }}>THÀNH TIỀN</th>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #0f172a' }}>
+                                <th style={{ padding: '8px', textAlign: 'left' }}>DỊCH VỤ / NỘI DUNG</th>
+                                <th style={{ padding: '8px', textAlign: 'right' }}>THÀNH TIỀN</th>
                             </tr>
                         </thead>
                         <tbody>
                             {invoice.folio?.charges?.map((charge, idx) => (
                                 <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <td style={{ padding: '16px 12px' }}>{charge.description}</td>
-                                    <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(charge.totalAmount)} đ</td>
+                                    <td style={{ padding: '8px' }}>{charge.description}</td>
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(charge.totalAmount)} đ</td>
                                 </tr>
                             ))}
-                            <tr style={{ borderTop: '1px solid #e2e8f0' }}>
-                                <td style={{ padding: '16px 12px', textAlign: 'right', fontWeight: '700' }}>VAT (10%)</td>
-                                <td style={{ padding: '16px 12px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(invoice.vatAmount)} đ</td>
-                            </tr>
-                            <tr style={{ background: '#f8fafc', borderTop: '2px solid #0f172a' }}>
-                                <td style={{ padding: '16px 12px', fontWeight: '900', fontSize: '20px' }}>TỔNG CỘNG</td>
-                                <td style={{ padding: '16px 12px', textAlign: 'right', fontWeight: '900', fontSize: '20px' }}>
+                            <tr style={{ borderTop: '2px solid #0f172a', background: '#f8fafc' }}>
+                                <td style={{ padding: '8px', fontWeight: '900' }}>TỔNG THANH TOÁN (ĐÃ BAO GỒM VAT)</td>
+                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: '900', fontSize: '16px' }}>
                                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(invoice.totalAmount)}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', textAlign: 'center', marginTop: '40px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>
                         <div>
                             <p style={{ fontWeight: '800' }}>Người lập phiếu</p>
-                            <p style={{ fontStyle: 'italic', fontSize: '12px', marginBottom: '40px' }}>(Ký và ghi rõ họ tên)</p>
-                            <p style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
-                                {invoice.createdBy || "PHÒNG KẾ TOÁN"}
-                            </p>
+                            <p style={{ fontStyle: 'italic', fontSize: '11px', marginBottom: '30px' }}>(Ký và ghi rõ họ tên)</p>
+                            <p style={{ fontWeight: '900' }}>{invoice.createdBy || "PHÒNG KẾ TOÁN"}</p>
                         </div>
                         <div>
                             <p style={{ fontWeight: '800' }}>Khách hàng</p>
-                            <p style={{ fontStyle: 'italic', fontSize: '12px', marginBottom: '40px' }}>(Ký và ghi rõ họ tên)</p>
-                            <p style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
-                                {invoice.folio?.reservation?.guest?.fullName || "KÝ TÊN"}
-                            </p>
+                            <p style={{ fontStyle: 'italic', fontSize: '11px', marginBottom: '30px' }}>(Ký và ghi rõ họ tên)</p>
+                            <p style={{ fontWeight: '900' }}>{invoice.folio?.reservation?.guest?.fullName || "KÝ TÊN"}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ĐƯỜNG CẮT HÓA ĐƠN (Chỉ hiện khi in) */}
+                <div className="print-divider" style={{ margin: '30px 0', borderTop: '1px dashed #cbd5e1', position: 'relative' }}>
+                    <span style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'white', padding: '0 10px', fontSize: '10px', color: '#94a3b8' }}>KÉO CẮT TẠI ĐÂY</span>
+                </div>
+
+                {/* LIÊN 2: CHO KHÁCH SẠN */}
+                <div className="invoice-copy">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
+                        <div>
+                            <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a' }}>HMS PHUOC PREMIER</h1>
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>Hệ thống quản lý khách sạn chuyên nghiệp</p>
+                            <p style={{ color: '#ef4444', fontWeight: '700', fontSize: '12px' }}>LIÊN 2: DÀNH CHO KHÁCH SẠN (LƯU NỘI BỘ)</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>HÓA ĐƠN GTGT</h2>
+                            <p style={{ color: '#64748b', fontSize: '13px' }}>Số: {invoice.invoiceNumber}</p>
+                            <p style={{ color: '#64748b', fontSize: '12px' }}>Ngày: {new Date(invoice.issuedAt).toLocaleString('vi-VN', { hour12: false })}</p>
                         </div>
                     </div>
 
-                <div className="no-print" style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '16px' }}>
-                    <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '700', cursor: 'pointer' }}>Quay lại</button>
-                    <button onClick={() => window.print()} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Printer size={18}/> In Hóa đơn ngay
+                    <div style={{ marginBottom: '25px', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                        <div>
+                            <div style={{ fontWeight: '800', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>KHÁCH HÀNG</div>
+                            <p style={{ fontWeight: '700' }}>{invoice.folio?.reservation?.guest?.fullName || "Khách vãng lai"}</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: '800', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>PHÒNG</div>
+                            <p style={{ fontWeight: '700', color: '#3b82f6' }}>P.{invoice.folio?.reservation?.room?.roomNumber || "N/A"}</p>
+                        </div>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
+                        <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #0f172a' }}>
+                                <th style={{ padding: '8px', textAlign: 'left' }}>DỊCH VỤ / NỘI DUNG</th>
+                                <th style={{ padding: '8px', textAlign: 'right' }}>THÀNH TIỀN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {invoice.folio?.charges?.map((charge, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '8px' }}>{charge.description}</td>
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{new Intl.NumberFormat('vi-VN').format(charge.totalAmount)} đ</td>
+                                </tr>
+                            ))}
+                            <tr style={{ borderTop: '2px solid #0f172a', background: '#f8fafc' }}>
+                                <td style={{ padding: '8px', fontWeight: '900' }}>TỔNG THANH TOÁN (ĐÃ BAO GỒM VAT)</td>
+                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: '900', fontSize: '16px' }}>
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(invoice.totalAmount)}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>
+                        <div>
+                            <p style={{ fontWeight: '800' }}>Người lập phiếu</p>
+                            <p style={{ fontStyle: 'italic', fontSize: '11px', marginBottom: '30px' }}>(Ký và ghi rõ họ tên)</p>
+                            <p style={{ fontWeight: '900' }}>{invoice.createdBy || "PHÒNG KẾ TOÁN"}</p>
+                        </div>
+                        <div>
+                            <p style={{ fontWeight: '800' }}>Khách hàng</p>
+                            <p style={{ fontStyle: 'italic', fontSize: '11px', marginBottom: '30px' }}>(Ký và ghi rõ họ tên)</p>
+                            <p style={{ fontWeight: '900' }}>{invoice.folio?.reservation?.guest?.fullName || "KÝ TÊN"}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="no-print" style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '16px', zIndex: 100 }}>
+                    <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '700', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>Quay lại</button>
+                    <button onClick={() => window.print()} style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', background: '#0f172a', color: 'white', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                        <Printer size={18}/> In 2 Liên (A4)
                     </button>
                 </div>
             </div>
@@ -312,21 +381,45 @@ const Invoices = () => {
 
             <style>{`
                 @media print {
-                    @page { size: portrait; margin: 0; }
-                    body * { visibility: hidden !important; }
-                    .print-invoice-area, .print-invoice-area * { visibility: visible !important; }
-                    .print-invoice-area { 
-                        position: absolute !important; 
-                        left: 0 !important; 
-                        top: 0 !important; 
-                        width: 100% !important; 
-                        max-width: 100% !important; 
-                        margin: 0 !important; 
-                        padding: 15mm !important;
-                        border: none !important;
+                    @page { 
+                        size: A4 portrait; 
+                        margin: 0; 
+                    }
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: auto;
                         background: white !important;
                     }
-                    .no-print { display: none !important; }
+                    /* Ẩn tất cả mọi thứ trên web */
+                    body * { 
+                        visibility: hidden !important; 
+                    }
+                    /* Chỉ hiện vùng hóa đơn */
+                    .print-invoice-area, .print-invoice-area * { 
+                        visibility: visible !important; 
+                    }
+                    .print-invoice-area { 
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 210mm !important;
+                        min-height: 297mm !important;
+                        margin: 0 !important;
+                        padding: 10mm !important;
+                        background: white !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        display: block !important;
+                    }
+                    .invoice-copy {
+                        padding: 5mm;
+                        page-break-inside: avoid;
+                    }
+                    /* Ẩn nút quay lại và nút in */
+                    .no-print { 
+                        display: none !important; 
+                    }
                 }
             `}</style>
         </div>
