@@ -1,98 +1,69 @@
-# 🏨 Hotel Management System (HMS) - Backend v3.0
+# 🏨 Hotel Management System (HMS) - Backend v3.0 (Production Ready)
 
-Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp từ đồ án thực hành lên tiêu chuẩn **BRD v3.0** (và cập nhật bổ sung). Dự án tập trung vào bảo mật dữ liệu, tự động hóa quy trình vận hành và tuân thủ các quy tắc tài chính.
+Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp toàn diện lên tiêu chuẩn **BRD v3.0**. Dự án tập trung vào tính thực tế trong vận hành: Tự động hóa dọn dẹp, Phục vụ phòng thông minh, và Hệ thống Hội viên (CRM) chuẩn Quốc tế.
 
 ---
 
-## 🚀 1. HƯỚNG DẪN TRIỂN KHAI NHANH (QUICK START GUIDE)
+## 🚀 1. HƯỚNG DẪN KHỞI TẠO DỮ LIỆU
+Hệ thống sử dụng **Entity Framework Core**. Để tạo lại toàn bộ dữ liệu mẫu (Seeding) mới nhất:
 
-### A. Khởi tạo Cơ sở dữ liệu (EF Core Migrations)
-Nếu bạn triển khai trên máy mới hoặc thư mục `Migrations` bị xóa, hãy mở **Package Manager Console** trong Visual Studio và chạy các lệnh sau:
-
-**1. Cho Hệ thống vận hành (AppDbContext):**
-```powershell
-# Tạo bản thiết kế (Migration)
-Add-Migration InitialFinalUpgrade -Context AppDbContext
-
-# Cập nhật vào SQL Server
-Update-Database -Context AppDbContext
+1. Chạy mã SQL sau trong Query Analyzer (để làm sạch DB cũ):
+```sql
+DELETE FROM Invoices; DELETE FROM FolioCharges; DELETE FROM Folios; 
+DELETE FROM Reservations; DELETE FROM HousekeepingTasks; 
+DELETE FROM Rooms; DELETE FROM RoomTypes; DELETE FROM InventoryItems;
 ```
-
-**2. Cho Kho dữ liệu phân tích (WarehouseDbContext):**
-```powershell
-# Tạo bản thiết kế phân tích
-Add-Migration WarehouseInit -Context WarehouseDbContext
-
-# Cập nhật vào SQL Server
-Update-Database -Context WarehouseDbContext
-```
-
-### B. Khởi động Giao diện (Frontend - React)
-Dự án sử dụng React + Vite. Cấu hình sẵn kết nối API tại `src/api/api.js`.
-```bash
-cd HMS_Frontend
-npm install
-npm run dev
-```
+2. **Restart/Recycle App Pool** trên SmarterASP để kích hoạt `DbSeeder.cs` nạp lại dữ liệu mới nhất.
 
 ---
 
-## 🔐 2. DANH SÁCH TÀI KHOẢN TEST (AUTO-SEEDED)
+## 🔐 2. DANH SÁCH TÀI KHOẢN THỬ NGHIỆM
 
-Hệ thống đã được nạp sẵn dữ liệu mẫu. Bạn có thể dùng các tài khoản sau để đăng nhập ngay lập tức tại API `/api/Account/login`:
+Hệ thống đã nạp sẵn các tài khoản phân quyền để test kịch bản vận hành:
 
-| Nhân viên / Khách | Username | Password | Email | Mã NV | Chức vụ |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Nguyễn Khắc Phước** | `admin_phuoc` | `Admin@123` | `admin@hms.com` | `NV001` | **CEO (Admin)** |
-| **Trần Văn Quản** | `manager` | `Staff@123` | `manager@hms.com` | `NV002` | **Hotel Manager** |
-| **Nguyễn Thị Lan** | `lan` | `Staff@123` | `lan@hms.com` | `NV003` | **Receptionist** |
-| **Lê Văn Nam** | `nam` | `Staff@123` | `nam@hms.com` | `NV004` | **Room Attendant (Phục vụ phòng)** |
-| **Nguyễn Thị Mai** | `mai.nt` | `Hms@123` | `mai.nt@hms.com` | `HK-001` | **Housekeeper (Dọn phòng)** |
-| **Trần Văn Nam** | `nam.tv` | `Hms@123` | `nam.tv@hms.com` | `HK-002` | **Housekeeper (Dọn phòng)** |
-| **Nguyễn Thành Viên** | `0909000123` | `Guest@123` | `member@gmail.com` | `Guest` | **VIP Member** |
-
-*Lưu ý:* Sau khi Login thành công, copy chuỗi `token`, nhấn nút **Authorize** trên cùng của trang Swagger và điền cú pháp: `Bearer <token của bạn>`.
-
-> [!TIP]
-> **Cơ chế Đồng bộ Nhân viên (Staff-Identity Sync):**
-> Hệ thống sử dụng kiến trúc kép: `IdentityUser` quản lý việc Đăng nhập/Mật khẩu/Quyền, trong khi bảng `Staff` quản lý hồ sơ nhân sự (Lương, Phòng ban, Mã NV). Hai bảng này được đồng bộ thông qua trường **Email**. Nếu bạn tạo tài khoản nhân viên mới, hãy đảm bảo Email trùng khớp để hệ thống tự động ánh xạ hồ sơ.
-
-Bạn cũng có thể tự đăng ký tài khoản mới qua API `POST /api/Account/register`.
+| Đối tượng | Username | Password | Chức vụ | Quyền hạn |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin** | `admin_phuoc` | `Admin@123` | **CEO** | Toàn quyền hệ thống |
+| **Manager** | `manager` | `Staff@123` | **Quản lý** | Điều phối nhân sự, duyệt phòng |
+| **Receptionist** | `lan` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Hóa đơn |
+| **Attendant** | `nam` | `Staff@123` | **Phục vụ** | Nhận đơn gọi món, giao đồ |
+| **Housekeeper** | `mai.nt` | `Hms@123` | **Dọn phòng** | Làm vệ sinh, chụp ảnh bằng chứng |
+| **Member** | `member@gmail.com` | `Guest@123` | **Khách VIP** | Đặt phòng công cộng |
 
 ---
 
-## 💼 3. Các nghiệp vụ
+## 💼 3. CÁC TÍNH NĂNG NỔI BẬT ĐÃ CẬP NHẬT
 
-### 🏨 3.1. Đặt phòng & Phụ thu trễ/sớm (Surcharges)
-*   **API:** `POST /api/Reservations`
-*   **Tính năng:** Khi dùng API Check-in/out, hệ thống tự động đối soát giờ thực tế.
-    *   **Test:** Thử tạo một đặt phòng nhận hôm nay. Nếu Check-in lúc **7h sáng**, hệ thống tự tính thêm **50% tiền phòng** (BR-02).
+### 🏨 3.1. Hệ thống Phòng & Booking mới
+*   **Hạng phòng mới:** Bổ sung hạng **Single Room (Phòng Đơn)** dành cho 1 người với giá ưu đãi (400,000 VNĐ).
+*   **Booking 1 Khách:** Mặc định hệ thống đặt phòng hiện tại là 1 người để tối ưu cho khách đi công tác/cá nhân.
 
-### 🛡️ 3.2. Bảo mật PII (Mã hóa CCCD)
-*   **API:** `POST /api/Guests`
-*   **Tính năng:** Lưu số CCCD với mã hóa **AES-256** minh bạch trong DB.
-*   **Test:** Truy vấn API với tư cách Admin/FrontDesk để giải mã, nếu không có Token, hệ thống sẽ từ chối truy cập.
+### 🧹 3.2. Hệ thống Vận hành "Buồng & Phục vụ" (Tách biệt)
+*   **Hệ thống Dọn dẹp (Housekeeping):** Tự động tạo task ngay khi khách trả phòng. Nhân viên phải **chụp ảnh thực tế** làm bằng chứng để Admin duyệt "SẠCH" mới cho phép đón khách mới.
+*   **Hệ thống Phục vụ (Room Service):** Chỉ hiển thị các đơn yêu cầu đồ ăn/uống/dịch vụ từ khách hàng. 
+    *   **Trừ kho động:** Tự động parse số lượng (VD: "2x Coca") để trừ chính xác tồn kho trong DB.
+    *   **Tự động Folio:** Tiền dịch vụ tự động cộng vào hồ sơ thanh toán của khách khi nhân viên xác nhận đã giao.
 
-### 🧹 3.3. Tự động hóa Housekeeping
-*   **API:** `POST /api/Reservations/{id}/check-out`
-*   **Tính năng:** Ngay khi khách trả phòng:
-    *   Trạng thái phòng thành `VacantDirty`.
-    *   Hệ thống tự tạo 1 task vệ sinh trong `/api/HousekeepingTasks`.
-
-### 📈 3.4. Tích lũy điểm & Thăng hạng (Loyalty)
-*   **Cơ chế:** Tích lũy 1 VNĐ = 1 điểm sau thanh toán.
-*   Tự động thăng hạng **Gold** (>10k điểm) hoặc **Platinum** (>50k điểm).
+### 📈 3.3. CRM & Loyalty (Hội viên 6 cấp bậc)
+Hệ thống tích điểm tự động (**10,000 VNĐ = 1 điểm**) với tên hạng tiếng Việt chuẩn:
+1.  **Hạng Đồng (Bronze):** 0 - 999 điểm.
+2.  **Hạng Bạc (Silver):** 1,000 - 2,999 điểm.
+3.  **Hạng Vàng (Gold):** 3,000 - 9,999 điểm.
+4.  **Hạng Bạch Kim (Platinum):** 10,000 - 24,999 điểm.
+5.  **Hạng Kim Cương (Diamond):** 25,000 - 49,999 điểm.
+6.  **Hạng Hoàng Gia (Royal):** > 50,000 điểm.
 
 ---
 
-## 🛠 4. HỆ THỐNG ENUM (TRA CỨU CƠ SỞ DỮ LIỆU)
-*Khi xem dữ liệu trên SQL, các trạng thái hiển thị dạng INT. Bảng tra cứu dưới đây sẽ hữu ích cho bạn:*
+## 📦 4. QUẢN LÝ KHO (LOGISTICS)
+*   Dữ liệu kho hiện đã bao gồm: **Giá vốn (UnitCost)** và **Giá bán (SellingPrice)**.
+*   Trạng thái **IsForSale**: Chỉ những món hàng được bật cờ này mới xuất hiện trên Menu gọi món của khách hàng.
 
-### 4.1. Khách Hàng & Loyalty
-*   **GuestType**: `0` Regular, `1` VIP, `2` Corporate, `3` Member, `4` Group
-*   **LoyaltyTier**: `0` Silver, `1` Gold, `2` Platinum, `3` Diamond
+---
 
-### 4.2. Đặt Phòng (ReservationStatus)
+## 🛠 5. HỆ THỐNG ENUM (TRA CỨU ID TRONG DATABASE)
+
+### 5.1. Đặt Phòng (ReservationStatus)
 | Số ID | Tên Trạng Thái | Ý nghĩa |
 |---|---|---|
 | **0** | **Pending** | Chờ xác nhận |
@@ -102,7 +73,7 @@ Bạn cũng có thể tự đăng ký tài khoản mới qua API `POST /api/Acco
 | **4** | **Cancelled** | Đã hủy |
 | **5** | **NoShow** | Khách không đến |
 
-### 4.3. Phòng (RoomStatus)
+### 5.2. Phòng (RoomStatus)
 | Số ID | Tên Trạng Thái | Ý nghĩa |
 |---|---|---|
 | **0** | **VacantClean** | Trống & Sạch |
@@ -112,7 +83,7 @@ Bạn cũng có thể tự đăng ký tài khoản mới qua API `POST /api/Acco
 | **4** | **OutOfOrder** | Hỏng hóc |
 | **5** | **Maintenance**| Bảo trì |
 
-### 4.4. Hóa Đơn (InvoiceStatus)
+### 5.3. Hóa Đơn (InvoiceStatus)
 | Số ID | Tên Trạng Thái | Ý nghĩa |
 |---|---|---|
 | **0** | **Draft** | Nháp bảng kê |
@@ -120,66 +91,21 @@ Bạn cũng có thể tự đăng ký tài khoản mới qua API `POST /api/Acco
 | **2** | **Paid** | Đã thanh toán xong |
 | **3** | **Cancelled**| Đã hủy bỏ |
 
----
-
-## 🏬 5. HỆ THỐNG DỮ LIỆU MẪU (AUTO-SEEDED)
-
-Hệ thống đã cấu hình sẵn để test nhanh:
-*   **Hạng phòng**: Standard Room (500k), Deluxe Room (850k), Executive Suite (1,5 triệu).
-*   **Phòng thực tế**: 
-    *   Tầng 1: `101`, `102` (Standard - Trống Sạch).
-    *   Tầng 2: `201`, `202` (Deluxe - Trống Sạch).
-    *   Tầng 3: `301`, `302` (Suite - Trống Sạch).
-*   **Dịch vụ kho**: Nước suối, Coca Cola, Khăn tắm.
+### 5.4. Các ID khác
+*   **LoyaltyTier**: `0` Đồng | `1` Bạc | `2` Vàng | `3` Bạch Kim | `4` Kim Cương | `5` Hoàng Gia
+*   **StaffRole**: `0` Admin | `1` Manager | `2` Receptionist | `3` Housekeeper | `4` Accountant | `5` Technician | `6` RoomAttendant
+*   **HmsTaskType**: `0` Cleaning (Dọn dẹp) | `1` Turndown | `2` Inspection | `3` Maintenance | `4` Repair | `5` Delivery (Giao đồ)
 
 ---
 
-## 🧪 6. QUY TRÌNH KỊCH BẢN TEST
+## 🧪 6. KỊCH BẢN KIỂM THỬ (TEST CASES)
 
-1.  **Cấu hình ban đầu (Tùy chọn):** Tạo `RoomTypes` và `Rooms` mới qua hệ thống API, hoặc dùng dữ liệu mẫu.
-2.  **Đăng ký hồ sơ Khách:** `POST /api/Guests` với thông tin liên hệ bảo mật.
-3.  **Tạo Đặt phòng:** `POST /api/Reservations`.
-4.  **Nhận phòng (Check-in):** 
-    *   Cập nhật `idNumber` (Số CMND/CCCD/Passport) gốc ở hồ sơ.
-    *   `POST /api/Reservations/{id}/check-in` để vào ở.
-5.  **Dịch vụ phát sinh (Folio):** Dùng `GET /api/Folios` lấy mã phiếu chi phí. Gán các phụ phí (VD: minibar) bằng `POST /api/FolioCharges`.
-6.  **Thanh toán (Check-out):** `POST /api/Reservations/{id}/check-out`. Tự động tạo Hóa đơn điện tử với VAT. Thực hiện `POST /api/Payments` để thu tiền thực tế.
-7.  **Hậu mãi:** Dùng tài khoản nhân viên vào `GET /api/HousekeepingTasks` nhận việc dọn phòng và cập nhật bằng lệnh `PUT`.
-8.  **Hậu kiểm:** Truy cập `GET /api/AuditLogs` để quản lý các dấu vết can thiệp (Create/Update/Delete) trên dữ liệu nhạy cảm.
+1.  **Dùng app khách hàng:** Đặt 1 phòng bất kỳ (Mặc định 1 khách).
+2.  **Dùng app lễ tân:** Check-in cho khách vừa đặt.
+3.  **Dùng app khách hàng:** Vào Dashboard chọn "Gọi dịch vụ", gọi 2 lon Coca.
+4.  **Dùng app phục vụ:** Nhận đơn, sau đó nhấn "Xác nhận đã giao". Kiểm tra xem kho có bị trừ 2 lon Coca không.
+5.  **Dùng app lễ tân:** Check-out. Kiểm tra hóa đơn xem có tiền phòng + tiền 2 lon Coca chưa.
+6.  **Hậu kiểm:** Sau khi thanh toán, vào "Hệ thống dọn dẹp" xem đã có task dọn phòng đó tự động sinh ra chưa.
 
 ---
-
-## 🛠️ 7. Kiến trúc Kỹ thuật Nổi bật
-
-*   **Repository Pattern & Unit of Work:** Quản lý giao dịch nguyên vẹn.
-*   **Soft Delete:** Cờ Logic (`IsDeleted`) ngăn chặn sai lệch trên DB lịch sử.
-*   **Audit Logging:** Truy vết thao tác theo user từng Context.
-*   **Background Tasks:** Hệ thống cập nhật trạng thái No-Show tự động theo thời gian thực (CRON Jobs).
-
-*Thiết kế và hỗ trợ mở rộng chuyên nghiệp theo Tiêu chuẩn Khách sạn.*
-
----
-
-## 🚀 8. HƯỚNG DẪN DEPLOY (CI/CD)
-
-Dự án đã được cấu hình sẵn các workflow GitHub Actions để tự động hóa việc triển khai.
-
-### A. Deploy Backend (ASP.NET Core) lên Azure
-1.  **Lấy Publish Profile**: Vào Azure Portal -> App Service -> Get publish profile.
-2.  **Cấu hình GitHub Secrets**:
-    *   `AZURE_WEBAPP_PUBLISH_PROFILE`: Dán nội dung file `.publishsettings`.
-3.  **Cập nhật Workflow**: Mở file `.github/workflows/deploy-azure.yml` và thay `YOUR_APP_NAME` bằng tên App Service của bạn.
-
-### B. Deploy Backend bằng Docker (GHCR)
-Hệ thống tự động build Docker image và đẩy lên **GitHub Container Registry (GHCR)** mỗi khi bạn push lên nhánh `main`.
-*   **Workflow**: `.github/workflows/docker-image.yml`
-*   **Image Path**: `ghcr.io/<your-github-username>/demo02:latest`
-
-### C. Deploy Frontend (React + Vite)
-Khuyến nghị sử dụng **Vercel** hoặc **Netlify**:
-1.  Kết nối Repo GitHub với Vercel.
-2.  Cấu hình **Root Directory**: `HMS_Frontend`.
-3.  **Build Command**: `npm run build`.
-4.  **Output Directory**: `dist`.
-5.  **Environment Variables**: Thêm `VITE_API_BASE_URL` trỏ về link Backend đã deploy.
-
+*Thiết kế và duy trì bởi đội ngũ phát triển HMS Royal.*
