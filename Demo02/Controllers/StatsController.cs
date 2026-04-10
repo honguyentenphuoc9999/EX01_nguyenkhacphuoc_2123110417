@@ -62,7 +62,7 @@ namespace Demo02.Controllers
                 message = TranslateAction(a.Action, a.EntityName),
                 user = a.UserId == "admin@hms.com" ? "Quản trị viên" : (a.UserId ?? "Hệ thống"),
                 time = a.Timestamp
-            }).ToList();
+            }).ToList<object>();
 
             // Fallback: Nếu AuditLogs trống
             if (events == null || !events.Any())
