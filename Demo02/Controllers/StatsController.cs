@@ -49,24 +49,42 @@ namespace Demo02.Controllers
                               && r.Guest != null 
                               && r.Guest.IsVerified == true);
 
+            // 4.1 Tổng khách hàng (Tích lũy)
+            var totalGuestsCount = await _context.Guests.CountAsync();
+
             // 5. Các sự kiện gần đây (Lấy từ Nhật ký hệ thống AuditLogs)
-            var recentEvents = await _context.AuditLogs
+            var events = await _context.AuditLogs
                 .OrderByDescending(a => a.Timestamp)
                 .Take(5)
                 .Select(a => new {
-                    Message = $"{a.Action} - {a.EntityName}",
-                    User = a.UserId,
-                    Time = a.Timestamp
+                    message = $"{a.Action} - {a.EntityName}",
+                    user = a.UserId,
+                    time = a.Timestamp
                 })
-                .ToListAsync();
+                .ToListAsync<object>();
+
+            // Fallback: Nếu AuditLogs trống, lấy 5 thông tin Đặt phòng gần nhất làm sự kiện
+            if (events == null || events.Count == 0)
+            {
+                events = await _context.Reservations
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(5)
+                    .Select(r => new {
+                        message = $"Booking {r.BookingCode} - {r.Status}",
+                        user = "System",
+                        time = r.CreatedAt
+                    })
+                    .ToListAsync<object>();
+            }
 
             return Ok(new
             {
-                MonthlyRevenue = monthlyRevenue,
-                OccupancyRate = Math.Round(occupancyRate, 1),
-                OutstandingAmount = outstandingAmount,
-                TodayGuests = todayGuests,
-                RecentEvents = recentEvents
+                monthlyRevenue = monthlyRevenue,
+                occupancyRate = Math.Round(occupancyRate, 1),
+                pendingAmount = outstandingAmount,
+                newGuests = todayGuests,
+                totalGuests = totalGuestsCount,
+                recentEvents = events
             });
         }
     }

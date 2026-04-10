@@ -18,6 +18,7 @@ const Dashboard = () => {
         pendingTrend: "0%",
         newGuests: 0,
         guestsTrend: "0%",
+        totalGuests: 0, // Thêm trường dữ liệu tổng
         recentEvents: []
     });
 
@@ -28,14 +29,15 @@ const Dashboard = () => {
                 const data = res.data;
                 setStats({
                     monthlyRevenue: data.monthlyRevenue,
-                    revenueTrend: "+2.5%", // Giả lập xu hướng
+                    revenueTrend: "+2.5%",
                     occupancyRate: data.occupancyRate,
                     occupancyTrend: "+1.2%",
-                    pendingAmount: data.outstandingAmount,
+                    pendingAmount: data.pendingAmount,
                     pendingTrend: "-0.5%",
-                    newGuests: data.todayGuests,
+                    newGuests: data.newGuests,
                     guestsTrend: "+100%",
-                    recentEvents: []
+                    totalGuests: data.totalGuests,
+                    recentEvents: data.recentEvents
                 });
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu Dashboard:", error);
@@ -45,11 +47,12 @@ const Dashboard = () => {
     }, []);
 
     const renderAdminDashboard = () => (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '24px' }}>
             <StatCard icon={<TrendingUp color="#10b981"/>} label="Doanh thu tháng" value={`${new Intl.NumberFormat('vi-VN').format(stats.monthlyRevenue)} ₫`} trend={stats.revenueTrend} />
             <StatCard icon={<Box color="#3b82f6"/>} label="Tỷ lệ lấp đầy" value={`${stats.occupancyRate}%`} trend={stats.occupancyTrend} />
             <StatCard icon={<CreditCard color="#f59e0b"/>} label="Tiền chưa thanh toán" value={`${new Intl.NumberFormat('vi-VN').format(stats.pendingAmount)} ₫`} trend={stats.pendingTrend} />
             <StatCard icon={<Users color="#8b5cf6"/>} label="Khách mới" value={`${stats.newGuests}`} trend={stats.guestsTrend} />
+            <StatCard icon={<Sparkles color="#ec4899"/>} label="Tổng khách hàng" value={`${stats.totalGuests}`} trend="+100%" />
         </div>
     );
 
