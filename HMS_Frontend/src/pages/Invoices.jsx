@@ -75,7 +75,7 @@ const PrintInvoiceModal = ({ invoice, onClose }) => {
             <div style={{ maxWidth: '800px', margin: '40px auto', padding: '60px', border: '1px solid #e2e8f0', background: 'white' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
                     <div>
-                        <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0f172a' }}>HMS ROYAL</h1>
+                        <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0f172a' }}>HMS PHUOC PREMIER</h1>
                         <p style={{ color: '#64748b' }}>Hệ thống quản lý khách sạn chuyên nghiệp</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -306,9 +306,19 @@ const Invoices = () => {
 
             <style>{`
                 @media print {
+                    @page { size: portrait; margin: 10mm; }
                     .no-print { display: none !important; }
-                    body { background: white !important; padding: 0 !important; }
-                    main { margin: 0 !important; padding: 0 !important; }
+                    body { background: white !important; margin: 0 !important; padding: 0 !important; }
+                    .print-container { 
+                        position: static !important;
+                        box-shadow: none !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                        border: none !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>
         </div>
