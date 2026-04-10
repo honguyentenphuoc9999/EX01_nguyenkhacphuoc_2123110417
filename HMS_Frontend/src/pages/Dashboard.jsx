@@ -24,8 +24,19 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const res = await api.get('/Dashboards/stats');
-                setStats(res.data);
+                const res = await api.get('/Stats/dashboard');
+                const data = res.data;
+                setStats({
+                    monthlyRevenue: data.monthlyRevenue,
+                    revenueTrend: "+2.5%", // Giả lập xu hướng
+                    occupancyRate: data.occupancyRate,
+                    occupancyTrend: "+1.2%",
+                    pendingAmount: data.outstandingAmount,
+                    pendingTrend: "-0.5%",
+                    newGuests: data.todayGuests,
+                    guestsTrend: "+100%",
+                    recentEvents: []
+                });
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu Dashboard:", error);
             }

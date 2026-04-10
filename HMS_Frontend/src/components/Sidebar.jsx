@@ -67,7 +67,7 @@ const Sidebar = () => {
         { name: 'F&B & Dịch vụ', icon: <Utensils size={22} />, path: '/services', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Marketing', icon: <Megaphone size={22} />, path: '/marketing', roles: ['Admin', 'Manager'] },
         { name: 'Cổng OTA', icon: <Globe size={22} />, path: '/ota', roles: ['Admin', 'Manager'] },
-        { name: 'Cài đặt', icon: <SettingsIcon size={22} />, path: '/settings', roles: ['Admin', 'Manager'] },
+        { name: 'Cài đặt', icon: <SettingsIcon size={22} />, path: '/settings', roles: ['Admin'] },
     ];
 
     return (
