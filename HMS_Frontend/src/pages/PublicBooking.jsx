@@ -38,7 +38,7 @@ const PublicBooking = () => {
     const [searchData, setSearchData] = useState({ 
         checkIn: new Date().toISOString().split('T')[0], 
         checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], 
-        guests: 2 
+        guests: 1 
     });
 
     const [guestInfo, setGuestInfo] = useState({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });

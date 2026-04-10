@@ -121,23 +121,27 @@ namespace Demo02.Data
             {
                 var types = new List<RoomType>
                 {
+                    new RoomType { TypeName = "Single Room", BasePrice = 350000, MaxOccupancy = 1, AreaSqm = 18, Description = "Phòng đơn yên tĩnh, phù hợp cho khách đi công tác", Amenities = "Wifi, TV, Bàn làm việc", CreatedBy = "System" },
                     new RoomType { TypeName = "Standard Room", BasePrice = 500000, MaxOccupancy = 2, AreaSqm = 25, Description = "Phòng tiêu chuẩn đầy đủ tiện nghi", Amenities = "Wifi, TV, Điều hòa", CreatedBy = "System" },
                     new RoomType { TypeName = "Deluxe Room", BasePrice = 850000, MaxOccupancy = 2, AreaSqm = 35, Description = "Phòng sang trọng view thành phố", Amenities = "Wifi, TV, Minibar, Bồn tắm", CreatedBy = "System" },
                     new RoomType { TypeName = "Executive Suite", BasePrice = 1500000, MaxOccupancy = 3, AreaSqm = 55, Description = "Phòng tổng thống cực kỳ cao cấp", Amenities = "Wifi, TV 4K, Jacuzzi, Ban công", CreatedBy = "System" }
                 };
                 context.RoomTypes.AddRange(types);
-                await context.SaveChangesAsync(); // Lưu để lấy ID cho bước tiếp theo
+                await context.SaveChangesAsync();
             }
 
-            // 5. Seed Rooms (Bổ sung phòng còn thiếu)
+            // 5. Seed Rooms
+            var sglType = await context.RoomTypes.FirstAsync(t => t.TypeName == "Single Room");
             var stdType = await context.RoomTypes.FirstAsync(t => t.TypeName == "Standard Room");
             var dlxType = await context.RoomTypes.FirstAsync(t => t.TypeName == "Deluxe Room");
             var suiteType = await context.RoomTypes.FirstAsync(t => t.TypeName == "Executive Suite");
 
             var roomsToSeed = new List<Room>
             {
-                new Room { RoomNumber = "101", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
-                new Room { RoomNumber = "102", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
+                new Room { RoomNumber = "101", Floor = 1, RoomTypeId = sglType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 350000, CreatedBy = "System" },
+                new Room { RoomNumber = "102", Floor = 1, RoomTypeId = sglType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 350000, CreatedBy = "System" },
+                new Room { RoomNumber = "103", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
+                new Room { RoomNumber = "104", Floor = 1, RoomTypeId = stdType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 500000, CreatedBy = "System" },
                 new Room { RoomNumber = "201", Floor = 2, RoomTypeId = dlxType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 850000, CreatedBy = "System" },
                 new Room { RoomNumber = "202", Floor = 2, RoomTypeId = dlxType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 850000, CreatedBy = "System" },
                 new Room { RoomNumber = "301", Floor = 3, RoomTypeId = suiteType.RoomTypeId, Status = RoomStatus.VacantClean, BasePrice = 1500000, CreatedBy = "System" },
@@ -200,7 +204,7 @@ namespace Demo02.Data
                     new InventoryItem { ItemCode = "INV-002", ItemName = "Nước suối", Category = ItemCategory.Minibar, Unit = "Chai", CurrentStock = 200, MinimumStock = 50, UnitCost = 3000, SellingPrice = 15000, IsForSale = true, CreatedBy = "System" },
                     new InventoryItem { ItemCode = "INV-003", ItemName = "Bia 333", Category = ItemCategory.Minibar, Unit = "Lon", CurrentStock = 120, MinimumStock = 30, UnitCost = 15000, SellingPrice = 35000, IsForSale = true, CreatedBy = "System" },
                     new InventoryItem { ItemCode = "INV-004", ItemName = "Snack khoai tây", Category = ItemCategory.Minibar, Unit = "Gói", CurrentStock = 80, MinimumStock = 15, UnitCost = 8000, SellingPrice = 20000, IsForSale = true, CreatedBy = "System" },
-                    new InventoryItem { ItemCode = "INV-005", ItemName = "Khăn tắm", Category = ItemCategory.Linen, Unit = "Cái", CurrentStock = 50, MinimumStock = 10, UnitCost = 50000, SellingPrice = 0, IsForSale = false, CreatedBy = "System" }
+                    new InventoryItem { ItemCode = "INV-005", ItemName = "Khăn tắm", Category = ItemCategory.Linen, Unit = "Cái", CurrentStock = 50, MinimumStock = 10, UnitCost = 50000, SellingPrice = 60000, IsForSale = true, CreatedBy = "System" }
                 });
             }
 
