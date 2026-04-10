@@ -4,30 +4,23 @@ Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp toàn
 
 ---
 
-## 🚀 1. HƯỚNG DẪN KHỞI TẠO DỮ LIỆU
-Hệ thống sử dụng **Entity Framework Core**. Để tạo lại toàn bộ dữ liệu mẫu (Seeding) mới nhất:
-
-1. Chạy mã SQL sau trong Query Analyzer (để làm sạch DB cũ):
-```sql
-DELETE FROM Invoices; DELETE FROM FolioCharges; DELETE FROM Folios; 
-DELETE FROM Reservations; DELETE FROM HousekeepingTasks; 
-DELETE FROM Rooms; DELETE FROM RoomTypes; DELETE FROM InventoryItems;
-```
-2. **Restart/Recycle App Pool** trên SmarterASP để kích hoạt `DbSeeder.cs` nạp lại dữ liệu mới nhất.
-
----
-
 ## 🔐 2. DANH SÁCH TÀI KHOẢN THỬ NGHIỆM
 
 Hệ thống đã nạp sẵn các tài khoản phân quyền để test kịch bản vận hành:
 
-| Đối tượng | Username | Password | Chức vụ | Quyền hạn |
+| Đối tượng | Email / Đăng nhập | Mật khẩu | Chức vụ | Quyền hạn |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin_phuoc` | `Admin@123` | **CEO** | Toàn quyền hệ thống, Cài đặt VietQR, Quản lý Nhân sự |
-| **Manager** | `manager` | `Staff@123` | **Quản lý** | Điều phối dọn dẹp/phục vụ, Duyệt phòng sạch, Xem báo cáo |
-| **Receptionist** | `lan` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Thu tiền, Xuất hóa đơn |
-| **Attendant** | `nam` | `Staff@123` | **Phục vụ** | Nhận thực đơn, Giao đồ ăn tận nơi, Xác nhận đã giao |
-| **Housekeeper** | `mai.nt` | `Hms@123` | **Dọn phòng** | Xem danh sách phòng bẩn, Dọn dẹp, Chụp ảnh bằng chứng |
+| **Admin** | `admin@hms.com` | `Admin@123` | **CEO** | Toàn quyền, Cài đặt VietQR, Quản lý Nhân sự |
+| **Manager** | `manager@hms.com` | `Staff@123` | **Quản lý** | Điều phối dọn dẹp/phục vụ, xem báo cáo |
+| **Receptionist** | `lan@hms.com` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Thu tiền |
+| **Attendant** | `nam@hms.com` | `Staff@123` | **Phục vụ** | Nhận thực đơn, Giao đồ ăn tận nơi |
+| **Housekeeper 1** | `mai.nt@hms.com` | `Hms@123` | **Dọn phòng** | Xem danh sách dọn dẹp, Chụp ảnh bằng chứng |
+| **Housekeeper 2** | `nam.tv@hms.com` | `Hms@123` | **Dọn phòng** | Nhân viên dọn dẹp số 2 |
+
+### 👤 2.1. Tài khoản Khách hàng mẫu (Loyalty Member)
+| Họ và Tên | Email / SĐT | Mật khẩu | Hạng hội viên |
+| :--- | :--- | :--- | :--- |
+| **Nguyễn Thành Viên** | `member@gmail.com` / `0909000123` | `Guest@123` | **Hạng Vàng (Gold)** |
 
 ### 🔐 2.1. CHI TIẾT CÁC NGHIỆP VỤ THEO VAI TRÒ
 *   **ADMIN:** Cấu hình gốc (VietQR, Thông tin khách sạn), Quản lý tài khoản nhân viên, Xem toàn bộ Audit Logs.
