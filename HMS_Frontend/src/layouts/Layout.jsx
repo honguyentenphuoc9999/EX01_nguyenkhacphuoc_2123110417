@@ -25,12 +25,23 @@ const Layout = () => {
 
       {/* Sidebar - Sử dụng Transform để ẩn/hiện mượt mà */}
       <div className={`app-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
-        <Sidebar />
+        <Sidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
 
-      {/* Lớp phủ an toàn khi mở Menu */}
+      {/* Lớp phủ an toàn khi mở Menu - Hiệu ứng Glassmorphism */}
       {isSidebarOpen && (
-        <div className="app-overlay" onClick={() => setIsSidebarOpen(false)} />
+        <div 
+          className="app-overlay" 
+          onClick={() => setIsSidebarOpen(false)} 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9998,
+            transition: 'opacity 0.3s'
+          }}
+        />
       )}
 
       {/* Vùng hiển thị nội dung chính */}
@@ -48,8 +59,9 @@ const Layout = () => {
           left: 0;
           top: 0;
           z-index: 9999;
-          transition: transform 0.3s ease;
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           background: #0f172a;
+          box-shadow: 20px 0 50px rgba(0,0,0,0.3);
         }
 
         .app-main {
@@ -57,53 +69,43 @@ const Layout = () => {
           margin-left: 280px;
           padding: 32px;
           min-width: 0;
-          transition: margin 0.3s ease;
+          transition: margin 0.4s ease;
         }
 
         .floating-menu-btn {
           display: none;
           position: fixed;
-          top: 15px;
-          right: 15px;
-          z-index: 10001;
-          background: #0f172a;
-          color: white;
+          top: 20px;
+          left: 20px;
+          z-index: 9000;
+          background: white;
+          color: #0f172a;
           border: none;
           padding: 12px;
-          border-radius: 12px;
+          border-radius: 14px;
           cursor: pointer;
-          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          border: 1px solid #e2e8f0;
         }
 
         /* XỬ LÝ CHO MÀN HÌNH NHỎ (TABLET & MOBILE) */
         @media (max-width: 1200px) {
           .app-sidebar {
+            width: 85%;
+            max-width: 320px;
             transform: translateX(-100%);
+            border-radius: 0 32px 32px 0;
           }
           .app-sidebar.is-open {
             transform: translateX(0);
           }
           .app-main {
             margin-left: 0;
-            padding: 20px;
-            padding-top: 80px;
+            padding: 16px;
+            padding-top: 85px;
           }
           .floating-menu-btn {
             display: flex;
-          }
-          .app-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 9998;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .app-main {
-            padding: 16px;
-            padding-top: 75px;
           }
         }
       `}</style>
