@@ -23,12 +23,18 @@ Hệ thống đã nạp sẵn các tài khoản phân quyền để test kịch 
 
 | Đối tượng | Username | Password | Chức vụ | Quyền hạn |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin_phuoc` | `Admin@123` | **CEO** | Toàn quyền hệ thống |
-| **Manager** | `manager` | `Staff@123` | **Quản lý** | Điều phối nhân sự, duyệt phòng |
-| **Receptionist** | `lan` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Hóa đơn |
-| **Attendant** | `nam` | `Staff@123` | **Phục vụ** | Nhận đơn gọi món, giao đồ |
-| **Housekeeper** | `mai.nt` | `Hms@123` | **Dọn phòng** | Làm vệ sinh, chụp ảnh bằng chứng |
-| **Member** | `member@gmail.com` | `Guest@123` | **Khách VIP** | Đặt phòng công cộng |
+| **Admin** | `admin_phuoc` | `Admin@123` | **CEO** | Toàn quyền hệ thống, Cài đặt VietQR, Quản lý Nhân sự |
+| **Manager** | `manager` | `Staff@123` | **Quản lý** | Điều phối dọn dẹp/phục vụ, Duyệt phòng sạch, Xem báo cáo |
+| **Receptionist** | `lan` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Thu tiền, Xuất hóa đơn |
+| **Attendant** | `nam` | `Staff@123` | **Phục vụ** | Nhận thực đơn, Giao đồ ăn tận nơi, Xác nhận đã giao |
+| **Housekeeper** | `mai.nt` | `Hms@123` | **Dọn phòng** | Xem danh sách phòng bẩn, Dọn dẹp, Chụp ảnh bằng chứng |
+
+### 🔐 2.1. CHI TIẾT CÁC NGHIỆP VỤ THEO VAI TRÒ
+*   **ADMIN:** Cấu hình gốc (VietQR, Thông tin khách sạn), Quản lý tài khoản nhân viên, Xem toàn bộ Audit Logs.
+*   **MANAGER:** Không được vào mục "Cài đặt". Chuyên quản lý vận hành: Giao việc cho nhân viên, kiểm tra chất lượng dọn dẹp, xem Dashboard thống kê thực tế.
+*   **LỄ TÂN:** Thực hiện quy trình đón/tiễn khách. Quản lý danh sách đặt phòng và thanh toán hóa đơn VAT.
+*   **PHỤC VỤ (Room Attendant):** Chỉ truy cập "Hệ thống Phục vụ" để đi giao hàng. Các đơn hàng này do Khách hàng yêu cầu từ trang Home.
+*   **DỌN PHÒNG (Housekeeper):** Chỉ truy cập "Hệ thống Dọn dẹp" để vệ sinh phòng theo yêu cầu tự động từ hệ thống (sau check-out) hoặc theo chỉ định của Quản lý.
 
 ---
 
