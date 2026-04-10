@@ -93,7 +93,17 @@ const Inventory = () => {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>Đang tải dữ liệu kho...</td></tr>
+                            <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>Đang tải dữ liệu kho...</td></tr>
+                        ) : items.length === 0 ? (
+                            <tr>
+                                <td colSpan="7" style={{ textAlign: 'center', padding: '60px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                        <Package size={48} color="#cbd5e1" />
+                                        <p style={{ fontSize: '18px', fontWeight: '700', color: '#94a3b8' }}>KHO ĐANG TRỐNG</p>
+                                        <p style={{ fontSize: '14px', color: '#cbd5e1' }}>Vui lòng nhấn 'Nhập kho mới' để thêm vật tư</p>
+                                    </div>
+                                </td>
+                            </tr>
                         ) : items.map(item => (
                             <tr key={item.itemId} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                 <td style={{ padding: '16px', fontWeight: '700', color: '#3b82f6' }}>{item.itemCode}</td>
