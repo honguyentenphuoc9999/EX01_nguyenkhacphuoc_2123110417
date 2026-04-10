@@ -132,14 +132,15 @@ const DeliveryTasks = () => {
         switch (status) {
             case 0: case 'Pending': case '0': return { bg: '#fef3c7', text: '#d97706', label: 'Chờ xử lý', icon: <Clock size={16}/> };
             case 1: case 'InProgress': case '1': return { bg: '#eff6ff', text: '#3b82f6', label: 'Đang đi giao', icon: <RefreshCw size={16}/> };
+            case 4: case 'Cancelled': return { bg: '#fef2f2', text: '#ef4444', label: 'Đã hủy đơn', icon: <Package size={16} /> };
             case 'Completed': return { bg: '#dcfce7', text: '#166534', label: 'Đã giao xong', icon: <CheckCircle2 size={16}/> };
             default: return { bg: '#f1f5f9', text: '#475569', label: 'Khác', icon: <Package size={16}/> };
         }
     };
 
     const isManager = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
-    const activeTasks = tasks.filter(t => t.status !== 'Completed');
-    const historyTasks = tasks.filter(t => t.status === 'Completed').sort((a,b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+    const activeTasks = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Cancelled' && t.status !== 4);
+    const historyTasks = tasks.filter(t => t.status === 'Completed' || t.status === 'Cancelled' || t.status === 4).sort((a,b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
     return (
         <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh' }}>

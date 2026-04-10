@@ -222,6 +222,37 @@ namespace Demo02.Controllers
                 
                 // 3. Đóng hồ sơ Folio
                 detailedInvoice.Folio.Status = FolioStatus.Closed;
+
+                // 4. TỰ ĐỘNG HỦY CÁC ĐƠN DỊCH VỤ ĐANG GIAO (BRD Nâng cấp)
+                var pendingOrders = await _context.RoomServiceOrders
+                    .Where(o => o.ReservationId == res.ReservationId && 
+                               o.Status != "Completed" && 
+                               o.Status != "Cancelled" && 
+                               !o.Status.Contains("Cancelled"))
+                    .ToListAsync();
+
+                foreach (var order in pendingOrders)
+                {
+                    order.Status = "Cancelled - Guest Checked Out";
+                    order.Notes = (order.Notes ?? "") + " [Hệ thống tự động hủy đơn do khách đã thanh toán Checkout]";
+                }
+
+                // 5. TỰ ĐỘNG HỦY CÁC HOUSEKEEPING TASK GIAO ĐỒ (Delivery Tasks)
+                if (res.RoomId.HasValue)
+                {
+                    var deliveryTasks = await _context.HousekeepingTasks
+                        .Where(t => t.RoomId == res.RoomId && 
+                                   t.TaskType == HmsTaskType.Delivery && 
+                                   t.Status != HmsTaskStatus.Completed && 
+                                   t.Status != HmsTaskStatus.Cancelled)
+                        .ToListAsync();
+
+                    foreach (var task in deliveryTasks)
+                    {
+                        task.Status = HmsTaskStatus.Cancelled;
+                        task.Notes = (task.Notes ?? "") + " [KHÁCH ĐÃ CHECKOUT - DỪNG GIAO ĐỒ]";
+                    }
+                }
             }
 
             await _context.SaveChangesAsync();
