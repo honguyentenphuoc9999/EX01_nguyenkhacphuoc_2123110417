@@ -52,29 +52,31 @@ namespace Demo02.Controllers
             // 4.1 Tổng khách hàng (Tích lũy)
             var totalGuestsCount = await _context.Guests.CountAsync();
 
-            // 5. Các sự kiện gần đây (Dịch sang tiếng Việt)
-            var events = await _context.AuditLogs
+            // 5. Các sự kiện gần đây (Phải lấy dữ liệu thô về rồi mới dịch trong bộ nhớ)
+            var rawLogs = await _context.AuditLogs
                 .OrderByDescending(a => a.Timestamp)
                 .Take(5)
-                .Select(a => new {
-                    message = TranslateAction(a.Action, a.EntityName),
-                    user = a.UserId == "admin@hms.com" ? "Quản trị viên" : (a.UserId ?? "Hệ thống"),
-                    time = a.Timestamp
-                })
-                .ToListAsync<object>();
+                .ToListAsync();
+
+            var events = rawLogs.Select(a => new {
+                message = TranslateAction(a.Action, a.EntityName),
+                user = a.UserId == "admin@hms.com" ? "Quản trị viên" : (a.UserId ?? "Hệ thống"),
+                time = a.Timestamp
+            }).ToList();
 
             // Fallback: Nếu AuditLogs trống
-            if (events == null || events.Count == 0)
+            if (events == null || !events.Any())
             {
-                events = await _context.Reservations
+                var rawReservations = await _context.Reservations
                     .OrderByDescending(r => r.CreatedAt)
                     .Take(5)
-                    .Select(r => new {
-                        message = $"Đơn đặt phòng {r.BookingCode} - {(r.Status == ReservationStatus.Confirmed ? "Đã xác nhận" : "Mới")}",
-                        user = "Hệ thống",
-                        time = r.CreatedAt
-                    })
-                    .ToListAsync<object>();
+                    .ToListAsync();
+                
+                events = rawReservations.Select(r => new {
+                    message = $"Đơn đặt phòng {r.BookingCode} - {(r.Status == ReservationStatus.Confirmed ? "Đã xác nhận" : "Mới")}",
+                    user = "Hệ thống",
+                    time = r.CreatedAt
+                }).ToList<object>();
             }
 
             // Tính toán xu hướng giả lập dựa trên dữ liệu thật (Ví dụ: so với mục tiêu hoặc tháng trước)
