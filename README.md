@@ -29,7 +29,7 @@ Hệ thống đã nạp sẵn các tài khoản phân quyền để test kịch 
 *   **PHỤC VỤ (Room Attendant):** Chỉ truy cập "Hệ thống Phục vụ" để đi giao hàng. Các đơn hàng này do Khách hàng yêu cầu từ trang Home.
 *   **DỌN PHÒNG (Housekeeper):** Chỉ truy cập "Hệ thống Dọn dẹp" để vệ sinh phòng theo yêu cầu tự động từ hệ thống (sau check-out) hoặc theo chỉ định của Quản lý.
 
-----
+-----
 
 ## 💼 3. CÁC TÍNH NĂNG NỔI BẬT ĐÃ CẬP NHẬT
 
