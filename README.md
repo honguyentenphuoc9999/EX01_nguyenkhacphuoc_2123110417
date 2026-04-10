@@ -1,4 +1,4 @@
-# 🏨 Hotel Management System (HMS) - Backend v3.0 (Production Ready)
+# 🏨 HMS PHUOC PREMIER - Backend v3.0 (Production Ready)
 
 Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp toàn diện lên tiêu chuẩn **BRD v3.0**. Dự án tập trung vào tính thực tế trong vận hành: Tự động hóa dọn dẹp, Phục vụ phòng thông minh, và Hệ thống Hội viên (CRM) chuẩn Quốc tế.
 
@@ -107,4 +107,4 @@ Hệ thống tích điểm tự động (**10,000 VNĐ = 1 điểm**) với tên
 6.  **Hậu kiểm:** Sau khi thanh toán, vào "Hệ thống dọn dẹp" xem đã có task dọn phòng đó tự động sinh ra chưa.
 
 ---
-*Thiết kế và duy trì bởi đội ngũ phát triển HMS Royal.*
+*Thiết kế và duy trì bởi đội ngũ phát triển HMS PHUOC PREMIER.*

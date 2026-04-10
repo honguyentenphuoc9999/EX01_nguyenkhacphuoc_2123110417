@@ -175,7 +175,7 @@ const PublicBooking = () => {
                     animate={{ opacity: 1, y: 0 }}
                     style={{ fontSize: isMobile ? '32px' : '48px', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1.2' }}
                 >
-                    HMS ROYAL LUXURY HOTEL
+                    HMS PHUOC PREMIER
                 </motion.h1>
                 <motion.p 
                     initial={{ opacity: 0 }} 
