@@ -35,8 +35,9 @@ namespace Demo02.Controllers
                 .Include(rr => rr.Reservation)
                 .Where(rr => rr.Reservation != null && 
                              rr.Reservation.Status != ReservationStatus.Cancelled &&
-                             rr.Reservation.CheckInDate < cout && 
-                             rr.Reservation.CheckOutDate > cin)
+                             rr.Reservation.Status != ReservationStatus.CheckedOut &&
+                             rr.Reservation.CheckInDate.Date < cout.Date && 
+                             rr.Reservation.CheckOutDate.Date > cin.Date)
                 .ToListAsync();
 
             // 2. Lấy danh sách hạng phòng
@@ -49,33 +50,20 @@ namespace Demo02.Controllers
                 var allRooms = rt.Rooms?.ToList() ?? new List<Room>();
                 var totalRoomsCount = allRooms.Count;
                 
-                // Số phòng đã bị đặt trước (Reserved)
+                // Số phòng đã bị chiếm dụng (Reserved/Occupied)
                 var bookedCount = overlappingReservations.Count(rr => rr.RoomTypeId == rt.RoomTypeId);
                 
-                // Nếu khách đặt cho NGÀY HÔM NAY, phải kiểm tra trạng thái vật lý của phòng
-                int unavailableCurrentStatus = 0;
-                if (cin.Date == vnToday)
-                {
-                    // Đếm những phòng không sẵn sàng: Đang bẩn (Dirty), Đang dọn, hoặc đang có khách (Occupied)
-                    unavailableCurrentStatus = allRooms.Count(r => 
-                        (r.Status == RoomStatus.Occupied || 
-                         r.Status == RoomStatus.VacantDirty || 
-                         r.Status == RoomStatus.OutOfOrder || 
-                         r.Status == RoomStatus.UnderMaintenance));
-
-                    // Tuy nhiên, vì bookedCount đã đếm dựa trên Reservation, 
-                    // ta chỉ cần lấy số lượng phòng THỰC SỰ SẠCH VÀ TRỐNG tại thời điểm này
-                    // nếu nó ít hơn số phòng trống dự tính (total - booked)
-                }
-
                 int finalAvailable = totalRoomsCount - bookedCount;
                 
-                // Nếu đặt hôm nay, con số không thể vượt quá số phòng VacantClean hiện có
+                // --- HMS LOGIC: Nếu đặt hôm nay, chỉ loại trừ những phòng đang hỏng (OutOfOrder) ---
                 if (cin.Date == vnToday)
                 {
-                    int vacantCleanCount = allRooms.Count(r => r.Status == RoomStatus.VacantClean);
-                    // Số phòng sẵn sàng = giá trị nhỏ nhất giữa (Tổng - Đã đặt) và (Số phòng đang Sạch)
-                    finalAvailable = Math.Min(finalAvailable, vacantCleanCount);
+                    int maintenanceCount = allRooms.Count(r => 
+                        r.Status == RoomStatus.OutOfOrder || 
+                        r.Status == RoomStatus.UnderMaintenance);
+                    
+                    // Số lượng khả dụng thực tế không thể vượt quá (Tổng - hỏng)
+                    finalAvailable = Math.Min(finalAvailable, totalRoomsCount - maintenanceCount);
                 }
 
                 if (finalAvailable < 0) finalAvailable = 0;

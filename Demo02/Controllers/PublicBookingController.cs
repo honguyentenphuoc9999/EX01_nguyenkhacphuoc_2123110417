@@ -98,24 +98,22 @@ namespace Demo02.Controllers
             var roomType = await _context.RoomTypes.FindAsync(dto.RoomTypeId);
             if (roomType == null) return NotFound(new { message = "Hạng phòng không tồn tại!" });
 
-            // --- HMS SMART AVAILABILITY: Kiểm tra số lượng phòng trống của hạng này ---
+            // --- HMS SMART AVAILABILITY: Kiểm tra số lượng phòng trống thực tế ---
             var vnNow = DateTime.UtcNow.AddHours(7);
             var today = vnNow.Date;
 
             var totalRoomsInType = await _context.Rooms
                 .CountAsync(r => r.RoomTypeId == dto.RoomTypeId && !r.IsDeleted);
 
-            // Đếm số lượng đơn đặt phòng hạng này mà chưa bị hủy và trùng lịch
-            var bookedRoomsCount = await _context.ReservationRooms
-                .Include(rr => rr.Reservation)
-                .CountAsync(rr => rr.RoomTypeId == dto.RoomTypeId &&
-                             rr.Reservation != null &&
-                             rr.Reservation.Status != ReservationStatus.Cancelled &&
-                             rr.Reservation.CheckInDate < dto.CheckOutDate &&
-                             rr.Reservation.CheckOutDate > dto.CheckInDate);
+            // Đếm số lượng đặt phòng thực tế đang chiếm dụng hạng phòng này trong khoảng thời gian khách chọn
+            var bookedRoomsCount = await _context.Reservations
+                .Where(r => r.Status != ReservationStatus.Cancelled && r.Status != ReservationStatus.CheckedOut)
+                .Where(r => _context.Rooms.Any(room => room.RoomId == r.RoomId && room.RoomTypeId == dto.RoomTypeId))
+                .CountAsync(r => r.CheckInDate.Date < dto.CheckOutDate.Date && 
+                                r.CheckOutDate.Date > dto.CheckInDate.Date);
 
             if (bookedRoomsCount >= totalRoomsInType)
-                return BadRequest(new { message = "Rất tiếc, hạng phòng này vừa hết phòng trong giây lát. Vui lòng chọn hạng khác hoặc ngày khác!" });
+                return BadRequest(new { message = "Rất tiếc, hạng phòng này hiện đã kín chỗ trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác!" });
 
             // Tìm một phòng bất kỳ thuộc hạng này để gán vào đơn (Logic ưu tiên phòng trống thực tế)
             var allRoomsOfType = await _context.Rooms
@@ -128,8 +126,9 @@ namespace Demo02.Controllers
                 var isOccupied = await _context.Reservations.AnyAsync(res => 
                     res.RoomId == r.RoomId && 
                     res.Status != ReservationStatus.Cancelled &&
-                    res.CheckInDate < dto.CheckOutDate && 
-                    res.CheckOutDate > dto.CheckInDate);
+                    res.Status != ReservationStatus.CheckedOut &&
+                    res.CheckInDate.Date < dto.CheckOutDate.Date && 
+                    res.CheckOutDate.Date > dto.CheckInDate.Date);
                 
                 if (!isOccupied) {
                     targetRoom = r;
