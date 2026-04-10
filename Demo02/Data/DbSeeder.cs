@@ -292,6 +292,18 @@ namespace Demo02.Data
                     new ServiceBooking { GuestId = guest?.GuestId, ServiceType = "Spa", ResourceName = "Phòng Massage VIP 1", StartTime = DateTime.Now.AddHours(5), EndTime = DateTime.Now.AddHours(6), NumberOfPersons = 1, Status = "Reserved", CreatedBy = "System" }
                 });
             }
+            // 11. Seed Audit Logs for Dashboard Visibility
+            if (!context.AuditLogs.Any())
+            {
+                context.AuditLogs.AddRange(new List<AuditLog>
+                {
+                    new AuditLog { Action = "Check-In", EntityName = "Reservation", EntityId = "BK-1002", Timestamp = DateTime.Now.AddMinutes(-45), UserId = "lan@hms.com" },
+                    new AuditLog { Action = "Paid Full", EntityName = "Invoice", EntityId = "INV-2024-001", Timestamp = DateTime.Now.AddHours(-2), UserId = "admin@hms.com" },
+                    new AuditLog { Action = "Update", EntityName = "Room", EntityId = "Phòng 301", Timestamp = DateTime.Now.AddHours(-5), UserId = "manager@hms.com" },
+                    new AuditLog { Action = "Delivery", EntityName = "RoomService", EntityId = "Order-502", Timestamp = DateTime.Now.AddMinutes(-120), UserId = "nam@hms.com" },
+                    new AuditLog { Action = "Cleaned", EntityName = "Housekeeping", EntityId = "Phòng 205", Timestamp = DateTime.Now.AddHours(-1), UserId = "mai.nt@hms.com" }
+                });
+            }
 
             await context.SaveChangesAsync();
         }
