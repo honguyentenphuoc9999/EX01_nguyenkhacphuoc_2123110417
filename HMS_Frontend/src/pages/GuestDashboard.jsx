@@ -29,6 +29,15 @@ const GuestDashboard = () => {
         guests: 2 
     });
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+
     const cancelReasons = [
         "Thay đổi lịch trình đột xuất", "Tìm được giá phòng tốt hơn", "Sự cố sức khỏe / gia đình",
         "Nhầm lẫn thông tin đặt phòng", "Thời tiết không thuận lợi", "Thay đổi địa điểm du lịch",
@@ -177,13 +186,12 @@ const GuestDashboard = () => {
         } catch (err) { setShowToast("Lỗi: " + (err.response?.data?.message || err.message)); }
     };
 
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 1024);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const getNights = () => {
+        const start = new Date(searchData.checkIn);
+        const end = new Date(searchData.checkOut);
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 0;
+    };
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f8fafc' }}>
