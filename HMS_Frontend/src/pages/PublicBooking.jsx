@@ -23,18 +23,6 @@ const PublicBooking = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        fetchRoomTypes();
-    }, []);
-
-    const fetchRoomTypes = async () => {
-        try {
-            const res = await api.get('/RoomTypes'); // API công khai
-            setRoomTypes(res.data);
-        } catch (err) { console.error(err); }
-        setLoading(false);
-    };
-
     const [searchData, setSearchData] = useState({ 
         checkIn: new Date().toISOString().split('T')[0], 
         checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], 
@@ -51,6 +39,22 @@ const PublicBooking = () => {
     const [submitting, setSubmitting] = useState(false);
     const [showPass, setShowPass] = useState(false);
 
+    const fetchRoomTypes = async (cin, cout) => {
+        setLoading(true);
+        try {
+            const checkInDate = cin || searchData.checkIn;
+            const checkOutDate = cout || searchData.checkOut;
+            const url = `/RoomTypes?checkIn=${checkInDate}&checkOut=${checkOutDate}`;
+            const res = await api.get(url);
+            setRoomTypes(res.data);
+        } catch (err) { console.error(err); }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchRoomTypes(); // Tải dữ liệu ban đầu cho ngày hôm nay
+    }, []);
+
     const handleCheckAvailability = () => {
         const newErrors = {};
         const today = new Date().toISOString().split('T')[0];
@@ -62,8 +66,7 @@ const PublicBooking = () => {
             return false;
         }
         setSearchErrors({});
-        setLoading(true);
-        setTimeout(() => setLoading(false), 800);
+        fetchRoomTypes(searchData.checkIn, searchData.checkOut);
         return true;
     };
 
@@ -248,7 +251,7 @@ const PublicBooking = () => {
                                     gap: '6px'
                                 }}>
                                     <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></div>
-                                    CÒN {(rt.availableRooms || rt.AvailableRooms)} / {(rt.roomCount || rt.RoomCount)} PHÒNG
+                                    HIỆN TẠI CÒN {(rt.availableRooms || rt.AvailableRooms)} / {(rt.roomCount || rt.RoomCount)} PHÒNG
                                 </div>
                             </div>
                             <div style={{ padding: isMobile ? '20px' : '24px' }}>
