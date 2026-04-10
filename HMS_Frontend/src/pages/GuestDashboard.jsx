@@ -201,12 +201,9 @@ const GuestDashboard = () => {
                     <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#1e293b' }}>Chào mừng trở lại, {profile?.fullName || 'Khách quý'}!</h1>
                     <p style={{ color: '#64748b', fontSize: '14px' }}>Khám phá không gian nghỉ dưỡng dành riêng cho bạn.</p>
                 </div>
-                <button onClick={logout} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '14px', border: '1px solid #fee2e2', background: 'white', color: '#ef4444', fontWeight: '700', cursor: 'pointer' }}>
-                    <LogOut size={18} /> Đăng xuất
-                </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) 1fr', gap: '32px' }}>
                 {/* Main Content */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                     
@@ -219,7 +216,7 @@ const GuestDashboard = () => {
                         </div>
                         
                         {/* Search Bar Inline */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '20px', marginBottom: '24px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '20px', marginBottom: '32px', border: '1px solid #f1f5f9' }}>
                             <div>
                                 <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Nhận phòng</label>
                                 <input type="date" value={searchData.checkIn} onChange={e => setSearchData({...searchData, checkIn: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
@@ -235,55 +232,66 @@ const GuestDashboard = () => {
                                 </select>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                <button style={{ width: '100%', height: '42px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                                <button style={{ width: '100%', height: '42px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)' }}>
                                     Tìm phòng
                                 </button>
                             </div>
                         </div>
 
-                        {/* Room Types Horizontal Scroll */}
-                        <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '16px' }} className="no-scrollbar">
+                        {/* Room Types Grid - Optimized layout */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
                             {roomTypes.map(rt => (
                                 <motion.div 
                                     key={rt.roomTypeId || rt.RoomTypeId} 
-                                    whileHover={{ y: -5 }}
-                                    style={{ flex: '0 0 280px', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}
+                                    whileHover={{ y: -8 }}
+                                    style={{ background: 'white', borderRadius: '28px', border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 10px 15px -10px rgba(0,0,0,0.1)', transition: 'all 0.3s' }}
                                 >
-                                    <div style={{ height: '140px', position: 'relative' }}>
-                                        <img src={`https://images.unsplash.com/photo-1590490360182-c33d597353a0?auto=format&fit=crop&w=400&q=60&sig=${rt.typeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'white', padding: '4px 10px', borderRadius: '8px', fontWeight: '800', color: '#10b981', fontSize: '14px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                    <div style={{ height: '180px', position: 'relative' }}>
+                                        <img 
+                                            src={`https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=60&sig=${rt.typeName || rt.TypeName}`} 
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                            alt={rt.typeName}
+                                        />
+                                        <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', padding: '6px 14px', borderRadius: '12px', fontWeight: '900', color: '#10b981', fontSize: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                                             {(() => {
                                                 const level = profile?.membershipLevel || 'Bronze';
                                                 const rates = { 'Royal': 0.25, 'Diamond': 0.20, 'Platinum': 0.15, 'Gold': 0.10, 'Silver': 0.05, 'Bronze': 0 };
                                                 const discount = rates[level] || 0;
-                                                const finalPrice = rt.basePrice * (1 - discount);
+                                                const basePrice = rt.basePrice || rt.BasePrice || 0;
+                                                const finalPrice = basePrice * (1 - discount);
                                                 return (
                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                        {discount > 0 && <span style={{ fontSize: '10px', color: '#94a3b8', textDecoration: 'line-through', fontWeight: '600', marginBottom: '-4px' }}>{new Intl.NumberFormat('vi-VN').format(rt.basePrice)}₫</span>}
+                                                        {discount > 0 && <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through', fontWeight: '600', marginBottom: '-2px' }}>{new Intl.NumberFormat('vi-VN').format(basePrice)}₫</span>}
                                                         <span>{new Intl.NumberFormat('vi-VN').format(finalPrice)}₫</span>
                                                     </div>
                                                 );
                                             })()}
                                         </div>
                                     </div>
-                                    <div style={{ padding: '16px' }}>
-                                        <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '4px' }}>{rt.typeName}</h3>
-                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                                           <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={12}/> {rt.maxOccupancy} người</span>
-                                           <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Wifi size={12}/> Wifi</span>
+                                    <div style={{ padding: '24px' }}>
+                                        <h3 style={{ fontSize: '18px', fontWeight: '900', marginBottom: '8px', color: '#1e293b' }}>{rt.typeName || rt.TypeName}</h3>
+                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}><Users size={14}/> {rt.maxOccupancy} người</span>
+                                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}><Wifi size={14}/> Wifi 5</span>
                                            {(rt.availableRooms > 0 || rt.AvailableRooms > 0) ? (
-                                                <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', background: '#fff7ed', padding: '2px 8px', borderRadius: '6px' }}>
-                                                    Còn {rt.availableRooms || rt.AvailableRooms} phòng
+                                                <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px', background: '#fff7ed', padding: '4px 10px', borderRadius: '10px' }}>
+                                                    <CheckCircle2 size={12} /> Còn {rt.availableRooms || rt.AvailableRooms} phòng
                                                 </span>
                                            ) : (
-                                                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '800', background: '#fef2f2', padding: '2px 8px', borderRadius: '6px' }}>Hết phòng</span>
+                                                <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '800', background: '#fef2f2', padding: '4px 10px', borderRadius: '10px' }}>Hết phòng</span>
                                            )}
                                         </div>
                                         <button 
                                             onClick={() => setSelectedType(rt)}
-                                            style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #3b82f6', color: '#3b82f6', background: 'white', fontWeight: '700', fontSize: '12px', cursor: 'pointer', transition: '0.2s' }}
+                                            style={{ 
+                                                width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #3b82f6', 
+                                                color: '#3b82f6', background: 'white', fontWeight: '800', fontSize: '13px', 
+                                                cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' 
+                                            }}
+                                            onMouseOver={(e) => { e.currentTarget.style.background = '#3b82f6'; e.currentTarget.style.color = 'white'; }}
+                                            onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#3b82f6'; }}
                                         >
-                                            Đặt nhanh
+                                            Đặt nhanh <ArrowRight size={16} />
                                         </button>
                                     </div>
                                 </motion.div>
