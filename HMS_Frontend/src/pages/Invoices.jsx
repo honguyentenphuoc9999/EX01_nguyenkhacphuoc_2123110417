@@ -69,6 +69,8 @@ const PaymentModal = ({ invoice, onClose, onConfirm }) => {
 };
 
 // --- MODAL IN HÓA ĐƠN ---
+const PrintInvoiceModal = ({ invoice, onClose }) => {
+    return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.98)', zIndex: 3000, overflowY: 'auto' }}>
             {/* Vùng chứa hóa đơn (Có class để in) */}
             <div className="print-invoice-area">
