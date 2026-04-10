@@ -56,13 +56,12 @@ namespace Demo02.Controllers
                 int unavailableCurrentStatus = 0;
                 if (cin.Date == DateTime.Today)
                 {
-                    // Đếm những phòng không sẵn sàng: Đang bẩn (Dirty), Đang dọn (Cleaning), hoặc đang có khách (Occupied)
-                    // và quan trọng là phòng đó CHƯA nằm trong danh sách đã bị đặt (bookedCount) để tránh trừ 2 lần
+                    // Đếm những phòng không sẵn sàng: Đang bẩn (Dirty), Đang dọn, hoặc đang có khách (Occupied)
                     unavailableCurrentStatus = allRooms.Count(r => 
                         (r.Status == RoomStatus.Occupied || 
-                         r.Status == RoomStatus.Dirty || 
-                         r.Status == RoomStatus.Cleaning || 
-                         r.Status == RoomStatus.Maintenance));
+                         r.Status == RoomStatus.VacantDirty || 
+                         r.Status == RoomStatus.OutOfOrder || 
+                         r.Status == RoomStatus.UnderMaintenance));
 
                     // Tuy nhiên, vì bookedCount đã đếm dựa trên Reservation, 
                     // ta chỉ cần lấy số lượng phòng THỰC SỰ SẠCH VÀ TRỐNG tại thời điểm này

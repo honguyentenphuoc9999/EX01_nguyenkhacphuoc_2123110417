@@ -67,9 +67,9 @@ namespace Demo02.Controllers
                 if (log.EntityName == "Invoice" && Guid.TryParse(log.EntityId, out Guid invId))
                 {
                     var guestName = await _context.Invoices
-                        .Include(i => i.Reservation).ThenInclude(r => r!.Guest)
+                        .Include(i => i.Folio).ThenInclude(f => f!.Reservation).ThenInclude(r => r!.Guest)
                         .Where(i => i.InvoiceId == invId)
-                        .Select(i => i.Reservation!.Guest!.FullName)
+                        .Select(i => i.Folio!.Reservation!.Guest!.FullName)
                         .FirstOrDefaultAsync();
                     if (!string.IsNullOrEmpty(guestName)) customerInfo = $" - Khách: {guestName}";
                 }
