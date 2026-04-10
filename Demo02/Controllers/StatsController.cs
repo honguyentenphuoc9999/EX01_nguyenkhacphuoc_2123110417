@@ -54,8 +54,8 @@ namespace Demo02.Controllers
                 .OrderByDescending(a => a.Timestamp)
                 .Take(5)
                 .Select(a => new {
-                    Message = $"{a.Action} - {a.TableName}",
-                    User = a.UserEmail,
+                    Message = $"{a.Action} - {a.EntityName}",
+                    User = a.UserId,
                     Time = a.Timestamp
                 })
                 .ToListAsync();
