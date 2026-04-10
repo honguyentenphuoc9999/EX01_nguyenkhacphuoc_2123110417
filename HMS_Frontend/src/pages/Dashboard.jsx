@@ -29,13 +29,13 @@ const Dashboard = () => {
                 const data = res.data;
                 setStats({
                     monthlyRevenue: data.monthlyRevenue,
-                    revenueTrend: "+2.5%",
+                    revenueTrend: data.revenueTrend,
                     occupancyRate: data.occupancyRate,
-                    occupancyTrend: "+1.2%",
+                    occupancyTrend: data.occupancyTrend,
                     pendingAmount: data.pendingAmount,
-                    pendingTrend: "-0.5%",
+                    pendingTrend: data.pendingTrend,
                     newGuests: data.newGuests,
-                    guestsTrend: "+100%",
+                    guestsTrend: data.guestsTrend,
                     totalGuests: data.totalGuests,
                     recentEvents: data.recentEvents
                 });
