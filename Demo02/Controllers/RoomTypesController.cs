@@ -46,13 +46,40 @@ namespace Demo02.Controllers
 
             // 3. Tính toán kết quả
             var result = roomTypes.Select(rt => {
-                var totalRooms = rt.Rooms?.Count() ?? 0;
+                var allRooms = rt.Rooms?.ToList() ?? new List<Room>();
+                var totalRoomsCount = allRooms.Count;
                 
-                // Đếm xem có bao nhiêu phòng hạng này đã bị giữ chân
+                // Số phòng đã bị đặt trước (Reserved)
                 var bookedCount = overlappingReservations.Count(rr => rr.RoomTypeId == rt.RoomTypeId);
                 
-                var availableCount = totalRooms - bookedCount;
-                if (availableCount < 0) availableCount = 0;
+                // Nếu khách đặt cho NGÀY HÔM NAY, phải kiểm tra trạng thái vật lý của phòng
+                int unavailableCurrentStatus = 0;
+                if (cin.Date == DateTime.Today)
+                {
+                    // Đếm những phòng không sẵn sàng: Đang bẩn (Dirty), Đang dọn (Cleaning), hoặc đang có khách (Occupied)
+                    // và quan trọng là phòng đó CHƯA nằm trong danh sách đã bị đặt (bookedCount) để tránh trừ 2 lần
+                    unavailableCurrentStatus = allRooms.Count(r => 
+                        (r.Status == RoomStatus.Occupied || 
+                         r.Status == RoomStatus.Dirty || 
+                         r.Status == RoomStatus.Cleaning || 
+                         r.Status == RoomStatus.Maintenance));
+
+                    // Tuy nhiên, vì bookedCount đã đếm dựa trên Reservation, 
+                    // ta chỉ cần lấy số lượng phòng THỰC SỰ SẠCH VÀ TRỐNG tại thời điểm này
+                    // nếu nó ít hơn số phòng trống dự tính (total - booked)
+                }
+
+                int finalAvailable = totalRoomsCount - bookedCount;
+                
+                // Nếu đặt hôm nay, con số không thể vượt quá số phòng VacantClean hiện có
+                if (cin.Date == DateTime.Today)
+                {
+                    int vacantCleanCount = allRooms.Count(r => r.Status == RoomStatus.VacantClean);
+                    // Số phòng sẵn sàng = giá trị nhỏ nhất giữa (Tổng - Đã đặt) và (Số phòng đang Sạch)
+                    finalAvailable = Math.Min(finalAvailable, vacantCleanCount);
+                }
+
+                if (finalAvailable < 0) finalAvailable = 0;
 
                 return new RoomTypeResponseDto {
                     RoomTypeId = rt.RoomTypeId,
@@ -60,8 +87,8 @@ namespace Demo02.Controllers
                     BasePrice = rt.BasePrice,
                     Description = rt.Description,
                     MaxOccupancy = rt.MaxOccupancy,
-                    RoomCount = totalRooms,
-                    AvailableRooms = availableCount // Con số thực tế dựa trên ngày đặt
+                    RoomCount = totalRoomsCount,
+                    AvailableRooms = finalAvailable 
                 };
             });
 

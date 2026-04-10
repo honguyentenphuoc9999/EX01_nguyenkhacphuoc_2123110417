@@ -55,28 +55,55 @@ namespace Demo02.Controllers
             // 5. Các sự kiện gần đây (Phải lấy dữ liệu thô về rồi mới dịch trong bộ nhớ)
             var rawLogs = await _context.AuditLogs
                 .OrderByDescending(a => a.Timestamp)
-                .Take(5)
+                .Take(7)
                 .ToListAsync();
 
-            var events = rawLogs.Select(a => new {
-                message = TranslateAction(a.Action, a.EntityName),
-                user = a.UserId == "admin@hms.com" ? "Quản trị viên" : (a.UserId ?? "Hệ thống"),
-                time = a.Timestamp
-            }).ToList<object>();
+            var events = new List<object>();
+
+            foreach (var log in rawLogs)
+            {
+                string customerInfo = "";
+                // Thử tìm tên khách hàng nếu là Invoice hoặc Reservation
+                if (log.EntityName == "Invoice" && Guid.TryParse(log.EntityId, out Guid invId))
+                {
+                    var guestName = await _context.Invoices
+                        .Include(i => i.Reservation).ThenInclude(r => r!.Guest)
+                        .Where(i => i.InvoiceId == invId)
+                        .Select(i => i.Reservation!.Guest!.FullName)
+                        .FirstOrDefaultAsync();
+                    if (!string.IsNullOrEmpty(guestName)) customerInfo = $" - Khách: {guestName}";
+                }
+                else if (log.EntityName == "Reservation" && Guid.TryParse(log.EntityId, out Guid resId))
+                {
+                    var guestName = await _context.Reservations
+                        .Include(r => r.Guest)
+                        .Where(r => r.ReservationId == resId)
+                        .Select(r => r.Guest!.FullName)
+                        .FirstOrDefaultAsync();
+                    if (!string.IsNullOrEmpty(guestName)) customerInfo = $" - Khách: {guestName}";
+                }
+
+                events.Add(new {
+                    message = TranslateAction(log.Action, log.EntityName) + customerInfo,
+                    user = log.UserId == "admin@hms.com" ? "Quản trị viên" : (log.UserId ?? "Hệ thống"),
+                    time = log.Timestamp.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy") // Chuyển sang giờ VN
+                });
+            }
 
             // Fallback: Nếu AuditLogs trống
-            if (events == null || !events.Any())
+            if (!events.Any())
             {
                 var rawReservations = await _context.Reservations
+                    .Include(r => r.Guest)
                     .OrderByDescending(r => r.CreatedAt)
                     .Take(5)
                     .ToListAsync();
                 
-                events = rawReservations.Select(r => new {
-                    message = $"Đơn đặt phòng {r.BookingCode} - {(r.Status == ReservationStatus.Confirmed ? "Đã xác nhận" : "Mới")}",
+                events = rawReservations.Select(r => (object)new {
+                    message = $"Đơn đặt phòng {r.BookingCode} - Khách: {r.Guest?.FullName}",
                     user = "Hệ thống",
-                    time = r.CreatedAt
-                }).ToList<object>();
+                    time = r.CreatedAt.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy") // Chuyển sang giờ VN
+                }).ToList();
             }
 
             // Tính toán xu hướng giả lập dựa trên dữ liệu thật (Ví dụ: so với mục tiêu hoặc tháng trước)
