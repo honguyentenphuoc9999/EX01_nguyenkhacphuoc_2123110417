@@ -49,7 +49,7 @@ Hệ thống đã được nạp sẵn dữ liệu mẫu. Bạn có thể dùng 
 | **Lê Văn Nam** | `nam` | `Staff@123` | `nam@hms.com` | `NV004` | **Room Attendant (Phục vụ phòng)** |
 | **Nguyễn Thị Mai** | `mai.nt` | `Hms@123` | `mai.nt@hms.com` | `HK-001` | **Housekeeper (Dọn phòng)** |
 | **Trần Văn Nam** | `nam.tv` | `Hms@123` | `nam.tv@hms.com` | `HK-002` | **Housekeeper (Dọn phòng)** |
-| **Nguyễn Thành Viên** | `member` | `Guest@123` | `member@gmail.com` | `Guest` | **VIP Member** |
+| **Nguyễn Thành Viên** | `0909000123` | `Guest@123` | `member@gmail.com` | `Guest` | **VIP Member** |
 
 *Lưu ý:* Sau khi Login thành công, copy chuỗi `token`, nhấn nút **Authorize** trên cùng của trang Swagger và điền cú pháp: `Bearer <token của bạn>`.
 
@@ -157,3 +157,29 @@ Hệ thống đã cấu hình sẵn để test nhanh:
 *   **Background Tasks:** Hệ thống cập nhật trạng thái No-Show tự động theo thời gian thực (CRON Jobs).
 
 *Thiết kế và hỗ trợ mở rộng chuyên nghiệp theo Tiêu chuẩn Khách sạn.*
+
+---
+
+## 🚀 8. HƯỚNG DẪN DEPLOY (CI/CD)
+
+Dự án đã được cấu hình sẵn các workflow GitHub Actions để tự động hóa việc triển khai.
+
+### A. Deploy Backend (ASP.NET Core) lên Azure
+1.  **Lấy Publish Profile**: Vào Azure Portal -> App Service -> Get publish profile.
+2.  **Cấu hình GitHub Secrets**:
+    *   `AZURE_WEBAPP_PUBLISH_PROFILE`: Dán nội dung file `.publishsettings`.
+3.  **Cập nhật Workflow**: Mở file `.github/workflows/deploy-azure.yml` và thay `YOUR_APP_NAME` bằng tên App Service của bạn.
+
+### B. Deploy Backend bằng Docker (GHCR)
+Hệ thống tự động build Docker image và đẩy lên **GitHub Container Registry (GHCR)** mỗi khi bạn push lên nhánh `main`.
+*   **Workflow**: `.github/workflows/docker-image.yml`
+*   **Image Path**: `ghcr.io/<your-github-username>/demo02:latest`
+
+### C. Deploy Frontend (React + Vite)
+Khuyến nghị sử dụng **Vercel** hoặc **Netlify**:
+1.  Kết nối Repo GitHub với Vercel.
+2.  Cấu hình **Root Directory**: `HMS_Frontend`.
+3.  **Build Command**: `npm run build`.
+4.  **Output Directory**: `dist`.
+5.  **Environment Variables**: Thêm `VITE_API_BASE_URL` trỏ về link Backend đã deploy.
+

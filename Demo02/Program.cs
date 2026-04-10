@@ -96,11 +96,12 @@ builder.Services.AddSwaggerGen(c => {
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Luôn bật Swagger để giáo viên có thể kiểm tra API từ xa qua link live
+app.UseSwagger();
+app.UseSwaggerUI(c => {
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HMS API v3.0");
+    c.RoutePrefix = string.Empty; // Đặt Swagger làm trang chủ khi vào link
+});
 
 app.UseHttpsRedirection();
 
@@ -116,6 +117,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate(); // Tự động tạo bảng và cập nhật cấu trúc DB trên server
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await DbSeeder.SeedAsync(context, userManager, roleManager);

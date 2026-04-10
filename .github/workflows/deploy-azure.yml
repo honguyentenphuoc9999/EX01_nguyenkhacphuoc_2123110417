@@ -1,0 +1,32 @@
+name: Deploy ASP.NET Core to Azure
+
+on:
+  push:
+    branches: [ "main" ] # Tên nhánh chính của bạn
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Thay đổi theo version .NET bạn dùng
+
+    - name: Restore dependencies
+      run: dotnet restore Demo02/Demo02.csproj
+
+    - name: Build
+      run: dotnet build Demo02/Demo02.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish Demo02/Demo02.csproj -c Release -o ./publish
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'YOUR_APP_NAME' # Thay bằng tên App Service trên Azure của bạn
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ./publish
