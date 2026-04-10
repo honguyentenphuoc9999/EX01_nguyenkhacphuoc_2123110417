@@ -167,8 +167,14 @@ namespace Demo02.Controllers
             }
             else if (!isStaffBooking)
             {
-                var signResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password ?? "", false);
-                if (!signResult.Succeeded) return BadRequest(new { message = "Mật khẩu không chính xác. Vui lòng thử lại!" });
+                // Nếu khách hàng ĐÃ ĐĂNG NHẬP và chính là chủ tài khoản này, không bắt check mật khẩu lại
+                bool isOwnAccount = User.Identity?.IsAuthenticated == true && User.Identity.Name == user.UserName;
+                
+                if (!isOwnAccount)
+                {
+                    var signResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password ?? "", false);
+                    if (!signResult.Succeeded) return BadRequest(new { message = "Mật khẩu không chính xác. Vui lòng thử lại!" });
+                }
             }
 
             // --- ✍️ THỰC THI ĐẶT PHÒNG ---
@@ -200,7 +206,7 @@ namespace Demo02.Controllers
 
             var reservation = new Reservation {
                 GuestId = guest.GuestId,
-                RoomId = targetRoom.RoomId,
+                RoomId = targetRoom?.RoomId,
                 BookingCode = "HMS-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 CheckInDate = dto.CheckInDate,
                 CheckOutDate = dto.CheckOutDate,
@@ -209,12 +215,23 @@ namespace Demo02.Controllers
                 CreatedAt = DateTime.Now
             };
 
-            // 🛡️ CHỈ cập nhật Status nếu đây là đặt phòng cho HÔM NAY
-            if (dto.CheckInDate.Date == DateTime.Today)
+            // 🛡️ Cập nhật trạng thái phòng nếu đặt hôm nay
+            if (targetRoom != null && dto.CheckInDate.Date <= DateTime.Today && dto.CheckOutDate.Date > DateTime.Today)
             {
                 targetRoom.Status = RoomStatus.Reserved;
             }
+            
             _context.Reservations.Add(reservation);
+            await _context.SaveChangesAsync(); // Lưu để có ReservationId
+
+            // --- 🔗 QUAN TRỌNG: Lưu vào ReservationRooms để đồng bộ logic tính phòng trống ---
+            var resRoom = new ReservationRoom {
+                ReservationId = reservation.ReservationId,
+                RoomTypeId = dto.RoomTypeId,
+                RoomId = targetRoom?.RoomId, // Có thể null nếu chưa gán phòng cụ thể
+                PriceAtBooking = roomType.BasePrice * discountMultiplier
+            };
+            _context.ReservationRooms.Add(resRoom);
             await _context.SaveChangesAsync();
 
             if (!isStaffBooking)

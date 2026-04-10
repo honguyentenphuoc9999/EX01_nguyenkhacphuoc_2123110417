@@ -34,12 +34,10 @@ namespace Demo02.Controllers
             var occupiedRooms = await _context.Rooms.CountAsync(r => r.Status == RoomStatus.Occupied);
             var occupancyRate = totalRooms > 0 ? (double)occupiedRooms / totalRooms * 100 : 0;
 
-            // 3. Tiền khách hàng chưa thanh toán (Từ các Folio đang ở - CheckedIn)
-            var outstandingAmount = await _context.FolioCharges
-                .Include(fc => fc.Folio)
-                .ThenInclude(f => f!.Reservation)
-                .Where(fc => fc.Folio != null && fc.Folio.Reservation != null && fc.Folio.Reservation.Status == ReservationStatus.CheckedIn)
-                .SumAsync(fc => (decimal?)fc.TotalAmount) ?? 0;
+            // 3. Tiền khách hàng chưa thanh toán (Từ các hóa đơn đang chờ thu tiền)
+            var outstandingAmount = await _context.Invoices
+                .Where(i => i.Status == InvoiceStatus.Draft || i.Status == InvoiceStatus.Issued)
+                .SumAsync(i => (decimal?)i.TotalAmount) ?? 0;
 
             // 4. Số khách mới hôm nay (Chỉ đếm Khách đã được xác minh hồ sơ thành công)
             var todayGuests = await _context.Reservations
