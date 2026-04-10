@@ -81,77 +81,87 @@ const Rooms = () => {
         }
     };
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
-        <div style={{ padding: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <div style={{ padding: isMobile ? '16px' : '32px' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '20px', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <LayoutGrid size={32} color="#3b82f6" /> Quản lý Danh sách Phòng
+                    <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <LayoutGrid size={isMobile ? 24 : 32} color="#3b82f6" /> Danh sách Phòng
                     </h1>
-                    <p style={{ color: '#64748b', marginTop: '4px' }}>Quản lý chi tiết từng số phòng, vị trí tầng và hạng phòng tương ứng.</p>
+                    <p style={{ color: '#64748b', marginTop: '4px', fontSize: isMobile ? '13px' : '15px' }}>Quản lý chi tiết từng số phòng, vị trí tầng và hạng phòng.</p>
                 </div>
-                <button onClick={() => { setModalData({ roomNumber: '', floor: 1, roomTypeId: roomTypes[0]?.roomTypeId || roomTypes[0]?.RoomTypeId || '' }); setIsModalOpen(true); }} style={{ background: '#3b82f6', color: 'white', padding: '12px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Plus size={20} /> Thêm Phòng mới
+                <button onClick={() => { setModalData({ roomNumber: '', floor: 1, roomTypeId: roomTypes[0]?.roomTypeId || roomTypes[0]?.RoomTypeId || '' }); setIsModalOpen(true); }} style={{ width: isMobile ? '100%' : 'auto', background: '#3b82f6', color: 'white', padding: '12px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Plus size={20} /> {isMobile ? 'Thêm phòng' : 'Thêm Phòng mới'}
                 </button>
             </div>
 
 
             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>SỐ PHÒNG / TẦNG</th>
-                            <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>HẠNG PHÒNG</th>
-                            <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>TRẠNG THÁI</th>
-                            <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700', textAlign: 'right' }}>HÀNH ĐỘNG</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && rooms.length === 0 ? (
-                            <tr><td colSpan="4" style={{ padding: '60px', textAlign: 'center' }}>Đang tải danh sách phòng...</td></tr>
-                        ) : rooms.map(room => (
-                            <tr key={room.roomId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '20px 24px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                        <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: '#f1f5f9', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '18px' }}>
-                                            {room.roomNumber || room.RoomNumber}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: '700', color: '#1e293b' }}>Phòng {room.roomNumber || room.RoomNumber}</div>
-                                            <div style={{ fontSize: '12px', color: '#94a3b8' }}>Tầng {room.floor || room.Floor}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td style={{ padding: '20px 24px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', color: '#475569' }}>
-                                        <Box size={16} color="#3b82f6" /> {room.roomTypeName || room.RoomTypeName || 'Chưa xác định'}
-                                    </div>
-                                </td>
-                                <td style={{ padding: '20px 24px' }}>
-                                    <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', background: getStatusColor(room).bg, color: getStatusColor(room).text }}>
-                                        {getStatusColor(room).label}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                        <button onClick={() => { 
-                                            const normalizedRoom = {
-                                                ...room,
-                                                roomNumber: room.roomNumber || room.RoomNumber,
-                                                floor: room.floor || room.Floor,
-                                                roomTypeId: room.roomTypeId || room.RoomTypeId,
-                                                roomId: room.roomId || room.RoomId
-                                            };
-                                            setModalData(normalizedRoom); 
-                                            setIsModalOpen(true); 
-                                        }} style={{ p: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Edit2 size={16} /></button>
-                                        <button onClick={() => handleDelete(room.roomId)} style={{ p: '8px', border: 'none', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Trash2 size={16} /></button>
-                                    </div>
-                                </td>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: isMobile ? '600px' : 'auto' }}>
+                        <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>SỐ PHÒNG / TẦNG</th>
+                                <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>HẠNG PHÒNG</th>
+                                <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700' }}>TRẠNG THÁI</th>
+                                <th style={{ padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: '700', textAlign: 'right' }}>HÀNH ĐỘNG</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {loading && rooms.length === 0 ? (
+                                <tr><td colSpan="4" style={{ padding: '60px', textAlign: 'center' }}>Đang tải danh sách phòng...</td></tr>
+                            ) : rooms.map(room => (
+                                <tr key={room.roomId} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            <div style={{ width: '45px', height: '45px', borderRadius: '12px', background: '#f1f5f9', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px' }}>
+                                                {room.roomNumber || room.RoomNumber}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '14px' }}>P.{room.roomNumber || room.RoomNumber}</div>
+                                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Tầng {room.floor || room.Floor}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
+                                            <Box size={14} color="#3b82f6" /> {room.roomTypeName || room.RoomTypeName || 'Chưa xác định'}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', background: getStatusColor(room).bg, color: getStatusColor(room).text }}>
+                                            {getStatusColor(room).label}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                            <button onClick={() => { 
+                                                const normalizedRoom = {
+                                                    ...room,
+                                                    roomNumber: room.roomNumber || room.RoomNumber,
+                                                    floor: room.floor || room.Floor,
+                                                    roomTypeId: room.roomTypeId || room.RoomTypeId,
+                                                    roomId: room.roomId || room.RoomId
+                                                };
+                                                setModalData(normalizedRoom); 
+                                                setIsModalOpen(true); 
+                                            }} style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDelete(room.roomId)} style={{ border: 'none', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={14} /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <AnimatePresence>

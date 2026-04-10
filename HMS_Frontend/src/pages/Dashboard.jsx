@@ -46,8 +46,16 @@ const Dashboard = () => {
         fetchDashboardData();
     }, []);
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const renderAdminDashboard = () => (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(5, 1fr)', gap: isMobile ? '16px' : '24px' }}>
             <StatCard icon={<TrendingUp color="#10b981"/>} label="Doanh thu tháng" value={`${new Intl.NumberFormat('vi-VN').format(stats.monthlyRevenue)} ₫`} trend={stats.revenueTrend} />
             <StatCard icon={<Box color="#3b82f6"/>} label="Tỷ lệ lấp đầy" value={`${stats.occupancyRate}%`} trend={stats.occupancyTrend} />
             <StatCard icon={<CreditCard color="#f59e0b"/>} label="Tiền chưa thanh toán" value={`${new Intl.NumberFormat('vi-VN').format(stats.pendingAmount)} ₫`} trend={stats.pendingTrend} />
@@ -57,7 +65,7 @@ const Dashboard = () => {
     );
 
     const renderFrontDeskDashboard = () => (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '24px' }}>
             <div style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Calendar color="#3b82f6" /> Hoạt động hôm nay
@@ -76,10 +84,10 @@ const Dashboard = () => {
     );
 
     return (
-        <div style={{ padding: '40px' }}>
+        <div style={{ padding: isMobile ? '16px' : '40px' }}>
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#1e293b' }}>Chào buổi sáng, {user?.fullName}! 👋</h1>
-                <p style={{ color: '#64748b', marginTop: '4px', marginBottom: '40px' }}>
+                <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '800', color: '#1e293b' }}>Chào buổi sáng, {user?.fullName}! 👋</h1>
+                <p style={{ color: '#64748b', marginTop: '4px', marginBottom: isMobile ? '24px' : '40px' }}>
                     Hệ thống đang hoạt động với vai trò: <b style={{ color: user?.role === 'Admin' ? '#ef4444' : '#3b82f6' }}>{user?.role}</b>
                 </p>
             </motion.div>
@@ -95,7 +103,7 @@ const Dashboard = () => {
                         stats.recentEvents.map((evt, idx) => {
                             const timeStr = new Date(evt.time).toLocaleString('vi-VN');
                             return (
-                                <div key={idx} style={{ background: 'white', padding: '16px 24px', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div key={idx} style={{ background: 'white', padding: '16px 24px', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '12px' : '0' }}>
                                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                                         <div style={{ padding: '10px', background: '#f1f5f9', borderRadius: '10px' }}><Clock size={16} color="#64748b" /></div>
                                         <div>
@@ -103,7 +111,7 @@ const Dashboard = () => {
                                             <div style={{ fontSize: '12px', color: '#94a3b8' }}>{timeStr} bởi {evt.user}</div>
                                         </div>
                                     </div>
-                                    <button style={{ color: '#3b82f6', background: 'transparent', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}>Chi tiết</button>
+                                    <button style={{ color: '#3b82f6', background: 'transparent', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '13px', width: isMobile ? '100%' : 'auto', textAlign: isMobile ? 'left' : 'right' }}>Chi tiết</button>
                                 </div>
                             );
                         })
