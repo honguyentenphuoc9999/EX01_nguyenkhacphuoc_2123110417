@@ -49,12 +49,24 @@ namespace Demo02.Controllers
                               && r.Guest != null 
                               && r.Guest.IsVerified == true);
 
+            // 5. Các sự kiện gần đây (Lấy từ Nhật ký hệ thống AuditLogs)
+            var recentEvents = await _context.AuditLogs
+                .OrderByDescending(a => a.Timestamp)
+                .Take(5)
+                .Select(a => new {
+                    Message = $"{a.Action} - {a.TableName}",
+                    User = a.UserEmail,
+                    Time = a.Timestamp
+                })
+                .ToListAsync();
+
             return Ok(new
             {
                 MonthlyRevenue = monthlyRevenue,
                 OccupancyRate = Math.Round(occupancyRate, 1),
                 OutstandingAmount = outstandingAmount,
-                TodayGuests = todayGuests
+                TodayGuests = todayGuests,
+                RecentEvents = recentEvents
             });
         }
     }
