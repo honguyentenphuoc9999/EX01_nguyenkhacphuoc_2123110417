@@ -191,14 +191,16 @@ namespace Demo02.Data
             }
             await context.SaveChangesAsync();
 
-            // 6. Seed Inventory
+            // 6. Seed Inventory (Phòng & Kho)
             if (!context.InventoryItems.Any())
             {
                 context.InventoryItems.AddRange(new List<InventoryItem>
                 {
-                    new InventoryItem { ItemCode = "INV-001", ItemName = "Coca Cola", Category = ItemCategory.Minibar, Unit = "Lon", CurrentStock = 100, MinimumStock = 20, CreatedBy = "System" },
-                    new InventoryItem { ItemCode = "INV-002", ItemName = "Nước suối", Category = ItemCategory.Minibar, Unit = "Chai", CurrentStock = 200, MinimumStock = 50, CreatedBy = "System" },
-                    new InventoryItem { ItemCode = "INV-003", ItemName = "Khăn tắm", Category = ItemCategory.Linen, Unit = "Cái", CurrentStock = 50, MinimumStock = 10, CreatedBy = "System" }
+                    new InventoryItem { ItemCode = "INV-001", ItemName = "Coca Cola", Category = ItemCategory.Minibar, Unit = "Lon", CurrentStock = 100, MinimumStock = 20, UnitCost = 10000, SellingPrice = 25000, IsForSale = true, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-002", ItemName = "Nước suối", Category = ItemCategory.Minibar, Unit = "Chai", CurrentStock = 200, MinimumStock = 50, UnitCost = 3000, SellingPrice = 15000, IsForSale = true, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-003", ItemName = "Bia 333", Category = ItemCategory.Minibar, Unit = "Lon", CurrentStock = 120, MinimumStock = 30, UnitCost = 15000, SellingPrice = 35000, IsForSale = true, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-004", ItemName = "Snack khoai tây", Category = ItemCategory.Minibar, Unit = "Gói", CurrentStock = 80, MinimumStock = 15, UnitCost = 8000, SellingPrice = 20000, IsForSale = true, CreatedBy = "System" },
+                    new InventoryItem { ItemCode = "INV-005", ItemName = "Khăn tắm", Category = ItemCategory.Linen, Unit = "Cái", CurrentStock = 50, MinimumStock = 10, UnitCost = 50000, SellingPrice = 0, IsForSale = false, CreatedBy = "System" }
                 });
             }
 
