@@ -55,15 +55,14 @@ namespace Demo02.Controllers
                 
                 int finalAvailable = totalRoomsCount - bookedCount;
                 
-                // --- HMS LOGIC: Nếu đặt hôm nay, chỉ loại trừ những phòng đang hỏng (OutOfOrder) ---
+                // --- HMS RIGID LOGIC: Ưu tiên vận hành thực tế ---
                 if (cin.Date == vnToday)
                 {
-                    int maintenanceCount = allRooms.Count(r => 
-                        r.Status == RoomStatus.OutOfOrder || 
-                        r.Status == RoomStatus.UnderMaintenance);
+                    // Đếm số lượng phòng THỰC SỰ SẴN SÀNG (Trống + Sạch)
+                    int readyRoomsCount = allRooms.Count(r => r.Status == RoomStatus.VacantClean);
                     
-                    // Số lượng khả dụng thực tế không thể vượt quá (Tổng - hỏng)
-                    finalAvailable = Math.Min(finalAvailable, totalRoomsCount - maintenanceCount);
+                    // Nếu đặt hôm nay, khách chỉ có thể đặt tối đa số phòng đã dọn xong
+                    finalAvailable = Math.Min(finalAvailable, readyRoomsCount);
                 }
 
                 if (finalAvailable < 0) finalAvailable = 0;

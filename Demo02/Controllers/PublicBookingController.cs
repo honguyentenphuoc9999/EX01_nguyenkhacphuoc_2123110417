@@ -123,24 +123,33 @@ namespace Demo02.Controllers
             Room? targetRoom = null;
             foreach (var r in allRoomsOfType)
             {
-                var isOccupied = await _context.Reservations.AnyAsync(res => 
+                // 1. Kiểm tra xem phòng vật lý này có bị ai đặt trùng lịch không
+                var isReserved = await _context.Reservations.AnyAsync(res => 
                     res.RoomId == r.RoomId && 
                     res.Status != ReservationStatus.Cancelled &&
                     res.Status != ReservationStatus.CheckedOut &&
                     res.CheckInDate.Date < dto.CheckOutDate.Date && 
                     res.CheckOutDate.Date > dto.CheckInDate.Date);
                 
-                if (!isOccupied) {
-                    targetRoom = r;
-                    break;
+                if (isReserved) continue;
+
+                // 2. Nếu đặt cho HÔM NAY, phải kiểm tra trạng thái vật lý (Phòng phải Sạch)
+                if (dto.CheckInDate.Date == today)
+                {
+                    if (r.Status != RoomStatus.VacantClean) continue;
                 }
+                
+                targetRoom = r;
+                break;
             }
 
-            // Nếu không tìm thấy phòng cụ thể để gán, lấy phòng đầu tiên
-            if (targetRoom == null) targetRoom = allRoomsOfType.FirstOrDefault();
-
             if (targetRoom == null) 
-                return BadRequest(new { message = "Hạng phòng này hiện chưa có phòng vật lý nào được tạo!" });
+            {
+                if (dto.CheckInDate.Date == today)
+                    return BadRequest(new { message = "Rất tiếc, hiện tại không có phòng nào đủ tiêu chuẩn 'Sạch & Sẵn sàng' để giao ngay. Vui lòng liên hệ Lễ tân hoặc chọn ngày khác!" });
+                
+                return BadRequest(new { message = "Hạng phòng này hiện chưa có phòng vật lý khả dụng để gán cho đơn đặt này!" });
+            }
 
             // --- ✍️ XỬ LÝ ĐĂNG KÝ / ĐĂNG NHẬP ---
             var user = await _userManager.FindByNameAsync(dto.Phone) 
