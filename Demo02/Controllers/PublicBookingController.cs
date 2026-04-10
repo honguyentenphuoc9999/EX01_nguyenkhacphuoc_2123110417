@@ -99,6 +99,9 @@ namespace Demo02.Controllers
             if (roomType == null) return NotFound(new { message = "Hạng phòng không tồn tại!" });
 
             // --- HMS SMART AVAILABILITY: Kiểm tra số lượng phòng trống của hạng này ---
+            var vnNow = DateTime.UtcNow.AddHours(7);
+            var today = vnNow.Date;
+
             var totalRoomsInType = await _context.Rooms
                 .CountAsync(r => r.RoomTypeId == dto.RoomTypeId && !r.IsDeleted);
 
@@ -134,8 +137,7 @@ namespace Demo02.Controllers
                 }
             }
 
-            // Nếu không tìm thấy phòng cụ thể để gán, vẫn cho đặt nhưng để RoomId = null (Lễ tân sẽ gán sau)
-            // hoặc lấy phòng đầu tiên của hạng đó. Ở đây tôi sẽ lấy phòng đầu tiên nếu không tìm được phòng ưng ý.
+            // Nếu không tìm thấy phòng cụ thể để gán, lấy phòng đầu tiên
             if (targetRoom == null) targetRoom = allRoomsOfType.FirstOrDefault();
 
             if (targetRoom == null) 
@@ -158,9 +160,9 @@ namespace Demo02.Controllers
 
                 var guestProfile = new Guest {
                     FullName = dto.FullName, Phone = dto.Phone, Nationality = "Vietnam",
-                    IdNumber = "PENDING-" + DateTime.Now.ToString("HHmmss"),
+                    IdNumber = "PENDING-" + vnNow.ToString("HHmmss"),
                     Email = dto.Email, GuestType = GuestType.Regular,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = vnNow
                 };
                 _context.Guests.Add(guestProfile);
                 await _context.SaveChangesAsync();
@@ -180,7 +182,7 @@ namespace Demo02.Controllers
             // --- ✍️ THỰC THI ĐẶT PHÒNG ---
             var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Phone == dto.Phone);
             if (guest == null) {
-                guest = new Guest { FullName = dto.FullName, Phone = dto.Phone, CreatedAt = DateTime.Now };
+                guest = new Guest { FullName = dto.FullName, Phone = dto.Phone, CreatedAt = vnNow };
                 _context.Guests.Add(guest);
                 await _context.SaveChangesAsync();
             }
@@ -212,11 +214,11 @@ namespace Demo02.Controllers
                 CheckOutDate = dto.CheckOutDate,
                 Status = ReservationStatus.Pending,
                 TotalPrice = roomType.BasePrice * nights * discountMultiplier,
-                CreatedAt = DateTime.Now
+                CreatedAt = vnNow
             };
 
             // 🛡️ Cập nhật trạng thái phòng nếu đặt hôm nay
-            if (targetRoom != null && dto.CheckInDate.Date <= DateTime.Today && dto.CheckOutDate.Date > DateTime.Today)
+            if (targetRoom != null && dto.CheckInDate.Date <= today && dto.CheckOutDate.Date > today)
             {
                 targetRoom.Status = RoomStatus.Reserved;
             }
@@ -228,8 +230,8 @@ namespace Demo02.Controllers
             var resRoom = new ReservationRoom {
                 ReservationId = reservation.ReservationId,
                 RoomTypeId = dto.RoomTypeId,
-                RoomId = targetRoom?.RoomId, // Có thể null nếu chưa gán phòng cụ thể
-                PriceAtBooking = roomType.BasePrice * discountMultiplier
+                RoomId = targetRoom?.RoomId, 
+                RoomRate = roomType.BasePrice * discountMultiplier // Sửa lỗi biên dịch ở đây
             };
             _context.ReservationRooms.Add(resRoom);
             await _context.SaveChangesAsync();

@@ -21,7 +21,8 @@ namespace Demo02.Controllers
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetDashboardStats()
         {
-            var today = DateTime.Today;
+            var vnNow = DateTime.UtcNow.AddHours(7);
+            var today = vnNow.Date;
             var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
             // 1. Doanh thu tháng (Chỉ tính các hóa đơn đã thanh toán 'Paid')

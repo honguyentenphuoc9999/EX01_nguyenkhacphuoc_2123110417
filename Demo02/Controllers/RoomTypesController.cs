@@ -28,20 +28,22 @@ namespace Demo02.Controllers
         {
             var cin = checkIn ?? DateTime.Today;
             var cout = checkOut ?? DateTime.Today.AddDays(1);
+            var vnToday = DateTime.UtcNow.AddHours(7).Date;
+            var cin = checkIn ?? vnToday;
+            var cout = checkOut ?? vnToday.AddDays(1);
 
-            // 1. Lấy tất cả các hạng phòng
-            var roomTypes = await _context.RoomTypes
-                .Include(rt => rt.Rooms)
-                .ToListAsync();
-
-            // 2. Tìm tất cả các ReservationRoom của các đơn đặt phòng trùng lịch (CheckIn < cout AND CheckOut > cin)
-            // Lọc ra các đơn không bị hủy (Status != Cancelled)
+            // 1. Lấy danh sách Record Reservation khớp ngày
             var overlappingReservations = await _context.ReservationRooms
                 .Include(rr => rr.Reservation)
                 .Where(rr => rr.Reservation != null && 
                              rr.Reservation.Status != ReservationStatus.Cancelled &&
                              rr.Reservation.CheckInDate < cout && 
                              rr.Reservation.CheckOutDate > cin)
+                .ToListAsync();
+
+            // 2. Lấy danh sách hạng phòng
+            var roomTypes = await _context.RoomTypes
+                .Include(rt => rt.Rooms)
                 .ToListAsync();
 
             // 3. Tính toán kết quả
@@ -54,7 +56,7 @@ namespace Demo02.Controllers
                 
                 // Nếu khách đặt cho NGÀY HÔM NAY, phải kiểm tra trạng thái vật lý của phòng
                 int unavailableCurrentStatus = 0;
-                if (cin.Date == DateTime.Today)
+                if (cin.Date == vnToday)
                 {
                     // Đếm những phòng không sẵn sàng: Đang bẩn (Dirty), Đang dọn, hoặc đang có khách (Occupied)
                     unavailableCurrentStatus = allRooms.Count(r => 
@@ -71,7 +73,7 @@ namespace Demo02.Controllers
                 int finalAvailable = totalRoomsCount - bookedCount;
                 
                 // Nếu đặt hôm nay, con số không thể vượt quá số phòng VacantClean hiện có
-                if (cin.Date == DateTime.Today)
+                if (cin.Date == vnToday)
                 {
                     int vacantCleanCount = allRooms.Count(r => r.Status == RoomStatus.VacantClean);
                     // Số phòng sẵn sàng = giá trị nhỏ nhất giữa (Tổng - Đã đặt) và (Số phòng đang Sạch)
