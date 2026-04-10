@@ -26,8 +26,6 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RoomTypeResponseDto>>> GetRoomTypes([FromQuery] DateTime? checkIn, [FromQuery] DateTime? checkOut)
         {
-            var cin = checkIn ?? DateTime.Today;
-            var cout = checkOut ?? DateTime.Today.AddDays(1);
             var vnToday = DateTime.UtcNow.AddHours(7).Date;
             var cin = checkIn ?? vnToday;
             var cout = checkOut ?? vnToday.AddDays(1);
