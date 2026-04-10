@@ -70,12 +70,12 @@ const Loyalty = () => {
                     tier === 3 ? 'Platinum' : tier === 4 ? 'Diamond' : tier === 5 ? 'Royal' : 'Bronze';
         
         switch (tVal) {
-            case 'Royal': return { bg: '#faf5ff', border: '#a855f7', text: '#7e22ce', icon: <Award size={14} fill="#a855f7"/>, label: 'ROYAL' };
-            case 'Diamond': return { bg: '#ecfeff', border: '#06b6d4', text: '#0e7490', icon: <ShieldCheck size={14} fill="#06b6d4"/>, label: 'DIAMOND' };
-            case 'Platinum': return { bg: '#f1f5f9', border: '#334155', text: '#0f172a', icon: <ShieldCheck size={14} fill="#334155"/>, label: 'PLATINUM' };
-            case 'Gold': return { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: <Award size={14} fill="#f59e0b"/>, label: 'GOLD' };
-            case 'Silver': return { bg: '#f1f5f9', border: '#94a3b8', text: '#475569', icon: <Star size={14}/>, label: 'SILVER' };
-            default: return { bg: '#fff7ed', border: '#ea580c', text: '#9a3412', icon: <Star size={14}/>, label: 'BRONZE' };
+            case 'Royal': return { bg: '#faf5ff', border: '#a855f7', text: '#7e22ce', icon: <Award size={14} fill="#a855f7"/>, label: 'Hạng Hoàng Gia' };
+            case 'Diamond': return { bg: '#ecfeff', border: '#06b6d4', text: '#0e7490', icon: <ShieldCheck size={14} fill="#06b6d4"/>, label: 'Hạng Kim Cương' };
+            case 'Platinum': return { bg: '#f1f5f9', border: '#334155', text: '#0f172a', icon: <ShieldCheck size={14} fill="#334155"/>, label: 'Hạng Bạch Kim' };
+            case 'Gold': return { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: <Award size={14} fill="#f59e0b"/>, label: 'Hạng Vàng' };
+            case 'Silver': return { bg: '#f1f5f9', border: '#94a3b8', text: '#475569', icon: <Star size={14}/>, label: 'Hạng Bạc' };
+            default: return { bg: '#fff7ed', border: '#ea580c', text: '#9a3412', icon: <Star size={14}/>, label: 'Hạng Đồng' };
         }
     };
 

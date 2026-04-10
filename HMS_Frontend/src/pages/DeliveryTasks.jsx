@@ -181,14 +181,18 @@ const DeliveryTasks = () => {
                                     </div>
 
                                     {task.status === 'Pending' || task.status === 0 ? (
-                                        <button onClick={() => handleAction(task, 'claim')} style={{ width: '100%', background: '#3b82f6', color: 'white', padding: '16px', borderRadius: '16px', border: 'none', fontWeight: '800', cursor: 'pointer', transition: '0.2s' }}>Bắt đầu đi giao</button>
+                                        !isManager ? (
+                                            <button onClick={() => handleAction(task, 'claim')} style={{ width: '100%', background: '#3b82f6', color: 'white', padding: '16px', borderRadius: '16px', border: 'none', fontWeight: '800', cursor: 'pointer', transition: '0.2s' }}>Bắt đầu đi giao</button>
+                                        ) : (
+                                            <div style={{ padding: '12px', textAlign: 'center', color: '#64748b', fontSize: '14px', fontStyle: 'italic', border: '1px dashed #cbd5e1', borderRadius: '12px' }}>Đang chờ nhân viên nhận đơn...</div>
+                                        )
                                     ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#eff6ff', padding: '12px', borderRadius: '12px', color: '#3b82f6' }}>
                                                 <UserCheck size={20} />
                                                 <span style={{ fontWeight: '800', fontSize: '14px' }}>{task.assignedStaff?.fullName || "Bí danh"} đang đi giao...</span>
                                             </div>
-                                            {(currentUser?.staffId === task.assignedStaffId || isManager) && (
+                                            {(currentUser?.staffId === task.assignedStaffId) && (
                                                 <button onClick={() => handleAction(task, 'complete')} style={{ width: '100%', background: '#10b981', color: 'white', padding: '16px', borderRadius: '16px', border: 'none', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}><CheckCircle2 size={20}/> Xác nhận đã giao tận tay</button>
                                             )}
                                         </div>
