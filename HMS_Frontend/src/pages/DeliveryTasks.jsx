@@ -165,10 +165,15 @@ const DeliveryTasks = () => {
 
             {loading && tasks.length === 0 ? <div style={{ textAlign: 'center', padding: '60px', color: '#64748b', fontWeight: '700' }}><RefreshCw className="animate-spin" style={{ margin: '0 auto 12px' }} /> Đang tải dữ liệu...</div> : (
                 activeTab === 'tasks' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '24px' }}>
+                    <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                        gap: '20px',
+                        padding: window.innerWidth < 640 ? '0' : '0 12px' 
+                    }}>
                         {activeTasks.length === 0 ? <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0', color: '#94a3b8', fontWeight: '700' }}>Tất cả các đơn đã được phục vụ!</div> : 
                             activeTasks.map(task => (
-                                <motion.div key={task.taskId} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'white', borderRadius: '24px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)' }}>
+                                <motion.div key={task.taskId} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'white', borderRadius: '24px', padding: window.innerWidth < 640 ? '20px' : '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                                         <div style={{ padding: '4px 12px', borderRadius: '10px', ...getStatusInfo(task.status), fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             {getStatusInfo(task.status).icon} {getStatusInfo(task.status).label.toUpperCase()}

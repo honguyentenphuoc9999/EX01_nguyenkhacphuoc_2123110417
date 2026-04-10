@@ -17,12 +17,15 @@ import {
     Utensils,
     Megaphone,
     Globe,
-    Send
+    Send,
+    Menu,
+    X
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
+    const [isOpen, setIsOpen] = React.useState(false);
     
     // --- 🇻🇳 VIỆT HÓA VAI TRÒ ---
     const getDisplayRole = () => {
@@ -71,70 +74,135 @@ const Sidebar = () => {
     ];
 
     return (
-        <div style={{ width: '280px', height: '100vh', background: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'sticky', top: 0 }}>
-            <div style={{ padding: '0 12px', marginBottom: '40px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <ShieldCheck size={26} /> HMS PHUOC PREMIER
-                </h2>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '1px' }}>Management System</div>
-            </div>
+        <>
+            {/* Mobile Toggle Button */}
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    position: 'fixed',
+                    top: '20px',
+                    left: '20px',
+                    zIndex: 100,
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: '#0f172a',
+                    color: 'white',
+                    border: 'none',
+                    display: 'none', // Sẽ được hiện bởi Media Query
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}
+                className="mobile-toggle"
+            >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
 
-            <nav style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {navItems.map((item) => {
-                        const userRole = String(user?.role || '').toLowerCase();
-                        const userPos = String(user?.position || '').toLowerCase();
-                        
-                        // Kiểm tra quyền: Theo Role chuẩn HOẶC Theo từ khóa trong chức vụ (fallback)
-                        let isAllowed = item.roles.some(r => String(r).toLowerCase() === userRole);
-                        
-                        if (item.path === '/delivery-tasks' && !isAllowed) {
-                            if (userPos.includes('phục vụ') || userPos.includes('attendant') || userRole.includes('attendant')) {
-                                isAllowed = true;
+            {/* Backdrop for mobile */}
+            {isOpen && (
+                <div 
+                    onClick={() => setIsOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(4px)',
+                        zIndex: 90
+                    }}
+                />
+            )}
+
+            <div className={`sidebar-container ${isOpen ? 'show' : ''}`} style={{ 
+                width: '280px', 
+                height: '100vh', 
+                background: '#0f172a', 
+                color: 'white', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                padding: '32px 20px', 
+                position: 'sticky', 
+                top: 0,
+                transition: 'transform 0.3s ease',
+                zIndex: 95
+            }}>
+                <div style={{ padding: '0 12px', marginBottom: '40px' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShieldCheck size={26} /> HMS PHUOC PREMIER
+                    </h2>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '1px' }}>Management System</div>
+                </div>
+
+                <nav style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {navItems.map((item) => {
+                            const userRole = String(user?.role || '').toLowerCase();
+                            const userPos = String(user?.position || '').toLowerCase();
+                            
+                            // Kiểm tra quyền: Theo Role chuẩn HOẶC Theo từ khóa trong chức vụ (fallback)
+                            let isAllowed = item.roles.some(r => String(r).toLowerCase() === userRole);
+                            
+                            if (item.path === '/delivery-tasks' && !isAllowed) {
+                                if (userPos.includes('phục vụ') || userPos.includes('attendant') || userRole.includes('attendant')) {
+                                    isAllowed = true;
+                                }
                             }
-                        }
-                        
-                        return isAllowed && (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                style={({ isActive }) => ({
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    padding: '14px 16px',
-                                    borderRadius: '12px',
-                                    textDecoration: 'none',
-                                    color: isActive ? 'white' : '#94a3b8',
-                                    background: isActive ? '#1e293b' : 'transparent',
-                                    fontWeight: isActive ? '700' : '500',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    borderLeft: isActive ? '4px solid #3b82f6' : '4px solid transparent'
-                                })}
-                            >
-                                {item.icon}
-                                {item.name}
-                            </NavLink>
-                        );
-                    })}
-                </div>
-            </nav>
+                            
+                            return isAllowed && (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    onClick={() => setIsOpen(false)}
+                                    style={({ isActive }) => ({
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '14px 16px',
+                                        borderRadius: '12px',
+                                        textDecoration: 'none',
+                                        color: isActive ? 'white' : '#94a3b8',
+                                        background: isActive ? '#1e293b' : 'transparent',
+                                        fontWeight: isActive ? '700' : '500',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        borderLeft: isActive ? '4px solid #3b82f6' : '4px solid transparent'
+                                    })}
+                                >
+                                    {item.icon}
+                                    {item.name}
+                                </NavLink>
+                            );
+                        })}
+                    </div>
+                </nav>
 
-            <div style={{ marginTop: 'auto', paddingTop: '32px', borderTop: '1px solid #1e293b' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#1e293b50', borderRadius: '16px', marginBottom: '24px' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: user?.role === 'Admin' ? '#ef4444' : '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '18px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                        {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+                <div style={{ marginTop: 'auto', paddingTop: '32px', borderTop: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#1e293b50', borderRadius: '16px', marginBottom: '24px' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: user?.role === 'Admin' ? '#ef4444' : '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '18px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                            {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#f1f5f9' }}>{user?.fullName || user?.username}</div>
+                            <div style={{ fontSize: '11px', color: user?.role === 'Admin' ? '#f87171' : '#3b82f6', fontWeight: '700', textTransform: 'uppercase' }}>{getDisplayRole()}</div>
+                        </div>
                     </div>
-                    <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#f1f5f9' }}>{user?.fullName || user?.username}</div>
-                        <div style={{ fontSize: '11px', color: user?.role === 'Admin' ? '#f87171' : '#3b82f6', fontWeight: '700', textTransform: 'uppercase' }}>{getDisplayRole()}</div>
-                    </div>
+                    <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none', background: '#fef2f205', color: '#f87171', cursor: 'pointer', fontWeight: '700', transition: 'all 0.2s' }}>
+                        <LogOut size={20} /> Đăng xuất
+                    </button>
                 </div>
-                <button onClick={logout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none', background: '#fef2f205', color: '#f87171', cursor: 'pointer', fontWeight: '700', transition: 'all 0.2s' }}>
-                    <LogOut size={20} /> Đăng xuất
-                </button>
             </div>
-        </div>
+
+            <style>{`
+                @media (max-width: 1024px) {
+                    .mobile-toggle {
+                        display: block !important;
+                    }
+                    .sidebar-container {
+                        position: fixed !important;
+                        transform: translateX(-100%);
+                    }
+                    .sidebar-container.show {
+                        transform: translateX(0);
+                    }
+                }
+            `}</style>
+        </>
     );
 };
 

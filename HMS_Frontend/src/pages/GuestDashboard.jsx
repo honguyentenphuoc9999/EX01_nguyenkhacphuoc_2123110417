@@ -177,12 +177,13 @@ const GuestDashboard = () => {
         } catch (err) { setShowToast("Lỗi: " + (err.response?.data?.message || err.message)); }
     };
 
-    const getNights = () => {
-        const start = new Date(searchData.checkIn);
-        const end = new Date(searchData.checkOut);
-        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        return diff > 0 ? diff : 0;
-    };
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f8fafc' }}>
@@ -191,19 +192,19 @@ const GuestDashboard = () => {
     );
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '40px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ background: '#f8fafc', minHeight: '100vh', padding: isMobile ? '16px' : '40px', fontFamily: 'Inter, sans-serif' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '48px' }}>
-                <div style={{ width: '70px', height: '70px', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 10px 20px rgba(139, 92, 246, 0.2)' }}>
-                    <User size={32} />
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '16px' : '24px', marginBottom: isMobile ? '32px' : '48px' }}>
+                <div style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 10px 20px rgba(139, 92, 246, 0.2)' }}>
+                    <User size={28} />
                 </div>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#1e293b' }}>Chào mừng trở lại, {profile?.fullName || 'Khách quý'}!</h1>
-                    <p style={{ color: '#64748b', fontSize: '14px' }}>Khám phá không gian nghỉ dưỡng dành riêng cho bạn.</p>
+                    <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '900', color: '#1e293b' }}>Chào mừng trở lại, {profile?.fullName || 'Khách quý'}!</h1>
+                    <p style={{ color: '#64748b', fontSize: '13px' }}>Khám phá không gian nghỉ dưỡng dành riêng cho bạn.</p>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) 1fr', gap: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.8fr) 1fr', gap: isMobile ? '20px' : '32px' }}>
                 {/* Main Content */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                     
@@ -216,7 +217,7 @@ const GuestDashboard = () => {
                         </div>
                         
                         {/* Search Bar Inline */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '20px', marginBottom: '32px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: isMobile ? '12px' : '16px', borderRadius: '20px', marginBottom: isMobile ? '20px' : '32px', border: '1px solid #f1f5f9' }}>
                             <div>
                                 <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Nhận phòng</label>
                                 <input type="date" value={searchData.checkIn} onChange={e => setSearchData({...searchData, checkIn: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
@@ -350,7 +351,7 @@ const GuestDashboard = () => {
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {reservations.map(res => (
-                                    <div key={res.reservationId} style={{ padding: '24px', border: '1px solid #f1f5f9', borderRadius: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div key={res.reservationId} style={{ padding: isMobile ? '20px' : '24px', border: '1px solid #f1f5f9', borderRadius: '24px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '20px' : '0' }}>
                                         <div style={{ display: 'flex', gap: '20px' }}>
                                             <div style={{ width: '56px', height: '56px', background: '#f8fafc', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <MapPin color="#3b82f6" />
