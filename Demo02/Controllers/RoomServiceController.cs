@@ -30,32 +30,48 @@ namespace Demo02.Controllers
             
             if (reservation == null) return BadRequest("Phòng này chưa được nhận hoặc đã trả, không thể gọi món.");
 
-            order.Status = "Pending";
+            order.Status = "InProgress"; // Gán sang InProgress ngay vì đã gán nhân viên
             order.CreatedAt = DateTime.Now;
             _context.RoomServiceOrders.Add(order);
             await _context.SaveChangesAsync();
 
-            // --- TỰ ĐỘNG TẠO NHIỆM VỤ GIAO ĐỒ (DELIVERY) ---
-            // Tìm nhân viên Phục vụ phòng (RoomAttendant - Role 6) rảnh nhất bằng 1 query duy nhất
+            // --- 1. HMS SMART ASSIGN: Tìm nhân viên Phục vụ (Room Attendant) đang THỰC SỰ RẢNH ---
             var bestAttendant = await _context.Staffs
                 .Where(s => s.Role == StaffRole.RoomAttendant && !s.IsDeleted)
-                .Select(s => new {
-                    Staff = s,
-                    TaskCount = _context.HousekeepingTasks.Count(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress)
-                })
-                .OrderBy(x => x.TaskCount)
-                .Select(x => x.Staff)
+                .Where(s => !_context.HousekeepingTasks.Any(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress))
                 .FirstOrDefaultAsync();
 
+            // --- 2. LOGISTICS AUTOMATION: Tự động trừ kho vật tư/đồ uống ---
+            // Giả sử OrderItems chứa tên món. HMS sẽ tìm trong kho và trừ 1 đơn vị (hoặc parse số lượng nếu có)
+            var inventoryItems = await _context.InventoryItems.ToListAsync();
+            foreach (var item in inventoryItems)
+            {
+                if (order.OrderItems.Contains(item.ItemName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Trừ kho (Mặc định 1 nếu không parse được số lượng phức tạp)
+                    item.CurrentStock -= 1; 
+                    
+                    // Ghi log giao dịch kho
+                    _context.InventoryTransactions.Add(new InventoryTransaction {
+                        ItemId = item.ItemId,
+                        QuantityChanged = -1,
+                        Type = "Outbound",
+                        ReferenceNumber = $"RS-{order.OrderId.ToString().Substring(0, 8)}",
+                        Notes = $"Xuất kho phục vụ phòng {reservation.Room?.RoomNumber}"
+                    });
+                }
+            }
+
+            // --- 3. TẠO NHIỆM VỤ GIAO ĐỒ ---
             var deliveryTask = new HousekeepingTask
             {
                 RoomId = order.RoomId,
                 AssignedStaffId = bestAttendant?.StaffId,
-                TaskType = HmsTaskType.Delivery, // Loại GIAO ĐỒ
+                TaskType = HmsTaskType.Delivery, 
                 Status = bestAttendant != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
                 Priority = Priority.High,
                 ScheduledDate = DateTime.Now,
-                Notes = $"GIAO MÓN: {order.OrderItems}. Đơn hàng ID: {order.OrderId}"
+                Notes = $"[PHỤC VỤ PHÒNG] Giao món: {order.OrderItems}. Đơn hàng ID: {order.OrderId}"
             };
             _context.HousekeepingTasks.Add(deliveryTask);
             await _context.SaveChangesAsync();

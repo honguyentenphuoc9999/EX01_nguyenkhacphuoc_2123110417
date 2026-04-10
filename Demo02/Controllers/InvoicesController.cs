@@ -200,10 +200,17 @@ namespace Demo02.Controllers
                         bool hasTask = await _context.HousekeepingTasks.AnyAsync(t => t.RoomId == room.RoomId && t.Status != HmsTaskStatus.Completed);
                         if (!hasTask)
                         {
+                            // --- HMS SMART ASSIGN: Tự động tìm nhân viên Buồng phòng (Housekeeper) đang rảnh (không làm phòng nào khác) ---
+                            var freeHousekeeper = await _context.Staffs
+                                .Where(s => s.Role == StaffRole.Housekeeper && !s.IsDeleted)
+                                .Where(s => !_context.HousekeepingTasks.Any(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress))
+                                .FirstOrDefaultAsync();
+
                             var cleaningTask = new HousekeepingTask {
                                 RoomId = res.RoomId.Value,
+                                AssignedStaffId = freeHousekeeper?.StaffId, // Gán nhân viên rảnh (nếu có)
                                 TaskType = HmsTaskType.Cleaning,
-                                Status = HmsTaskStatus.Pending,
+                                Status = freeHousekeeper != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
                                 Priority = Priority.Normal,
                                 ScheduledDate = DateTime.Now,
                                 Notes = $"Dọn phòng tự động sau khi hóa đơn {invoice.InvoiceNumber} thanh toán."
