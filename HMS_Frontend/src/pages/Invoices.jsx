@@ -71,9 +71,18 @@ const PaymentModal = ({ invoice, onClose, onConfirm }) => {
 // --- MODAL IN HÓA ĐƠN ---
 const PrintInvoiceModal = ({ invoice, onClose }) => {
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.98)', zIndex: 3000, overflowY: 'auto' }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: '#f1f5f9', zIndex: 3000, overflowY: 'auto', padding: '40px 20px' }}>
             {/* Vùng chứa hóa đơn (Có class để in) */}
-            <div className="print-invoice-area">
+            <div className="print-invoice-area" style={{ 
+                maxWidth: '850px', 
+                minHeight: '297mm', 
+                margin: '0 auto', 
+                padding: '15mm', 
+                background: 'white', 
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                borderRadius: '4px',
+                position: 'relative'
+            }}>
                 
                 {/* LIÊN 1: CHO KHÁCH HÀNG */}
                 <div className="invoice-copy">

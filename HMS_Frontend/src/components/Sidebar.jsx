@@ -73,8 +73,8 @@ const Sidebar = () => {
     return (
         <div style={{ width: '280px', height: '100vh', background: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'sticky', top: 0 }}>
             <div style={{ padding: '0 12px', marginBottom: '40px' }}>
-                <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <ShieldCheck size={28} /> HMS ROYAL
+                <h2 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.5px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={26} /> HMS PHUOC PREMIER
                 </h2>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '1px' }}>Management System</div>
             </div>
