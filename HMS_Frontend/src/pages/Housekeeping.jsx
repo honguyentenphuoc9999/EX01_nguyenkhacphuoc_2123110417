@@ -300,7 +300,7 @@ const Housekeeping = () => {
             const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
             
             // --- GIAI ĐOẠN 1: Tải Metadata (Không kèm ảnh) để hiện danh sách siêu tốc ---
-            const metaResult = await api.get('/HousekeepingTasks?excludeImages=true');
+            const metaResult = await api.get('/HousekeepingTasks?type=0&excludeImages=true');
             const taskMetaData = metaResult.data;
 
             setTasks(prevTasks => {

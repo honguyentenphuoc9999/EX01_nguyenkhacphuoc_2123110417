@@ -41,23 +41,28 @@ namespace Demo02.Controllers
                 .Where(s => !_context.HousekeepingTasks.Any(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress))
                 .FirstOrDefaultAsync();
 
-            // --- 2. LOGISTICS AUTOMATION: Tự động trừ kho vật tư/đồ uống ---
-            // Giả sử OrderItems chứa tên món. HMS sẽ tìm trong kho và trừ 1 đơn vị (hoặc parse số lượng nếu có)
+            // --- 2. LOGISTICS AUTOMATION: Tự động trừ kho vật tư/đồ uống dựa theo số lượng ---
             var inventoryItems = await _context.InventoryItems.ToListAsync();
-            foreach (var item in inventoryItems)
+            // Regex để bắt số lượng món: "2x Coca Cola" -> Số lượng 2, Tên "Coca Cola"
+            var itemRegex = new System.Text.RegularExpressions.Regex(@"(\d+)x\s+(.+?)(?:,|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var matches = itemRegex.Matches(order.OrderItems);
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
             {
-                if (order.OrderItems.Contains(item.ItemName, StringComparison.OrdinalIgnoreCase))
+                int quantity = int.Parse(match.Groups[1].Value);
+                string itemName = match.Groups[2].Value.Trim();
+
+                var invItem = inventoryItems.FirstOrDefault(i => i.ItemName.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+                if (invItem != null)
                 {
-                    // Trừ kho (Mặc định 1 nếu không parse được số lượng phức tạp)
-                    item.CurrentStock -= 1; 
+                    invItem.CurrentStock -= quantity; 
                     
-                    // Ghi log giao dịch kho
                     _context.InventoryTransactions.Add(new InventoryTransaction {
-                        ItemId = item.ItemId,
-                        QuantityChanged = -1,
+                        ItemId = invItem.ItemId,
+                        QuantityChanged = -quantity,
                         Type = "Outbound",
                         ReferenceNumber = $"RS-{order.OrderId.ToString().Substring(0, 8)}",
-                        Notes = $"Xuất kho phục vụ phòng {reservation.Room?.RoomNumber}"
+                        Notes = $"Xuất kho phục vụ phòng {reservation.Room?.RoomNumber} - Số lượng: {quantity}"
                     });
                 }
             }

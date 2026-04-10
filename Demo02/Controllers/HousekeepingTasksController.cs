@@ -29,8 +29,12 @@ namespace Demo02.Controllers
                 .Include(t => t.Room!)
                     .ThenInclude(r => r.RoomType)
                 .Include(t => t.AssignedStaff)
-                .Where(t => t.Status != HmsTaskStatus.Completed || t.CreatedAt >= fortyEightHoursAgo)
-                .AsQueryable();
+                .Where(t => t.Status != HmsTaskStatus.Completed || t.CreatedAt >= fortyEightHoursAgo);
+
+            if (type.HasValue)
+            {
+                query = query.Where(t => t.TaskType == type.Value);
+            }
 
             var finalQuery = query.OrderByDescending(t => t.ScheduledDate);
 
