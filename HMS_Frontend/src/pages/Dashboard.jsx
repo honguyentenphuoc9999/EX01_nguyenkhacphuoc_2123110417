@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     Users, Calendar, CreditCard, TrendingUp, 
-    ArrowUpRight, ArrowDownRight, Clock, Box 
+    ArrowUpRight, ArrowDownRight, Clock, Box, Sparkles 
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import api from '../api/axios';
