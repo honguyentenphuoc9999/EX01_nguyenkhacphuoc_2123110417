@@ -105,12 +105,15 @@ namespace Demo02.Controllers
             var totalRoomsInType = await _context.Rooms
                 .CountAsync(r => r.RoomTypeId == dto.RoomTypeId && !r.IsDeleted);
 
-            // Đếm số lượng đặt phòng thực tế đang chiếm dụng hạng phòng này trong khoảng thời gian khách chọn
-            var bookedRoomsCount = await _context.Reservations
-                .Where(r => r.Status != ReservationStatus.Cancelled && r.Status != ReservationStatus.CheckedOut)
-                .Where(r => _context.Rooms.Any(room => room.RoomId == r.RoomId && room.RoomTypeId == dto.RoomTypeId))
-                .CountAsync(r => r.CheckInDate.Date < dto.CheckOutDate.Date && 
-                                r.CheckOutDate.Date > dto.CheckInDate.Date);
+            // Đếm số lượng đặt phòng đã được xác nhận sử dụng bảng ReservationRooms (Nguồn chuẩn cho Inventory)
+            var bookedRoomsCount = await _context.ReservationRooms
+                .Include(rr => rr.Reservation)
+                .CountAsync(rr => rr.RoomTypeId == dto.RoomTypeId &&
+                                 rr.Reservation != null &&
+                                 rr.Reservation.Status != ReservationStatus.Cancelled &&
+                                 rr.Reservation.Status != ReservationStatus.CheckedOut &&
+                                 rr.Reservation.CheckInDate.Date < dto.CheckOutDate.Date && 
+                                 rr.Reservation.CheckOutDate.Date > dto.CheckInDate.Date);
 
             if (bookedRoomsCount >= totalRoomsInType)
                 return BadRequest(new { message = "Rất tiếc, hạng phòng này hiện đã kín chỗ trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác!" });

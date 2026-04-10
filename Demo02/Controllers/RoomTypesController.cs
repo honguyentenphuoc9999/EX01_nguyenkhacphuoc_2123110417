@@ -30,7 +30,7 @@ namespace Demo02.Controllers
             var cin = checkIn ?? vnToday;
             var cout = checkOut ?? vnToday.AddDays(1);
 
-            // 1. Lấy danh sách Record Reservation khớp ngày
+            // 1. Lấy danh sách Record Reservation khớp ngày từ bảng ReservationRooms (Nguồn chuẩn Inventory)
             var overlappingReservations = await _context.ReservationRooms
                 .Include(rr => rr.Reservation)
                 .Where(rr => rr.Reservation != null && 
