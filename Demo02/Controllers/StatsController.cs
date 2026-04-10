@@ -41,9 +41,13 @@ namespace Demo02.Controllers
                 .Where(fc => fc.Folio != null && fc.Folio.Reservation != null && fc.Folio.Reservation.Status == ReservationStatus.CheckedIn)
                 .SumAsync(fc => (decimal?)fc.TotalAmount) ?? 0;
 
-            // 4. Số khách mới hôm nay (Dựa trên ngày Check-In thực tế)
+            // 4. Số khách mới hôm nay (Chỉ đếm Khách đã được xác minh hồ sơ thành công)
             var todayGuests = await _context.Reservations
-                .CountAsync(r => r.Status == ReservationStatus.CheckedIn && r.CreatedAt.Date == today);
+                .Include(r => r.Guest)
+                .CountAsync(r => r.Status == ReservationStatus.CheckedIn 
+                              && r.CreatedAt.Date == today 
+                              && r.Guest != null 
+                              && r.Guest.IsVerified == true);
 
             return Ok(new
             {
