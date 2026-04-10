@@ -27,7 +27,7 @@ api.interceptors.response.use(
       // Tự động Logout nếu Token hết hạn
       localStorage.removeItem('hms_token');
       localStorage.removeItem('hms_user');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }

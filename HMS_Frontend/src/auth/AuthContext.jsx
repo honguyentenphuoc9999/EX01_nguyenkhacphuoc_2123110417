@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('hms_token');
     localStorage.removeItem('hms_user');
     setUser(null);
+    window.location.href = '/';
   };
 
   const value = {
