@@ -8,19 +8,19 @@ Hệ thống Quản lý Khách sạn chuyên nghiệp được nâng cấp toàn
 
 Hệ thống đã nạp sẵn các tài khoản phân quyền để test kịch bản vận hành:
 
-| Đối tượng | Email / Đăng nhập | Mật khẩu | Chức vụ | Quyền hạn |
+| Đối tượng | Tên đăng nhập (Username) | Mật khẩu | Chức vụ | Quyền hạn |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@hms.com` | `Admin@123` | **CEO** | Toàn quyền, Cài đặt VietQR, Quản lý Nhân sự |
-| **Manager** | `manager@hms.com` | `Staff@123` | **Quản lý** | Điều phối dọn dẹp/phục vụ, xem báo cáo |
-| **Receptionist** | `lan@hms.com` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Thu tiền |
-| **Attendant** | `nam@hms.com` | `Staff@123` | **Phục vụ** | Nhận thực đơn, Giao đồ ăn tận nơi |
-| **Housekeeper 1** | `mai.nt@hms.com` | `Hms@123` | **Dọn phòng** | Xem danh sách dọn dẹp, Chụp ảnh bằng chứng |
-| **Housekeeper 2** | `nam.tv@hms.com` | `Hms@123` | **Dọn phòng** | Nhân viên dọn dẹp số 2 |
+| **Admin** | `admin_phuoc` | `Admin@123` | **CEO** | Toàn quyền, Cài đặt VietQR, Quản lý Nhân sự |
+| **Manager** | `manager` | `Staff@123` | **Quản lý** | Điều phối dọn dẹp/phục vụ, xem báo cáo |
+| **Receptionist** | `lan` | `Staff@123` | **Lễ tân** | Đặt phòng, Check-in/out, Thu tiền |
+| **Attendant** | `nam` | `Staff@123` | **Phục vụ** | Nhận thực đơn, Giao đồ ăn tận nơi |
+| **Housekeeper 1** | `mai.nt` | `Hms@123` | **Dọn phòng** | Xem danh sách dọn dẹp, Chụp ảnh bằng chứng |
+| **Housekeeper 2** | `nam.tv` | `Hms@123` | **Dọn phòng** | Nhân viên dọn dẹp số 2 |
 
 ### 👤 2.1. Tài khoản Khách hàng mẫu (Loyalty Member)
-| Họ và Tên | Email / SĐT | Mật khẩu | Hạng hội viên |
-| :--- | :--- | :--- | :--- |
-| **Nguyễn Thành Viên** | `member@gmail.com` / `0909000123` | `Guest@123` | **Hạng Vàng (Gold)** |
+| Họ và Tên | Tên đăng nhập | Số điện thoại | Mật khẩu | Hạng hội viên |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nguyễn Thành Viên** | `member` | `0909000123` | `Guest@123` | **Hạng Vàng (Gold)** |
 
 ### 🔐 2.1. CHI TIẾT CÁC NGHIỆP VỤ THEO VAI TRÒ
 *   **ADMIN:** Cấu hình gốc (VietQR, Thông tin khách sạn), Quản lý tài khoản nhân viên, Xem toàn bộ Audit Logs.
