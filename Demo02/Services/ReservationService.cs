@@ -304,12 +304,16 @@ namespace Demo02.Services
             };
             _uow.Invoices.Add(invoice);
 
-            // --- BR-13: Loyalty Points (1 VND = 1 Point) ---
+            // --- BR-13: Loyalty Points (10,000 VND = 1 Point) ---
             var loyalty = (await _uow.LoyaltyAccounts.FindAsync(a => a.GuestId == r.GuestId)).FirstOrDefault();
             if (loyalty != null)
             {
-                loyalty.CurrentPoints += (int)total;
-                loyalty.LifetimePoints += (int)total;
+                int pointsToAdd = (int)(total / 10000);
+                if (pointsToAdd > 0)
+                {
+                    loyalty.CurrentPoints += pointsToAdd;
+                    loyalty.LifetimePoints += pointsToAdd;
+                }
 
                 // --- BRD Rule: Tự động thăng hạng thành viên ---
                 if (loyalty.LifetimePoints > 100000) loyalty.Tier = LoyaltyTier.Diamond;
