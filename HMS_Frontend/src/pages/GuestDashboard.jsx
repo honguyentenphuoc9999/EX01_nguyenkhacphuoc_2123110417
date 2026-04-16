@@ -542,7 +542,13 @@ const GuestDashboard = () => {
                                     padding: 32px;
                                     border-radius: 20px;
                                     color: white;
+                                    backface-visibility: hidden;
+                                    -webkit-backface-visibility: hidden;
+                                    transform-style: preserve-3d;
                                     box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2);
+                                  }
+                                  .holo-back {
+                                    transform: rotateY(180deg);
                                   }
                                   /* Lớp viền/nhũ lấp lánh (Overlay) */
                                   .holo-foil {
