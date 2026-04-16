@@ -64,11 +64,21 @@ const Loyalty = () => {
         }
     };
 
-    const getTierColor = (tier) => {
-        const tVal = (typeof tier === 'string') ? tier : 
+    const getTierColor = (tier, currentPoints) => {
+        let tVal = (typeof tier === 'string') ? tier : 
                     tier === 0 ? 'Bronze' : tier === 1 ? 'Silver' : tier === 2 ? 'Gold' : 
                     tier === 3 ? 'Platinum' : tier === 4 ? 'Diamond' : tier === 5 ? 'Royal' : 'Bronze';
         
+        // Cập nhật lại: Tính luôn ở JS để chạy đúng ngay lập tức trên Vercel dù Backend chưa deploy
+        if (currentPoints !== undefined) {
+            if (currentPoints >= 50000) tVal = 'Royal';
+            else if (currentPoints >= 25000) tVal = 'Diamond';
+            else if (currentPoints >= 10000) tVal = 'Platinum';
+            else if (currentPoints >= 3000) tVal = 'Gold';
+            else if (currentPoints >= 1000) tVal = 'Silver';
+            else tVal = 'Bronze';
+        }
+
         switch (tVal) {
             case 'Royal': return { bg: '#faf5ff', border: '#a855f7', text: '#7e22ce', icon: <Award size={14} fill="#a855f7"/>, label: 'Hạng Hoàng Gia' };
             case 'Diamond': return { bg: '#ecfeff', border: '#06b6d4', text: '#0e7490', icon: <ShieldCheck size={14} fill="#06b6d4"/>, label: 'Hạng Kim Cương' };
@@ -155,7 +165,7 @@ const Loyalty = () => {
                             ) : filteredAccounts.length === 0 ? (
                                 <tr><td colSpan="6" style={{ textAlign: 'center', padding: '100px', color: '#94a3b8' }}>Không tìm thấy hội viên nào.</td></tr>
                             ) : filteredAccounts.map((acc) => {
-                                const tier = getTierColor(acc.tier);
+                                const tier = getTierColor(acc.tier, acc.currentPoints);
                                 return (
                                     <tr key={acc.accountId} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: '0.2s' }} onClick={() => handleViewDetails(acc)}>
                                         <td style={{ padding: '20px 24px' }}>
@@ -226,8 +236,8 @@ const Loyalty = () => {
                                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>HẠNG HIỆN TẠI</p>
                                         <p style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            {getTierColor(selectedAccount.tier).icon}
-                                            {getTierColor(selectedAccount.tier).label}
+                                            {getTierColor(selectedAccount.tier, selectedAccount.currentPoints).icon}
+                                            {getTierColor(selectedAccount.tier, selectedAccount.currentPoints).label}
                                         </p>
                                     </div>
                                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>

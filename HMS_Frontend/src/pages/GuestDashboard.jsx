@@ -419,7 +419,18 @@ const GuestDashboard = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                     {/* Loyalty Card - Styled by Membership Level */}
                     {(() => {
-                        const level = profile?.membershipLevel || 'Bronze';
+                        let level = profile?.membershipLevel || 'Bronze';
+                        
+                        // HMS Fallback: Tự động tính toán lại mức hạng dựa trên số điểm thực tế dưới Frontend
+                        // để xử lý các tài khoản cũ chưa kịp được UpdateTier dưới Backend.
+                        const pts = profile?.loyaltyPoints || 0;
+                        if (pts >= 50000) level = 'Royal';
+                        else if (pts >= 25000) level = 'Diamond';
+                        else if (pts >= 10000) level = 'Platinum';
+                        else if (pts >= 3000) level = 'Gold';
+                        else if (pts >= 1000) level = 'Silver';
+                        else level = 'Bronze';
+
                         const styles = {
                             'Royal': {
                                 gradient: 'linear-gradient(135deg, #7e22ce, #a855f7)',
