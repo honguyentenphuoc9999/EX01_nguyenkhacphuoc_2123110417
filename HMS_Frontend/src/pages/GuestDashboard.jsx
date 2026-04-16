@@ -433,62 +433,88 @@ const GuestDashboard = () => {
 
                         const styles = {
                             'Royal': {
-                                gradient: 'linear-gradient(135deg, #7e22ce, #a855f7)',
-                                shadow: '0 20px 40px rgba(168, 85, 247, 0.3)',
-                                badge: 'ROYAL MEMBER',
-                                main: 'Royal VVIP'
+                                gradient: 'linear-gradient(135deg, #7e22ce, #a855f7, #ec4899, #8b5cf6)',
+                                shadow: '0 20px 40px rgba(168, 85, 247, 0.4)',
+                                badge: 'THÀNH VIÊN HOÀNG GIA',
+                                main: 'Hạng Hoàng Gia'
                             },
                             'Diamond': {
-                                gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)',
-                                shadow: '0 20px 40px rgba(6, 182, 212, 0.3)',
-                                badge: 'DIAMOND MEMBER',
-                                main: 'Diamond Elite'
+                                gradient: 'linear-gradient(135deg, #0891b2, #06b6d4, #3b82f6, #06b6d4)',
+                                shadow: '0 20px 40px rgba(6, 182, 212, 0.4)',
+                                badge: 'THÀNH VIÊN KIM CƯƠNG',
+                                main: 'Hạng Kim Cương'
                             },
                             'Platinum': {
-                                gradient: 'linear-gradient(135deg, #0f172a, #334155)',
-                                shadow: '0 20px 40px rgba(15, 23, 42, 0.3)',
-                                badge: 'PLATINUM MEMBER',
-                                main: 'Platinum'
+                                gradient: 'linear-gradient(135deg, #0f172a, #334155, #64748b, #334155)',
+                                shadow: '0 20px 40px rgba(15, 23, 42, 0.4)',
+                                badge: 'THÀNH VIÊN BẠCH KIM',
+                                main: 'Hạng Bạch Kim'
                             },
                             'Gold': {
-                                gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                shadow: '0 20px 40px rgba(245, 158, 11, 0.3)',
-                                badge: 'GOLD MEMBER',
-                                main: 'Gold'
+                                gradient: 'linear-gradient(135deg, #b45309, #f59e0b, #fbbf24, #f59e0b)',
+                                shadow: '0 20px 40px rgba(245, 158, 11, 0.4)',
+                                badge: 'THÀNH VIÊN VÀNG',
+                                main: 'Hạng Vàng'
                             },
                             'Silver': {
-                                gradient: 'linear-gradient(135deg, #94a3b8, #64748b)',
-                                shadow: '0 20px 40px rgba(148, 163, 184, 0.3)',
-                                badge: 'SILVER MEMBER',
-                                main: 'Silver'
+                                gradient: 'linear-gradient(135deg, #64748b, #94a3b8, #cbd5e1, #94a3b8)',
+                                shadow: '0 20px 40px rgba(148, 163, 184, 0.4)',
+                                badge: 'THÀNH VIÊN BẠC',
+                                main: 'Hạng Bạc'
                             },
                             'Bronze': {
-                                gradient: 'linear-gradient(135deg, #ea580c, #c2410c)',
-                                shadow: '0 20px 40px rgba(234, 88, 12, 0.3)',
-                                badge: 'BRONZE MEMBER',
-                                main: 'Bronze'
+                                gradient: 'linear-gradient(135deg, #9a3412, #ea580c, #f97316, #ea580c)',
+                                shadow: '0 20px 40px rgba(234, 88, 12, 0.4)',
+                                badge: 'THÀNH VIÊN ĐỒNG',
+                                main: 'Hạng Đồng'
                             }
                         };
                         const s = styles[level] || styles['Bronze'];
 
                         return (
-                            <div style={{ 
-                                background: s.gradient, 
-                                padding: '32px', 
-                                borderRadius: '32px', 
-                                color: 'white', 
-                                position: 'relative', 
-                                overflow: 'hidden', 
-                                boxShadow: s.shadow,
-                                transition: 'all 0.4s ease'
-                            }}>
-                                <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-20px', opacity: 0.15 }} />
-                                <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.8, marginBottom: '24px' }}>
-                                    {s.badge}
+                            <>
+                                <style>{`
+                                  .holo-card-animate {
+                                    background-size: 200% 200% !important;
+                                    animation: holoGradient 4s ease infinite;
+                                  }
+                                  .holo-card-animate::before {
+                                    content: '';
+                                    position: absolute;
+                                    top: 0; left: -100%; width: 50%; height: 100%;
+                                    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+                                    transform: skewX(-25deg);
+                                    animation: holoShine 5s infinite;
+                                  }
+                                  @keyframes holoGradient {
+                                    0% { background-position: 0% 50%; }
+                                    50% { background-position: 100% 50%; }
+                                    100% { background-position: 0% 50%; }
+                                  }
+                                  @keyframes holoShine {
+                                    0% { left: -100%; }
+                                    20% { left: 200%; }
+                                    100% { left: 200%; }
+                                  }
+                                `}</style>
+                                <div className="holo-card-animate" style={{ 
+                                    background: s.gradient, 
+                                    padding: '32px', 
+                                    borderRadius: '32px', 
+                                    color: 'white', 
+                                    position: 'relative', 
+                                    overflow: 'hidden', 
+                                    boxShadow: s.shadow,
+                                    transition: 'all 0.4s ease'
+                                }}>
+                                    <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-20px', opacity: 0.2 }} />
+                                    <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9, marginBottom: '24px' }}>
+                                        {s.badge}
+                                    </div>
+                                    <div style={{ fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{s.main}</div>
+                                    <div style={{ fontSize: '15px' }}>Số điểm tích lũy: <b>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b></div>
                                 </div>
-                                <div style={{ fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{s.main}</div>
-                                <div style={{ fontSize: '15px' }}>Số điểm tích lũy: <b>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b></div>
-                            </div>
+                            </>
                         );
                     })()}
 
