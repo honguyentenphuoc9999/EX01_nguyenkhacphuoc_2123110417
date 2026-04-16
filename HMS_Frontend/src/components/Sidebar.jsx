@@ -25,7 +25,7 @@ import { useAuth } from '../auth/AuthContext';
 
 const Sidebar = ({ onClose }) => {
     const { user, logout } = useAuth();
-    
+
     // --- 🇻🇳 VIỆT HÓA VAI TRÒ ---
     const getDisplayRole = () => {
         const roleMap = {
@@ -60,18 +60,18 @@ const Sidebar = ({ onClose }) => {
     ];
 
     return (
-        <div style={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
+        <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             padding: '32px 24px',
             background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
             color: 'white',
             position: 'relative'
         }}>
             {/* Close button for mobile */}
-            <button 
+            <button
                 onClick={onClose}
                 className="sidebar-close-btn"
                 style={{
@@ -111,7 +111,7 @@ const Sidebar = ({ onClose }) => {
                         if (item.path === '/delivery-tasks' && !isAllowed) {
                             if (userPos.includes('phục vụ') || userPos.includes('attendant') || userRole.includes('attendant')) isAllowed = true;
                         }
-                        
+
                         return isAllowed && (
                             <NavLink
                                 key={item.path}
@@ -142,10 +142,10 @@ const Sidebar = ({ onClose }) => {
 
             <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
                 {/* UPGRADED USER CARD */}
-                <div style={{ 
-                    padding: '20px', 
-                    background: 'rgba(255,255,255,0.03)', 
-                    borderRadius: '24px', 
+                <div style={{
+                    padding: '20px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '24px',
                     border: '1px solid rgba(255,255,255,0.05)',
                     marginBottom: '20px',
                     position: 'relative',
@@ -153,11 +153,11 @@ const Sidebar = ({ onClose }) => {
                 }}>
                     <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)' }}></div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ 
-                            width: '48px', height: '48px', borderRadius: '16px', 
-                            background: user?.role === 'Admin' ? 'linear-gradient(135deg, #ef4444, #b91c1c)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
-                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                            fontWeight: '800', fontSize: '20px', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' 
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '16px',
+                            background: user?.role === 'Admin' ? 'linear-gradient(135deg, #ef4444, #b91c1c)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: '800', fontSize: '20px', boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
                         }}>
                             {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                         </div>
@@ -165,13 +165,13 @@ const Sidebar = ({ onClose }) => {
                             <div style={{ fontSize: '15px', fontWeight: '800', color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {user?.fullName || user?.username}
                             </div>
-                            <div style={{ 
-                                fontSize: '10px', 
-                                color: '#3b82f6', 
-                                fontWeight: '800', 
-                                textTransform: 'uppercase', 
+                            <div style={{
+                                fontSize: '10px',
+                                color: '#3b82f6',
+                                fontWeight: '800',
+                                textTransform: 'uppercase',
                                 letterSpacing: '1px',
-                                marginTop: '2px' 
+                                marginTop: '2px'
                             }}>
                                 {getDisplayRole()}
                             </div>
@@ -179,13 +179,13 @@ const Sidebar = ({ onClose }) => {
                     </div>
                 </div>
 
-                <button 
-                    onClick={logout} 
-                    style={{ 
-                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', 
-                        padding: '16px', borderRadius: '18px', border: 'none', 
-                        background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', 
-                        cursor: 'pointer', fontWeight: '800', fontSize: '14px', transition: '0.3s' 
+                <button
+                    onClick={logout}
+                    style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                        padding: '16px', borderRadius: '18px', border: 'none',
+                        background: 'rgba(239, 68, 68, 0.1)', color: '#f87171',
+                        cursor: 'pointer', fontWeight: '800', fontSize: '14px', transition: '0.3s'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
