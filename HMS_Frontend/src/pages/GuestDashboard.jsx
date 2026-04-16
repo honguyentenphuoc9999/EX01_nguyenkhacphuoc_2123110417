@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Calendar, Star,
@@ -30,11 +30,49 @@ const GuestDashboard = () => {
     });
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const cardRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 1024);
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        
+        // Thêm tính năng con quay hồi chuyển (Gyroscope) cho điện thoại
+        const handleOrientation = (event) => {
+            if (!cardRef.current) return;
+            const beta = event.beta;    // -180 đến 180 (Nghiêng tới/lui)
+            const gamma = event.gamma;  // -90 đến 90 (Nghiêng trái/phải)
+            
+            if (beta === null || gamma === null) return;
+
+            // Xoay 3D dựa trên góc nghiêng thực tế của điện thoại
+            let rotateX = -(beta - 45) / 1.5; 
+            let rotateY = gamma / 1.5;
+            
+            rotateX = Math.max(-25, Math.min(25, rotateX));
+            rotateY = Math.max(-25, Math.min(25, rotateY));
+            
+            cardRef.current.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
+            cardRef.current.style.boxShadow = \`\${-rotateY * 2}px \${rotateX * 2}px 50px rgba(0,0,0,0.3)\`;
+            
+            const glare = cardRef.current.querySelector('.holo-glare');
+            if (glare) {
+                glare.style.opacity = '1';
+                const x = 50 + rotateY * 2;
+                const y = 50 - rotateX * 2;
+                glare.style.background = \`radial-gradient(circle at \${x}% \${y}%, rgba(255,255,255,0.7), transparent 60%)\`;
+            }
+        };
+
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (window.DeviceOrientationEvent) {
+                window.removeEventListener('deviceorientation', handleOrientation);
+            }
+        };
     }, []);
 
 
@@ -523,6 +561,7 @@ const GuestDashboard = () => {
 
                                 <div className="holo-container">
                                     <div 
+                                        ref={cardRef}
                                         className="holo-card-3d" 
                                         id="holoCard"
                                         onMouseMove={(e) => {
