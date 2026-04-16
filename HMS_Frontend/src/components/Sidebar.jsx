@@ -46,6 +46,7 @@ const Sidebar = ({ onClose }) => {
         { name: 'Cổng khách hàng', icon: <ShieldCheck size={22} />, path: '/guest-portal', roles: ['Guest'] },
         { name: 'Đặt phòng', icon: <Calendar size={22} />, path: '/reservations', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Khách hàng', icon: <Users size={22} />, path: '/guests', roles: ['Admin', 'Manager', 'Receptionist'] },
+        { name: 'Hội viên (Loyalty)', icon: <Gift size={22} />, path: '/loyalty', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Hóa đơn', icon: <FileText size={22} />, path: '/invoices', roles: ['Admin', 'Manager', 'Receptionist'] },
         { name: 'Hệ thống Dọn dẹp', icon: <Sparkles size={22} />, path: '/housekeeping', roles: ['Admin', 'Manager', 'Housekeeper', 3] },
         { name: 'Hệ thống Phục vụ', icon: <Send size={22} />, path: '/delivery-tasks', roles: ['Admin', 'Manager', 'RoomAttendant', 6] },
