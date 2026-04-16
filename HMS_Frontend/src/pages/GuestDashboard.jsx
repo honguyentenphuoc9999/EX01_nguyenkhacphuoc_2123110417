@@ -30,6 +30,7 @@ const GuestDashboard = () => {
     });
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const [isFlipped, setIsFlipped] = useState(false);
     const cardRef = useRef(null);
 
     useEffect(() => {
@@ -518,7 +519,24 @@ const GuestDashboard = () => {
                                   }
                                   .holo-card-3d {
                                     transform-style: preserve-3d;
-                                    transition: transform 0.1s ease-out;
+                                    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+                                    position: relative;
+                                    width: 100%;
+                                    min-height: 200px;
+                                    border-radius: 20px;
+                                  }
+                                  .holo-flip-wrapper {
+                                    display: grid;
+                                    transform-style: preserve-3d;
+                                    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                                    width: 100%;
+                                    height: 100%;
+                                  }
+                                  .holo-flip-wrapper.is-flipped {
+                                    transform: rotateY(180deg);
+                                  }
+                                  .holo-face {
+                                    grid-area: 1 / 1;
                                     position: relative;
                                     background: ${s.gradient};
                                     padding: 32px;
@@ -575,6 +593,8 @@ const GuestDashboard = () => {
 
                                 <div 
                                     className="holo-container"
+                                    onClick={() => setIsFlipped(!isFlipped)}
+                                    style={{ cursor: 'pointer' }}
                                     onMouseMove={(e) => {
                                         const container = e.currentTarget;
                                         const card = container.querySelector('.holo-card-3d');
@@ -593,18 +613,18 @@ const GuestDashboard = () => {
                                         card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.04, 1.04, 1.04)`;
                                         card.style.boxShadow = `${-rotateY * 1.5}px ${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)`;
                                         
-                                        const foil = card.querySelector('.holo-foil');
-                                        const iridescent = card.querySelector('.holo-iridescent');
-                                        if (foil && iridescent) {
-                                            foil.style.opacity = '1';
-                                            iridescent.style.opacity = '1';
+                                        const foils = card.querySelectorAll('.holo-foil');
+                                        const iridescents = card.querySelectorAll('.holo-iridescent');
+                                        if (foils.length > 0 && iridescents.length > 0) {
+                                            foils.forEach(f => f.style.opacity = '1');
+                                            iridescents.forEach(i => i.style.opacity = '1');
                                             
                                             // Tính tỷ lệ phần trăm (0-100)
                                             const bgPosX = (x / rect.width) * 100;
                                             const bgPosY = (y / rect.height) * 100;
                                             
-                                            foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
-                                            iridescent.style.background = `radial-gradient(circle at ${bgPosX}% ${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)`;
+                                            foils.forEach(f => f.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`);
+                                            iridescents.forEach(i => i.style.background = `radial-gradient(circle at ${bgPosX}% ${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)`);
                                         }
                                     }}
                                     onMouseLeave={(e) => {
@@ -613,10 +633,10 @@ const GuestDashboard = () => {
                                         if (!card) return;
                                         card.style.transform = 'rotateX(0) rotateY(0) scale3d(1, 1, 1)';
                                         card.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2)';
-                                        const foil = card.querySelector('.holo-foil');
-                                        const iridescent = card.querySelector('.holo-iridescent');
-                                        if (foil) foil.style.opacity = '0';
-                                        if (iridescent) iridescent.style.opacity = '0';
+                                        const foils = card.querySelectorAll('.holo-foil');
+                                        const iridescents = card.querySelectorAll('.holo-iridescent');
+                                        foils.forEach(f => f.style.opacity = '0');
+                                        iridescents.forEach(i => i.style.opacity = '0');
                                     }}
                                     onTouchMove={(e) => {
                                         if(e.touches.length > 0) {
@@ -639,12 +659,14 @@ const GuestDashboard = () => {
 
                                             card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
                                             
-                                            const foil = card.querySelector('.holo-foil');
-                                            if (foil) {
-                                                foil.style.opacity = '1';
-                                                const bgPosX = (x / rect.width) * 100;
-                                                const bgPosY = (y / rect.height) * 100;
-                                                foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
+                                            const foils = card.querySelectorAll('.holo-foil');
+                                            if (foils.length > 0) {
+                                                foils.forEach(f => {
+                                                    f.style.opacity = '1';
+                                                    const bgPosX = (x / rect.width) * 100;
+                                                    const bgPosY = (y / rect.height) * 100;
+                                                    f.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
+                                                });
                                             }
                                         }
                                     }}
@@ -653,8 +675,8 @@ const GuestDashboard = () => {
                                         const card = container.querySelector('.holo-card-3d');
                                         if(!card) return;
                                         card.style.transform = 'rotateX(0) rotateY(0)';
-                                        const foil = card.querySelector('.holo-foil');
-                                        if (foil) foil.style.opacity = '0';
+                                        const foils = card.querySelectorAll('.holo-foil');
+                                        foils.forEach(f => f.style.opacity = '0');
                                     }}
                                 >
                                     <div 
@@ -662,21 +684,68 @@ const GuestDashboard = () => {
                                         className="holo-card-3d" 
                                         id="holoCard"
                                     >
-                                        <div className="holo-foil"></div>
-                                        <div className="holo-iridescent"></div>
-                                        
-                                        <Star size={100} style={{ position: 'absolute', top: '-15px', right: '-25px', opacity: 0.15, transform: 'translateZ(20px)' }} />
-                                        
-                                        <div style={{ position: 'relative', transform: 'translateZ(60px)', zIndex: 20 }}>
-                                            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', opacity: 0.9, marginBottom: '24px' }}>
-                                                {s.badge}
+                                        <div className={`holo-flip-wrapper ${isFlipped ? 'is-flipped' : ''}`}>
+                                            
+                                            {/* MẶT TRƯỚC */}
+                                            <div className="holo-face holo-front">
+                                                <div className="holo-foil"></div>
+                                                <div className="holo-iridescent"></div>
+                                                
+                                                <Star size={100} style={{ position: 'absolute', top: '-15px', right: '-25px', opacity: 0.15, transform: 'translateZ(20px)' }} />
+                                                
+                                                <div style={{ position: 'relative', transform: 'translateZ(60px)', zIndex: 20 }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', opacity: 0.9, marginBottom: '24px' }}>
+                                                        {s.badge}
+                                                    </div>
+                                                    <div style={{ fontSize: '38px', fontWeight: '900', marginBottom: '8px', textShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                                                        {s.main}
+                                                    </div>
+                                                    <div style={{ fontSize: '15px' }}>
+                                                        Số điểm tích lũy: <b style={{ fontSize: '18px', textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div style={{ position: 'absolute', bottom: '20px', right: '20px', fontSize: '12px', opacity: 0.6, transform: 'translateZ(30px)' }}>
+                                                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 2 }}>
+                                                        Nhấn để xem / Click to flip ⟳
+                                                    </motion.div>
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: '38px', fontWeight: '900', marginBottom: '8px', textShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
-                                                {s.main}
+
+                                            {/* MẶT SAU */}
+                                            <div className="holo-face holo-back">
+                                                <div className="holo-foil"></div>
+                                                <div className="holo-iridescent"></div>
+                                                
+                                                <div style={{ position: 'relative', transform: 'translateZ(40px)', zIndex: 20 }}>
+                                                    <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '2px', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '8px' }}>
+                                                        Thông tin Hội Viên / Member Profile
+                                                    </div>
+                                                    
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: '11px', opacity: 0.7 }}>Họ Tên / Full Name:</div>
+                                                            <div style={{ fontSize: '18px', fontWeight: 'bold', textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>{profile?.fullName || 'Khách hàng'}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '11px', opacity: 0.7 }}>CCCD/CMND / ID Card:</div>
+                                                            <div style={{ fontSize: '16px', fontWeight: '600', letterSpacing: '1px' }}>{profile?.identityCard || profile?.cccd || '■■■■ ■■■ ■■■'}</div>
+                                                        </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                            <div>
+                                                                <div style={{ fontSize: '11px', opacity: 0.7 }}>Số đt / Phone:</div>
+                                                                <div style={{ fontSize: '14px', fontWeight: '500' }}>{profile?.phone || 'Chưa cập nhật'}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '11px', opacity: 0.7 }}>Email:</div>
+                                                                <div style={{ fontSize: '14px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.email || 'Chưa cập nhật'}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
                                             </div>
-                                            <div style={{ fontSize: '15px' }}>
-                                                Số điểm tích lũy: <b style={{ fontSize: '18px', textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b>
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
