@@ -80,11 +80,11 @@ namespace Demo02.Controllers
 
         private void UpdateTier(LoyaltyAccount account)
         {
-            if (account.LifetimePoints >= 50000) account.Tier = LoyaltyTier.Royal;
-            else if (account.LifetimePoints >= 25000) account.Tier = LoyaltyTier.Diamond;
-            else if (account.LifetimePoints >= 10000) account.Tier = LoyaltyTier.Platinum;
-            else if (account.LifetimePoints >= 3000) account.Tier = LoyaltyTier.Gold;
-            else if (account.LifetimePoints >= 1000) account.Tier = LoyaltyTier.Silver;
+            if (account.CurrentPoints >= 50000) account.Tier = LoyaltyTier.Royal;
+            else if (account.CurrentPoints >= 25000) account.Tier = LoyaltyTier.Diamond;
+            else if (account.CurrentPoints >= 10000) account.Tier = LoyaltyTier.Platinum;
+            else if (account.CurrentPoints >= 3000) account.Tier = LoyaltyTier.Gold;
+            else if (account.CurrentPoints >= 1000) account.Tier = LoyaltyTier.Silver;
             else account.Tier = LoyaltyTier.Bronze;
         }
     }
