@@ -80,6 +80,8 @@ namespace Demo02.Controllers
 
         private void UpdateTier(LoyaltyAccount account)
         {
+            // HMS: Sinh viên yêu cầu phân cấp độ phải đi theo điểm thực tế (CurrentPoints) 
+            // nên khi trừ điểm thì hạng cũng phải tụt xuống tương ứng.
             if (account.CurrentPoints >= 50000) account.Tier = LoyaltyTier.Royal;
             else if (account.CurrentPoints >= 25000) account.Tier = LoyaltyTier.Diamond;
             else if (account.CurrentPoints >= 10000) account.Tier = LoyaltyTier.Platinum;
