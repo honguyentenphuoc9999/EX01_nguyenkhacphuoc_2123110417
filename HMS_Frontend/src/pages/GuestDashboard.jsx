@@ -573,84 +573,94 @@ const GuestDashboard = () => {
                                   }
                                 `}</style>
 
-                                <div className="holo-container">
+                                <div 
+                                    className="holo-container"
+                                    onMouseMove={(e) => {
+                                        const container = e.currentTarget;
+                                        const card = container.querySelector('.holo-card-3d');
+                                        if (!card) return;
+                                        const rect = container.getBoundingClientRect();
+                                        const x = e.clientX - rect.left;
+                                        const y = e.clientY - rect.top;
+                                        
+                                        const centerX = rect.width / 2;
+                                        const centerY = rect.height / 2;
+                                        
+                                        // Độ nghiêng sâu hơn (Max 25 độ)
+                                        const rotateX = ((y - centerY) / centerY) * -25;
+                                        const rotateY = ((x - centerX) / centerX) * 25;
+
+                                        card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.04, 1.04, 1.04)\`;
+                                        card.style.boxShadow = \`\${-rotateY * 1.5}px \${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)\`;
+                                        
+                                        const foil = card.querySelector('.holo-foil');
+                                        const iridescent = card.querySelector('.holo-iridescent');
+                                        if (foil && iridescent) {
+                                            foil.style.opacity = '1';
+                                            iridescent.style.opacity = '1';
+                                            
+                                            // Tính tỷ lệ phần trăm (0-100)
+                                            const bgPosX = (x / rect.width) * 100;
+                                            const bgPosY = (y / rect.height) * 100;
+                                            
+                                            foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
+                                            iridescent.style.background = \`radial-gradient(circle at \${bgPosX}% \${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)\`;
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        const container = e.currentTarget;
+                                        const card = container.querySelector('.holo-card-3d');
+                                        if (!card) return;
+                                        card.style.transform = 'rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+                                        card.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2)';
+                                        const foil = card.querySelector('.holo-foil');
+                                        const iridescent = card.querySelector('.holo-iridescent');
+                                        if (foil) foil.style.opacity = '0';
+                                        if (iridescent) iridescent.style.opacity = '0';
+                                    }}
+                                    onTouchMove={(e) => {
+                                        if(e.touches.length > 0) {
+                                            const touch = e.touches[0];
+                                            const container = e.currentTarget;
+                                            const card = container.querySelector('.holo-card-3d');
+                                            if(!card) return;
+                                            const rect = container.getBoundingClientRect();
+                                            const x = touch.clientX - rect.left;
+                                            const y = touch.clientY - rect.top;
+
+                                            const centerX = rect.width / 2;
+                                            const centerY = rect.height / 2;
+
+                                            let rotateX = ((y - centerY) / centerY) * -20;
+                                            let rotateY = ((x - centerX) / centerX) * 20;
+
+                                            rotateX = Math.max(-20, Math.min(20, rotateX));
+                                            rotateY = Math.max(-20, Math.min(20, rotateY));
+
+                                            card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
+                                            
+                                            const foil = card.querySelector('.holo-foil');
+                                            if (foil) {
+                                                foil.style.opacity = '1';
+                                                const bgPosX = (x / rect.width) * 100;
+                                                const bgPosY = (y / rect.height) * 100;
+                                                foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
+                                            }
+                                        }
+                                    }}
+                                    onTouchEnd={(e) => {
+                                        const container = e.currentTarget;
+                                        const card = container.querySelector('.holo-card-3d');
+                                        if(!card) return;
+                                        card.style.transform = 'rotateX(0) rotateY(0)';
+                                        const foil = card.querySelector('.holo-foil');
+                                        if (foil) foil.style.opacity = '0';
+                                    }}
+                                >
                                     <div 
                                         ref={cardRef}
                                         className="holo-card-3d" 
                                         id="holoCard"
-                                        onMouseMove={(e) => {
-                                            const card = e.currentTarget;
-                                            const rect = card.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const y = e.clientY - rect.top;
-                                            
-                                            const centerX = rect.width / 2;
-                                            const centerY = rect.height / 2;
-                                            
-                                            // Độ nghiêng sâu hơn (Max 25 độ)
-                                            const rotateX = ((y - centerY) / centerY) * -25;
-                                            const rotateY = ((x - centerX) / centerX) * 25;
-
-                                            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.04, 1.04, 1.04)`;
-                                            card.style.boxShadow = `${-rotateY * 1.5}px ${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)`;
-                                            
-                                            const foil = card.querySelector('.holo-foil');
-                                            const iridescent = card.querySelector('.holo-iridescent');
-                                            if (foil && iridescent) {
-                                                foil.style.opacity = '1';
-                                                iridescent.style.opacity = '1';
-                                                
-                                                // Tính tỷ lệ phần trăm (0-100)
-                                                const bgPosX = (x / rect.width) * 100;
-                                                const bgPosY = (y / rect.height) * 100;
-                                                
-                                                foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
-                                                iridescent.style.background = `radial-gradient(circle at ${bgPosX}% ${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)`;
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            const card = e.currentTarget;
-                                            card.style.transform = 'rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-                                            card.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2)';
-                                            const foil = card.querySelector('.holo-foil');
-                                            const iridescent = card.querySelector('.holo-iridescent');
-                                            if (foil) foil.style.opacity = '0';
-                                            if (iridescent) iridescent.style.opacity = '0';
-                                        }}
-                                        onTouchMove={(e) => {
-                                            if(e.touches.length > 0) {
-                                                const touch = e.touches[0];
-                                                const card = e.currentTarget;
-                                                const rect = card.getBoundingClientRect();
-                                                const x = touch.clientX - rect.left;
-                                                const y = touch.clientY - rect.top;
-
-                                                const centerX = rect.width / 2;
-                                                const centerY = rect.height / 2;
-
-                                                let rotateX = ((y - centerY) / centerY) * -20;
-                                                let rotateY = ((x - centerX) / centerX) * 20;
-
-                                                rotateX = Math.max(-20, Math.min(20, rotateX));
-                                                rotateY = Math.max(-20, Math.min(20, rotateY));
-
-                                                card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-                                                
-                                                const foil = card.querySelector('.holo-foil');
-                                                if (foil) {
-                                                    foil.style.opacity = '1';
-                                                    const bgPosX = (x / rect.width) * 100;
-                                                    const bgPosY = (y / rect.height) * 100;
-                                                    foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
-                                                }
-                                            }
-                                        }}
-                                        onTouchEnd={(e) => {
-                                            const card = e.currentTarget;
-                                            card.style.transform = 'rotateX(0) rotateY(0)';
-                                            const foil = card.querySelector('.holo-foil');
-                                            if (foil) foil.style.opacity = '0';
-                                        }}
                                     >
                                         <div className="holo-foil"></div>
                                         <div className="holo-iridescent"></div>
