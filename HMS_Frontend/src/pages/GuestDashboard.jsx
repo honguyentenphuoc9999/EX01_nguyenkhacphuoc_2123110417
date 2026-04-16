@@ -51,15 +51,15 @@ const GuestDashboard = () => {
             rotateX = Math.max(-25, Math.min(25, rotateX));
             rotateY = Math.max(-25, Math.min(25, rotateY));
             
-            cardRef.current.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
-            cardRef.current.style.boxShadow = \`\${-rotateY * 2}px \${rotateX * 2}px 50px rgba(0,0,0,0.3)\`;
+            cardRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            cardRef.current.style.boxShadow = `${-rotateY * 2}px ${rotateX * 2}px 50px rgba(0,0,0,0.3)`;
             
             const glare = cardRef.current.querySelector('.holo-glare');
             if (glare) {
                 glare.style.opacity = '1';
                 const x = 50 + rotateY * 2;
                 const y = 50 - rotateX * 2;
-                glare.style.background = \`radial-gradient(circle at \${x}% \${y}%, rgba(255,255,255,0.7), transparent 60%)\`;
+                glare.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.7), transparent 60%)`;
             }
         };
 
@@ -591,8 +591,8 @@ const GuestDashboard = () => {
                                             const rotateX = ((y - centerY) / centerY) * -25;
                                             const rotateY = ((x - centerX) / centerX) * 25;
 
-                                            card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.04, 1.04, 1.04)\`;
-                                            card.style.boxShadow = \`\${-rotateY * 1.5}px \${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)\`;
+                                            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.04, 1.04, 1.04)`;
+                                            card.style.boxShadow = `${-rotateY * 1.5}px ${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)`;
                                             
                                             const foil = card.querySelector('.holo-foil');
                                             const iridescent = card.querySelector('.holo-iridescent');
@@ -604,8 +604,8 @@ const GuestDashboard = () => {
                                                 const bgPosX = (x / rect.width) * 100;
                                                 const bgPosY = (y / rect.height) * 100;
                                                 
-                                                foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
-                                                iridescent.style.background = \`radial-gradient(circle at \${bgPosX}% \${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)\`;
+                                                foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
+                                                iridescent.style.background = `radial-gradient(circle at ${bgPosX}% ${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)`;
                                             }
                                         }}
                                         onMouseLeave={(e) => {
@@ -634,14 +634,14 @@ const GuestDashboard = () => {
                                                 rotateX = Math.max(-20, Math.min(20, rotateX));
                                                 rotateY = Math.max(-20, Math.min(20, rotateY));
 
-                                                card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
+                                                card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
                                                 
                                                 const foil = card.querySelector('.holo-foil');
                                                 if (foil) {
                                                     foil.style.opacity = '1';
                                                     const bgPosX = (x / rect.width) * 100;
                                                     const bgPosY = (y / rect.height) * 100;
-                                                    foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
+                                                    foil.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
                                                 }
                                             }
                                         }}
