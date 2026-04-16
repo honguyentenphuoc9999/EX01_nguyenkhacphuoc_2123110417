@@ -513,49 +513,63 @@ const GuestDashboard = () => {
                             <>
                                 <style>{`
                                   .holo-container {
-                                    perspective: 1000px;
-                                    margin-bottom: 24px;
+                                    perspective: 1200px;
+                                    margin-bottom: 32px;
                                   }
                                   .holo-card-3d {
-                                    background-size: 200% 200% !important;
                                     transform-style: preserve-3d;
-                                    transition: transform 0.1s ease, box-shadow 0.1s ease;
+                                    transition: transform 0.1s ease-out;
                                     position: relative;
                                     background: ${s.gradient};
                                     padding: 32px;
-                                    border-radius: 32px;
+                                    border-radius: 20px;
                                     color: white;
-                                    overflow: hidden;
-                                    box-shadow: ${s.shadow};
+                                    box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2);
                                   }
-                                  .holo-glare {
+                                  /* Lớp viền/nhũ lấp lánh (Overlay) */
+                                  .holo-foil {
                                     position: absolute;
                                     top: 0; left: 0; right: 0; bottom: 0;
-                                    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8), transparent 50%);
+                                    border-radius: 20px;
+                                    background: linear-gradient(
+                                        115deg, 
+                                        transparent 0%, 
+                                        rgba(255,255,255,0.1) 15%, 
+                                        rgba(255,255,255,0.8) 25%, 
+                                        rgba(255,255,255,0.1) 35%, 
+                                        transparent 45%,
+                                        rgba(255,255,255,0.4) 55%,
+                                        transparent 70%
+                                    );
+                                    background-size: 250% 250%;
+                                    mix-blend-mode: color-dodge;
+                                    opacity: 0;
+                                    pointer-events: none;
+                                    transition: opacity 0.3s ease-out;
+                                    z-index: 10;
+                                  }
+                                  /* Lớp ngũ sắc mờ ảo khi chiếu sáng */
+                                  .holo-iridescent {
+                                    position: absolute;
+                                    inset: 0;
+                                    border-radius: 20px;
                                     opacity: 0;
                                     mix-blend-mode: overlay;
                                     pointer-events: none;
-                                    transition: opacity 0.3s ease;
-                                    z-index: 10;
+                                    transition: opacity 0.3s ease-out;
+                                    z-index: 9;
                                   }
-                                  /* Trên mobile (không có chuột), ta cho auto-shimmer nhẹ */
+                                  /* Trên mobile, auto-shimmer */
                                   @media (max-width: 768px) {
-                                    .holo-card-3d {
-                                        animation: holoGradientMobile 6s ease infinite;
-                                    }
-                                    .holo-glare {
-                                        animation: holoGlareMobile 4s ease infinite;
+                                    .holo-foil {
+                                        opacity: 0.5;
+                                        animation: foilMobile 5s ease infinite;
                                     }
                                   }
-                                  @keyframes holoGradientMobile {
-                                    0% { background-position: 0% 50%; }
-                                    50% { background-position: 100% 50%; }
-                                    100% { background-position: 0% 50%; }
-                                  }
-                                  @keyframes holoGlareMobile {
-                                    0% { opacity: 0; transform: translate(-50%, -50%); }
-                                    50% { opacity: 0.4; transform: translate(50%, 50%); }
-                                    100% { opacity: 0; transform: translate(-50%, -50%); }
+                                  @keyframes foilMobile {
+                                    0% { background-position: 0% 50%; opacity: 0.2; }
+                                    50% { background-position: 100% 50%; opacity: 0.6; }
+                                    100% { background-position: 0% 50%; opacity: 0.2; }
                                   }
                                 `}</style>
 
@@ -567,31 +581,41 @@ const GuestDashboard = () => {
                                         onMouseMove={(e) => {
                                             const card = e.currentTarget;
                                             const rect = card.getBoundingClientRect();
-                                            const x = e.clientX - rect.left; // x position within the element.
-                                            const y = e.clientY - rect.top;  // y position within the element.
+                                            const x = e.clientX - rect.left;
+                                            const y = e.clientY - rect.top;
                                             
                                             const centerX = rect.width / 2;
                                             const centerY = rect.height / 2;
                                             
-                                            // Calculate rotation (max 15 degrees)
-                                            const rotateX = ((y - centerY) / centerY) * -15;
-                                            const rotateY = ((x - centerX) / centerX) * 15;
+                                            // Độ nghiêng sâu hơn (Max 25 độ)
+                                            const rotateX = ((y - centerY) / centerY) * -25;
+                                            const rotateY = ((x - centerX) / centerX) * 25;
 
-                                            card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
-                                            card.style.boxShadow = \`\${-rotateY}px \${rotateX}px 40px rgba(0,0,0,0.2)\`;
+                                            card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.04, 1.04, 1.04)\`;
+                                            card.style.boxShadow = \`\${-rotateY * 1.5}px \${rotateX * 1.5}px 50px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.4)\`;
                                             
-                                            const glare = card.querySelector('.holo-glare');
-                                            if (glare) {
-                                                glare.style.opacity = '1';
-                                                glare.style.background = \`radial-gradient(circle at \${x}px \${y}px, rgba(255,255,255,0.6), transparent 60%)\`;
+                                            const foil = card.querySelector('.holo-foil');
+                                            const iridescent = card.querySelector('.holo-iridescent');
+                                            if (foil && iridescent) {
+                                                foil.style.opacity = '1';
+                                                iridescent.style.opacity = '1';
+                                                
+                                                // Tính tỷ lệ phần trăm (0-100)
+                                                const bgPosX = (x / rect.width) * 100;
+                                                const bgPosY = (y / rect.height) * 100;
+                                                
+                                                foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
+                                                iridescent.style.background = \`radial-gradient(circle at \${bgPosX}% \${bgPosY}%, rgba(255,200,255,0.6), rgba(200,255,255,0.6), rgba(255,255,200,0.6), transparent 70%)\`;
                                             }
                                         }}
                                         onMouseLeave={(e) => {
                                             const card = e.currentTarget;
                                             card.style.transform = 'rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-                                            card.style.boxShadow = s.shadow;
-                                            const glare = card.querySelector('.holo-glare');
-                                            if (glare) glare.style.opacity = '0';
+                                            card.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.2)';
+                                            const foil = card.querySelector('.holo-foil');
+                                            const iridescent = card.querySelector('.holo-iridescent');
+                                            if (foil) foil.style.opacity = '0';
+                                            if (iridescent) iridescent.style.opacity = '0';
                                         }}
                                         onTouchMove={(e) => {
                                             if(e.touches.length > 0) {
@@ -604,37 +628,46 @@ const GuestDashboard = () => {
                                                 const centerX = rect.width / 2;
                                                 const centerY = rect.height / 2;
 
-                                                // Giới hạn max độ nghiêng cho mobile
-                                                let rotateX = ((y - centerY) / centerY) * -10;
-                                                let rotateY = ((x - centerX) / centerX) * 10;
-                                                
-                                                // Clamp values
-                                                rotateX = Math.max(-10, Math.min(10, rotateX));
-                                                rotateY = Math.max(-10, Math.min(10, rotateY));
+                                                let rotateX = ((y - centerY) / centerY) * -20;
+                                                let rotateY = ((x - centerX) / centerX) * 20;
 
-                                                card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg)\`;
+                                                rotateX = Math.max(-20, Math.min(20, rotateX));
+                                                rotateY = Math.max(-20, Math.min(20, rotateY));
+
+                                                card.style.transform = \`rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
                                                 
-                                                const glare = card.querySelector('.holo-glare');
-                                                if (glare) {
-                                                    glare.style.opacity = '0.8';
-                                                    glare.style.background = \`radial-gradient(circle at \${x}px \${y}px, rgba(255,255,255,0.5), transparent 70%)\`;
+                                                const foil = card.querySelector('.holo-foil');
+                                                if (foil) {
+                                                    foil.style.opacity = '1';
+                                                    const bgPosX = (x / rect.width) * 100;
+                                                    const bgPosY = (y / rect.height) * 100;
+                                                    foil.style.backgroundPosition = \`\${bgPosX}% \${bgPosY}%\`;
                                                 }
                                             }
                                         }}
                                         onTouchEnd={(e) => {
                                             const card = e.currentTarget;
                                             card.style.transform = 'rotateX(0) rotateY(0)';
-                                            const glare = card.querySelector('.holo-glare');
-                                            if (glare) glare.style.opacity = '0';
+                                            const foil = card.querySelector('.holo-foil');
+                                            if (foil) foil.style.opacity = '0';
                                         }}
                                     >
-                                        <div className="holo-glare"></div>
-                                        <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-20px', opacity: 0.2, transform: 'translateZ(30px)' }} />
-                                        <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9, marginBottom: '24px', transform: 'translateZ(40px)' }}>
-                                            {s.badge}
+                                        <div className="holo-foil"></div>
+                                        <div className="holo-iridescent"></div>
+                                        
+                                        <Star size={100} style={{ position: 'absolute', top: '-15px', right: '-25px', opacity: 0.15, transform: 'translateZ(20px)' }} />
+                                        
+                                        <div style={{ position: 'relative', transform: 'translateZ(60px)', zIndex: 20 }}>
+                                            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', opacity: 0.9, marginBottom: '24px' }}>
+                                                {s.badge}
+                                            </div>
+                                            <div style={{ fontSize: '38px', fontWeight: '900', marginBottom: '8px', textShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                                                {s.main}
+                                            </div>
+                                            <div style={{ fontSize: '15px' }}>
+                                                Số điểm tích lũy: <b style={{ fontSize: '18px', textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b>
+                                            </div>
                                         </div>
-                                        <div style={{ fontSize: '32px', fontWeight: '900', marginBottom: '8px', transform: 'translateZ(50px)' }}>{s.main}</div>
-                                        <div style={{ fontSize: '15px', transform: 'translateZ(40px)' }}>Số điểm tích lũy: <b>{(profile?.loyaltyPoints || 0).toLocaleString()} PTS</b></div>
                                     </div>
                                 </div>
                             </>
