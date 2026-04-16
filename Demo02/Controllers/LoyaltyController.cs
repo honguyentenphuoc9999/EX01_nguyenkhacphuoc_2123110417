@@ -22,10 +22,27 @@ namespace Demo02.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<LoyaltyAccount>>> GetLoyaltyAccounts()
         {
-            return await _context.LoyaltyAccounts
+            var accounts = await _context.LoyaltyAccounts
                 .Include(a => a.Guest)
                 .OrderByDescending(a => a.CurrentPoints)
                 .ToListAsync();
+
+            // Tự động quét và sửa lỗi dữ liệu cũ: Cập nhật lại toàn bộ hạng thẻ theo CurrentPoints
+            bool hasChanges = false;
+            foreach(var acc in accounts)
+            {
+                var oldTier = acc.Tier;
+                UpdateTier(acc);
+                if (oldTier != acc.Tier) {
+                    hasChanges = true;
+                }
+            }
+            
+            if (hasChanges) {
+                await _context.SaveChangesAsync();
+            }
+
+            return accounts;
         }
 
         // GET: api/Loyalty/5
