@@ -23,15 +23,40 @@ const RoomTypes = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...modalData,
+                imageUrl: modalData.imageUrl // Đảm bảo field khớp với backend
+            };
+
             if (modalData.roomTypeId) {
-                await api.put(`/RoomTypes/${modalData.roomTypeId}`, modalData);
+                await api.put(`/RoomTypes/${modalData.roomTypeId}`, payload);
             } else {
-                await api.post('/RoomTypes', modalData);
+                await api.post('/RoomTypes', payload);
             }
             alert("Lưu hạng phòng thành công!");
             fetchRoomTypes();
             setIsModalOpen(false);
         } catch (err) { alert("Lỗi khi lưu dữ liệu."); }
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'yxyxbbvj'); // Preset Unsigned của bạn
+
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/de0de4yum/image/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            setModalData({ ...modalData, imageUrl: data.secure_url });
+        } catch (err) {
+            alert("Lỗi khi upload ảnh lên Cloudinary");
+        }
     };
 
     const handleDelete = async (id) => {
@@ -59,10 +84,13 @@ const RoomTypes = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
                 {roomTypes.map(rt => (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} key={rt.roomTypeId || rt.RoomTypeId} style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                        <div style={{ width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px', background: '#f1f5f9' }}>
+                            <img src={rt.imageUrl || rt.ImageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div>
                                 <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>{rt.typeName || rt.TypeName}</h3>
-                                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}><Info size={14}/> {rt.description || rt.Description || 'Không có mô tả.'}</div>
+                                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}><Info size={14} /> {rt.description || rt.Description || 'Không có mô tả.'}</div>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={() => { setModalData(rt); setIsModalOpen(true); }} style={{ p: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}><Edit2 size={16} /></button>
@@ -100,24 +128,40 @@ const RoomTypes = () => {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }} onClick={() => setIsModalOpen(false)} />
                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ position: 'relative', width: '100%', maxWidth: '500px', background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
                             <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px' }}>{modalData.roomTypeId ? 'Cập nhật' : 'Thêm mới'} Hạng phòng</h2>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Ảnh hạng phòng (1 ảnh Cloudinary)</label>
+                                <div style={{ width: '100%', height: '150px', border: '2px dashed #e2e8f0', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative' }} onClick={() => document.getElementById('roomTypeImg').click()}>
+                                    {modalData.imageUrl ? (
+                                        <img src={modalData.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
+                                    ) : (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <Plus size={24} color="#94a3b8" />
+                                            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Nhấn để tải ảnh</p>
+                                        </div>
+                                    )}
+                                    <input id="roomTypeImg" type="file" hidden onChange={handleImageUpload} accept="image/*" />
+                                </div>
+                            </div>
+
                             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Tên hạng phòng</label>
-                                    <input required value={modalData.typeName} onChange={e => setModalData({...modalData, typeName: e.target.value})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} placeholder="VD: Deluxe Double" />
+                                    <input required value={modalData.typeName} onChange={e => setModalData({ ...modalData, typeName: e.target.value })} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} placeholder="VD: Deluxe Double" />
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Giá cơ bản (₫)</label>
-                                        <input required type="number" value={modalData.basePrice} onChange={e => setModalData({...modalData, basePrice: parseFloat(e.target.value)})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} />
+                                        <input required type="number" value={modalData.basePrice} onChange={e => setModalData({ ...modalData, basePrice: parseFloat(e.target.value) })} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Người tối đa</label>
-                                        <input required type="number" value={modalData.maxOccupancy} onChange={e => setModalData({...modalData, maxOccupancy: parseInt(e.target.value)})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} />
+                                        <input required type="number" value={modalData.maxOccupancy} onChange={e => setModalData({ ...modalData, maxOccupancy: parseInt(e.target.value) })} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }} />
                                     </div>
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Mô tả ngắn</label>
-                                    <textarea value={modalData.description} onChange={e => setModalData({...modalData, description: e.target.value})} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px', height: '100px' }} />
+                                    <textarea value={modalData.description} onChange={e => setModalData({ ...modalData, description: e.target.value })} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px', height: '100px' }} />
                                 </div>
                                 <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                                     <button type="button" onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: '14px', border: '1px solid #e2e8f0', background: 'white', borderRadius: '12px', fontWeight: '700', cursor: 'pointer' }}>Hủy</button>

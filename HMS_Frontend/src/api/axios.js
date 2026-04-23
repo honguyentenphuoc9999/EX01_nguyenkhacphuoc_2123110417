@@ -24,9 +24,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Chỉ tự động Logout/Redirect nếu KHÔNG PHẢI là request đăng nhập
-      // (Vì đăng nhập sai mật khẩu cũng trả về 401, không được redirect làm mất dữ liệu nhập)
-      if (!error.config.url.includes('/Account/login')) {
+      // 🛡️ HMS SAFETY GATE: Kiểm tra kỹ xem có phải là request LOGIN không
+      // Chúng ta kiểm tra cả trong url và data để chắc chắn
+      const isLoginPath = error.config?.url?.toLowerCase().includes('login');
+      
+      if (!isLoginPath) {
+          // Chỉ redirect khi không phải trang login (Token hết hạn khi đang dùng các trang khác)
           localStorage.removeItem('hms_token');
           localStorage.removeItem('hms_user');
           window.location.href = '/';

@@ -36,7 +36,8 @@ namespace Demo02.Controllers
                     Floor = r.Floor,
                     RoomTypeName = r.RoomType!.TypeName,
                     Status = r.Status,
-                    BasePrice = r.BasePrice
+                    BasePrice = r.BasePrice,
+                    ImageUrls = r.ImageUrls // Thêm ảnh Cloudinary
                 }).ToListAsync();
         }
 
@@ -54,7 +55,8 @@ namespace Demo02.Controllers
                 Floor = r.Floor,
                 RoomTypeName = r.RoomType!.TypeName,
                 Status = r.Status,
-                BasePrice = r.BasePrice
+                BasePrice = r.BasePrice,
+                ImageUrls = r.ImageUrls
             };
         }
 
@@ -68,6 +70,7 @@ namespace Demo02.Controllers
                 Floor = dto.Floor,
                 RoomTypeId = dto.RoomTypeId,
                 BasePrice = dto.BasePrice,
+                ImageUrls = dto.ImageUrls,
                 Status = RoomStatus.VacantClean
             };
 

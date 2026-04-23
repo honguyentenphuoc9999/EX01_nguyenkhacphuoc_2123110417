@@ -12,6 +12,7 @@ namespace Demo02.Models.DTOs
         public string RoomTypeName { get; set; } = string.Empty;
         public RoomStatus Status { get; set; }
         public decimal BasePrice { get; set; }
+        public string? ImageUrls { get; set; }
     }
 
     public class RoomCreateDto
@@ -21,6 +22,7 @@ namespace Demo02.Models.DTOs
         public int Floor { get; set; }
         public Guid RoomTypeId { get; set; }
         public decimal BasePrice { get; set; }
+        public string? ImageUrls { get; set; }
     }
 
     public class RoomTypeResponseDto
@@ -32,6 +34,7 @@ namespace Demo02.Models.DTOs
         public int MaxOccupancy { get; set; }
         public int RoomCount { get; set; }
         public int AvailableRooms { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     // --- Guest DTOs (BRD Rule PI) ---

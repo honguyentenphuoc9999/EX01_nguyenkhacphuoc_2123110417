@@ -23,6 +23,7 @@ namespace Demo02.Models
         public string? Amenities { get; set; }
         public string? SeasonalPrices { get; set; } // Dạng JSON string
 
+        public string? ImageUrl { get; set; } // Link ảnh Cloudinary (1 ảnh)
         public ICollection<Room>? Rooms { get; set; }
     }
 }

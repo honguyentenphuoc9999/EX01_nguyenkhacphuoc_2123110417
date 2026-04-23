@@ -33,6 +33,13 @@ const Rooms = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        // Kiểm tra tối thiểu 1 ảnh
+        const images = JSON.parse(modalData.imageUrls || '[]');
+        if (images.length === 0) {
+            alert("Vui lòng tải lên ít nhất 1 ảnh cho phòng.");
+            return;
+        }
+
         try {
             if (modalData.roomId) {
                 await api.put(`/Rooms/${modalData.roomId}`, modalData);
@@ -43,6 +50,45 @@ const Rooms = () => {
             fetchRooms();
             setIsModalOpen(false);
         } catch (err) { alert("Lỗi khi lưu dữ liệu. Kiểm tra xem số phòng đã tồn tại chưa?"); }
+    };
+
+    const handleImagesUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        // Giới hạn tối đa 3 ảnh
+        const currentImages = JSON.parse(modalData.imageUrls || '[]');
+        if (currentImages.length + files.length > 3) {
+            alert("Tối đa chỉ được phép có 3 ảnh cho mỗi phòng.");
+            return;
+        }
+
+        const newUrls = [...currentImages];
+
+        for (const file of files) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'yxyxbbvj'); // Preset Unsigned của bạn
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/de0de4yum/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                newUrls.push(data.secure_url);
+            } catch (err) {
+                console.error("Lỗi upload Cloudinary", err);
+            }
+        }
+
+        setModalData({ ...modalData, imageUrls: JSON.stringify(newUrls) });
+    };
+
+    const removeImage = (index) => {
+        const images = JSON.parse(modalData.imageUrls || '[]');
+        images.splice(index, 1);
+        setModalData({ ...modalData, imageUrls: JSON.stringify(images) });
     };
 
     const handleDelete = async (id) => {
@@ -63,7 +109,7 @@ const Rooms = () => {
         // HMS Rule: Hỗ trợ cả Số (2) và Chữ ("Occupied") + Tự động tìm cả "Status" và "status"
         const raw = room?.status ?? room?.Status ?? 0;
         const s = String(raw).toLowerCase();
-        
+
         switch (raw) {
             case 0: case 'vacantclean': case '0':
                 return { bg: '#eff6ff', text: '#3b82f6', label: 'Trống' };
@@ -122,8 +168,10 @@ const Rooms = () => {
                                 <tr key={room.roomId} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td style={{ padding: '20px 24px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                            <div style={{ width: '45px', height: '45px', borderRadius: '12px', background: '#f1f5f9', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px' }}>
-                                                {room.roomNumber || room.RoomNumber}
+                                            <div style={{ width: '45px', height: '45px', borderRadius: '12px', background: '#f1f5f9', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px', overflow: 'hidden' }}>
+                                                {room.imageUrls ? (
+                                                    <img src={JSON.parse(room.imageUrls)[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Room" />
+                                                ) : (room.roomNumber || room.RoomNumber)}
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '14px' }}>P.{room.roomNumber || room.RoomNumber}</div>
@@ -143,7 +191,7 @@ const Rooms = () => {
                                     </td>
                                     <td style={{ padding: '20px 24px', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                            <button onClick={() => { 
+                                            <button onClick={() => {
                                                 const normalizedRoom = {
                                                     ...room,
                                                     roomNumber: room.roomNumber || room.RoomNumber,
@@ -151,8 +199,8 @@ const Rooms = () => {
                                                     roomTypeId: room.roomTypeId || room.RoomTypeId,
                                                     roomId: room.roomId || room.RoomId
                                                 };
-                                                setModalData(normalizedRoom); 
-                                                setIsModalOpen(true); 
+                                                setModalData(normalizedRoom);
+                                                setIsModalOpen(true);
                                             }} style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit2 size={14} /></button>
                                             <button onClick={() => handleDelete(room.roomId)} style={{ border: 'none', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={14} /></button>
                                         </div>
@@ -170,6 +218,26 @@ const Rooms = () => {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }} onClick={() => setIsModalOpen(false)} />
                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ position: 'relative', width: '100%', maxWidth: '450px', background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
                             <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px' }}>{modalData.roomId ? 'Cập nhật' : 'Thêm mới'} Phòng</h2>
+
+                            {/* Cloudinary Gallery Upload */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Hình ảnh thực tế (Tối đa 3 ảnh Cloudinary)</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                    {JSON.parse(modalData.imageUrls || '[]').map((url, idx) => (
+                                        <div key={idx} style={{ position: 'relative', width: '100%', height: '100px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                            <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Room" />
+                                            <button type="button" onClick={() => removeImage(idx)} style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                        </div>
+                                    ))}
+                                    {JSON.parse(modalData.imageUrls || '[]').length < 3 && (
+                                        <div onClick={() => document.getElementById('roomImages').click()} style={{ width: '100%', height: '100px', borderRadius: '12px', border: '2px dashed #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f8fafc' }}>
+                                            <Plus size={20} color="#94a3b8" />
+                                            <input id="roomImages" type="file" hidden multiple accept="image/*" onChange={handleImagesUpload} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
                                     <div>

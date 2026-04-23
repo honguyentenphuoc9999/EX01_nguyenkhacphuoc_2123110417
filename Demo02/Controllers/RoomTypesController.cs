@@ -74,8 +74,8 @@ namespace Demo02.Controllers
                     Description = rt.Description,
                     MaxOccupancy = rt.MaxOccupancy,
                     RoomCount = totalRoomsCount,
-                    AvailableRooms = finalAvailable 
-                };
+                    AvailableRooms = finalAvailable,
+                    ImageUrl = rt.ImageUrl                };
             });
 
             return Ok(result);
@@ -126,10 +126,8 @@ namespace Demo02.Controllers
             return NoContent();
         }
 
-        // POST: api/RoomTypes
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<RoomType>> PostRoomType(RoomType roomType)
+        public async Task<ActionResult<RoomType>> PostRoomType([FromBody] RoomType roomType)
         {
             _context.RoomTypes.Add(roomType);
             await _context.SaveChangesAsync();

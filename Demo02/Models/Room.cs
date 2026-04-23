@@ -26,6 +26,7 @@ namespace Demo02.Models
         [StringLength(500)]
         public string? Description { get; set; }
 
+        public string? ImageUrls { get; set; } // Danh sách link ảnh Cloudinary (JSON string: 1-3 ảnh)
         [Timestamp] // Ngăn chặn xung đột dữ liệu đồng thời theo yêu cầu BRD
         public byte[]? RowVersion { get; set; }
     }

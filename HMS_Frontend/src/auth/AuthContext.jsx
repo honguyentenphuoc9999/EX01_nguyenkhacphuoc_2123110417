@@ -54,10 +54,13 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (err) {
       console.error('Login Failed', err);
-      const errorMsg = err.response?.data?.message || err.response?.data || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.';
+      // Trích xuất message từ response (bao gồm cả trường hợp viết hoa/thường từ backend)
+      const data = err.response?.data;
+      const errorMsg = data?.message || data?.Message || (typeof data === 'string' ? data : 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.');
+      
       return { 
         success: false, 
-        message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)
+        message: errorMsg
       };
     }
   };
