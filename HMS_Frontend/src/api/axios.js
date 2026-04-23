@@ -24,10 +24,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Tự động Logout nếu Token hết hạn
-      localStorage.removeItem('hms_token');
-      localStorage.removeItem('hms_user');
-      window.location.href = '/';
+      // Chỉ tự động Logout/Redirect nếu KHÔNG PHẢI là request đăng nhập
+      // (Vì đăng nhập sai mật khẩu cũng trả về 401, không được redirect làm mất dữ liệu nhập)
+      if (!error.config.url.includes('/Account/login')) {
+          localStorage.removeItem('hms_token');
+          localStorage.removeItem('hms_user');
+          window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }
