@@ -18,9 +18,10 @@ options.UseSqlServer(builder.Configuration.GetConnectionString("WarehouseConnect
 // --- HMS Rule: Cấu hình CORS để Frontend (React) có thể gọi API ---
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin => true) // Cấu hình linh hoạt cho phép mọi origin nhưng hỗ trợ credentials
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // Quan trọng: Cho phép gửi kèm Token/Cookies
     });
 });
 

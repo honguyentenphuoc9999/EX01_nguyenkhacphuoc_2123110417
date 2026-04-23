@@ -12,6 +12,7 @@ namespace Demo02.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin,Manager,Receptionist")] // HMS Security: Kiểm soát quyền xác nhận thanh toán
     public class InvoicesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -161,164 +162,136 @@ namespace Demo02.Controllers
             };
         }
 
-        // POST: api/Invoices/5/mark-as-paid
         [HttpPost("{id}/mark-as-paid")]
         public async Task<IActionResult> MarkAsPaid(Guid id)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
-            if (invoice == null) return NotFound();
-
-            invoice.Status = InvoiceStatus.Paid; 
-            
-            // --- TỰ ĐỘNG ĐỒNG BỘ: Chuyển Reservation sang Checked-Out khi đã thanh toán ---
-            var detailedInvoice = await _context.Invoices
-                .Include(i => i.Folio!)
-                    .ThenInclude(f => f.Reservation!)
-                        .ThenInclude(r => r.Guest)
-                .FirstOrDefaultAsync(i => i.InvoiceId == id);
-
-            if (detailedInvoice?.Folio?.Reservation != null)
+            try 
             {
-                var res = detailedInvoice.Folio.Reservation;
+                // 1. Tải hóa đơn cùng đầy đủ thông tin liên quan trong 1 lần duy nhất để tránh xung đột tracking
+                var invoice = await _context.Invoices
+                    .Include(i => i.Folio!)
+                        .ThenInclude(f => f.Reservation!)
+                            .ThenInclude(r => r.Guest)
+                    .Include(i => i.Folio!)
+                        .ThenInclude(f => f.Reservation!)
+                            .ThenInclude(r => r.Room)
+                    .FirstOrDefaultAsync(i => i.InvoiceId == id);
+
+                if (invoice == null) return NotFound(new { message = "Không tìm thấy hóa đơn!" });
+
+                // 2. Cập nhật trạng thái hóa đơn
+                invoice.Status = InvoiceStatus.Paid; 
                 
-                // 1. Đồng bộ trạng thái đặt phòng
-                if (res.Status == ReservationStatus.CheckedIn || res.Status == ReservationStatus.Confirmed)
+                if (invoice.Folio?.Reservation != null)
                 {
-                    res.Status = ReservationStatus.CheckedOut;
-                    res.ActualCheckOut = DateTime.Now;
-                }
-
-                // 2. GIẢI PHÓNG PHÒNG & TẠO VIỆC DỌN DẸP (Luôn thực hiện nếu thanh toán xong mà chưa dọn)
-                if (res.RoomId.HasValue)
-                {
-                    var room = await _context.Rooms.FindAsync(res.RoomId.Value);
-                    if (room != null && room.Status != RoomStatus.VacantDirty && room.Status != RoomStatus.VacantClean)
+                    var res = invoice.Folio.Reservation;
+                    
+                    // 2.1. Đồng bộ trạng thái đặt phòng sang Checked-Out
+                    if (res.Status == ReservationStatus.CheckedIn || res.Status == ReservationStatus.Confirmed)
                     {
-                        room.Status = RoomStatus.VacantDirty;
-                        
-                        // Kiểm tra xem đã có task dọn dẹp chưa (tránh tạo trùng)
-                        bool hasTask = await _context.HousekeepingTasks.AnyAsync(t => t.RoomId == room.RoomId && t.Status != HmsTaskStatus.Completed);
-                        if (!hasTask)
-                        {
-                            // --- HMS SMART ASSIGN: Tự động tìm nhân viên Buồng phòng (Housekeeper) đang rảnh (không làm phòng nào khác) ---
-                            var freeHousekeeper = await _context.Staffs
-                                .Where(s => s.Role == StaffRole.Housekeeper && !s.IsDeleted)
-                                .Where(s => !_context.HousekeepingTasks.Any(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress))
-                                .FirstOrDefaultAsync();
+                        res.Status = ReservationStatus.CheckedOut;
+                        res.ActualCheckOut = DateTime.Now;
+                    }
 
-                            var cleaningTask = new HousekeepingTask {
-                                RoomId = res.RoomId.Value,
-                                AssignedStaffId = freeHousekeeper?.StaffId, // Gán nhân viên rảnh (nếu có)
-                                TaskType = HmsTaskType.Cleaning,
-                                Status = freeHousekeeper != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
-                                Priority = Priority.Normal,
-                                ScheduledDate = DateTime.Now,
-                                Notes = $"Dọn phòng tự động sau khi hóa đơn {invoice.InvoiceNumber} thanh toán."
+                    // 2.2. Giải phóng phòng và tạo Task dọn dẹp
+                    if (res.RoomId.HasValue)
+                    {
+                        var room = await _context.Rooms.FindAsync(res.RoomId.Value);
+                        if (room != null && room.Status != RoomStatus.VacantDirty && room.Status != RoomStatus.VacantClean)
+                        {
+                            room.Status = RoomStatus.VacantDirty;
+                            
+                            // Tạo task dọn dẹp nếu chưa có
+                            bool hasTask = await _context.HousekeepingTasks.AnyAsync(t => t.RoomId == room.RoomId && t.Status != HmsTaskStatus.Completed);
+                            if (!hasTask)
+                            {
+                                var freeHousekeeper = await _context.Staffs
+                                    .Where(s => s.Role == StaffRole.Housekeeper && !s.IsDeleted)
+                                    .Where(s => !_context.HousekeepingTasks.Any(t => t.AssignedStaffId == s.StaffId && t.Status == HmsTaskStatus.InProgress))
+                                    .FirstOrDefaultAsync();
+
+                                _context.HousekeepingTasks.Add(new HousekeepingTask {
+                                    RoomId = res.RoomId.Value,
+                                    AssignedStaffId = freeHousekeeper?.StaffId,
+                                    TaskType = HmsTaskType.Cleaning,
+                                    Status = freeHousekeeper != null ? HmsTaskStatus.InProgress : HmsTaskStatus.Pending,
+                                    Priority = Priority.Normal,
+                                    ScheduledDate = DateTime.Now,
+                                    Notes = $"Dọn phòng tự động sau khi hóa đơn {invoice.InvoiceNumber} thanh toán."
+                                });
+                            }
+                        }
+                    }
+                    
+                    // 2.3. Đóng hồ sơ Folio
+                    invoice.Folio.Status = FolioStatus.Closed;
+
+                    // 2.4. Hủy các đơn dịch vụ chưa hoàn tất
+                    var pendingOrders = await _context.RoomServiceOrders
+                        .Where(o => o.ReservationId == res.ReservationId && 
+                                   o.Status != "Completed" && 
+                                   o.Status != "Cancelled")
+                        .ToListAsync();
+
+                    foreach (var order in pendingOrders)
+                    {
+                        order.Status = "Cancelled - Guest Checked Out";
+                    }
+
+                    // 2.5. Tích điểm Loyalty
+                    if (res.Guest != null)
+                    {
+                        var guest = res.Guest;
+                        var loyaltyAccount = await _context.LoyaltyAccounts.FirstOrDefaultAsync(a => a.GuestId == guest.GuestId);
+                        
+                        if (loyaltyAccount == null)
+                        {
+                            loyaltyAccount = new LoyaltyAccount {
+                                GuestId = guest.GuestId,
+                                MemberNumber = "M-" + DateTime.Now.Ticks.ToString().Substring(10),
+                                Tier = LoyaltyTier.Silver,
+                                EnrolledAt = DateTime.Now
                             };
-                            _context.HousekeepingTasks.Add(cleaningTask);
+                            _context.LoyaltyAccounts.Add(loyaltyAccount);
+                        }
+
+                        int pointsToAdd = (int)(invoice.TotalAmount / 10000);
+                        if (pointsToAdd > 0)
+                        {
+                            loyaltyAccount.CurrentPoints += pointsToAdd;
+                            loyaltyAccount.LifetimePoints += pointsToAdd;
+                            
+                            _context.LoyaltyTransactions.Add(new LoyaltyTransaction {
+                                LoyaltyAccountId = loyaltyAccount.AccountId,
+                                Points = pointsToAdd,
+                                Type = LoyaltyTxType.Earn,
+                                Description = $"Tích điểm từ hóa đơn {invoice.InvoiceNumber}",
+                                TransactionDate = DateTime.Now
+                            });
                         }
                     }
                 }
-                
-                // 3. Đóng hồ sơ Folio
-                detailedInvoice.Folio.Status = FolioStatus.Closed;
 
-                // 4. TỰ ĐỘNG HỦY CÁC ĐƠN DỊCH VỤ ĐANG GIAO (BRD Nâng cấp)
-                var pendingOrders = await _context.RoomServiceOrders
-                    .Where(o => o.ReservationId == res.ReservationId && 
-                               o.Status != "Completed" && 
-                               o.Status != "Cancelled" && 
-                               !o.Status.Contains("Cancelled"))
-                    .ToListAsync();
+                // 3. Ghi nhật ký Audit
+                _context.AuditLogs.Add(new AuditLog {
+                    Action = "PaymentConfirmed",
+                    EntityName = "Invoice",
+                    EntityId = invoice.InvoiceId.ToString(),
+                    Timestamp = DateTime.UtcNow,
+                    UserId = User.Identity?.Name ?? "System", 
+                    Changes = $"Invoice {invoice.InvoiceNumber} marked as Paid."
+                });
 
-                foreach (var order in pendingOrders)
-                {
-                    order.Status = "Cancelled - Guest Checked Out";
-                    order.Notes = (order.Notes ?? "") + " [Hệ thống tự động hủy đơn do khách đã thanh toán Checkout]";
-                }
+                // 4. LƯU TẤT CẢ TRONG 1 LẦN DUY NHẤT (Atomicity)
+                await _context.SaveChangesAsync();
 
-                // 5. TỰ ĐỘNG HỦY CÁC HOUSEKEEPING TASK GIAO ĐỒ (Delivery Tasks)
-                if (res.RoomId.HasValue)
-                {
-                    var deliveryTasks = await _context.HousekeepingTasks
-                        .Where(t => t.RoomId == res.RoomId && 
-                                   t.TaskType == HmsTaskType.Delivery && 
-                                   t.Status != HmsTaskStatus.Completed && 
-                                   t.Status != HmsTaskStatus.Cancelled)
-                        .ToListAsync();
-
-                    foreach (var task in deliveryTasks)
-                    {
-                        task.Status = HmsTaskStatus.Cancelled;
-                        task.Notes = (task.Notes ?? "") + " [KHÁCH ĐÃ CHECKOUT - DỪNG GIAO ĐỒ]";
-                    }
-                }
+                return Ok(new { message = "Thanh toán thành công và đã đồng bộ hệ thống!" });
             }
-
-            await _context.SaveChangesAsync();
-
-            // --- TỰ ĐỘNG CỘNG ĐIỂM LOYALTY (CRM) ---
-            if (detailedInvoice?.Folio?.Reservation?.Guest != null)
+            catch (Exception ex)
             {
-                var guest = detailedInvoice.Folio.Reservation.Guest;
-                // Tìm tài khoản thành viên của khách
-                var loyaltyAccount = await _context.LoyaltyAccounts.FirstOrDefaultAsync(a => a.GuestId == guest.GuestId);
-                
-                // --- TỰ ĐỘNG TẠO TÀI KHOẢN LOYALTY NẾU CHƯA CÓ ---
-                if (loyaltyAccount == null)
-                {
-                    loyaltyAccount = new LoyaltyAccount
-                    {
-                        GuestId = guest.GuestId,
-                        MemberNumber = "M-" + DateTime.Now.Ticks.ToString().Substring(10), // Sinh mã hội viên tạm thời
-                        Tier = LoyaltyTier.Silver,
-                        CurrentPoints = 0,
-                        LifetimePoints = 0,
-                        EnrolledAt = DateTime.Now,
-                        CreatedAt = DateTime.Now,
-                        CreatedBy = "System_Auto"
-                    };
-                    _context.LoyaltyAccounts.Add(loyaltyAccount);
-                    await _context.SaveChangesAsync();
-                }
-
-                if (loyaltyAccount != null)
-                {
-                    // Tỷ lệ: 10,000 VNĐ = 1 điểm
-                    int pointsToAdd = (int)(detailedInvoice.TotalAmount / 10000);
-                    
-                    if (pointsToAdd > 0)
-                    {
-                        loyaltyAccount.CurrentPoints += pointsToAdd;
-                        loyaltyAccount.LifetimePoints += pointsToAdd;
-                        
-                        // Ghi lại lịch sử giao dịch điểm 
-                        _context.LoyaltyTransactions.Add(new LoyaltyTransaction
-                        {
-                            LoyaltyAccountId = loyaltyAccount.AccountId,
-                            Points = pointsToAdd,
-                            Type = LoyaltyTxType.Earn,
-                            Description = $"Tích điểm từ hóa đơn {detailedInvoice.InvoiceNumber}",
-                            TransactionDate = DateTime.Now,
-                            CreatedAt = DateTime.Now,
-                            CreatedBy = "System"
-                        });
-                    }
-                }
+                // Trả về lỗi chi tiết dạng JSON để frontend xử lý thay vì crash gây lỗi CORS
+                return StatusCode(500, new { message = "Lỗi máy chủ khi xác nhận thanh toán: " + ex.Message });
             }
-
-            // Create Audit Log
-            _context.AuditLogs.Add(new AuditLog {
-                Action = "PaymentConfirmed_WithLoyalty",
-                EntityName = "Invoice",
-                EntityId = invoice.InvoiceId.ToString(),
-                Timestamp = DateTime.UtcNow,
-                UserId = "System", 
-                Changes = $"Invoice {invoice.InvoiceNumber} marked as Paid. Points added to guest."
-            });
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Thanh toán thành công và đã tích điểm cho khách hàng!" });
         }
 
         // DELETE: api/Invoices/5/safety-delete
