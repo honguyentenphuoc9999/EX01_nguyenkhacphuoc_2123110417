@@ -42,9 +42,11 @@ const Rooms = () => {
         }
 
         const payload = {
-            ...modalData,
-            ImageUrls: finalUrls,
-            imageUrls: finalUrls
+            roomNumber: modalData.roomNumber || modalData.RoomNumber,
+            floor: modalData.floor || modalData.Floor || 1,
+            roomTypeId: modalData.roomTypeId || modalData.RoomTypeId,
+            status: modalData.status ?? modalData.Status ?? 0,
+            imageUrls: finalUrls // Đồng bộ về 1 tên duy nhất
         };
 
         try {

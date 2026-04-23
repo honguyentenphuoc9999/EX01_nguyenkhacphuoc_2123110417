@@ -103,24 +103,26 @@ namespace Demo02.Controllers
             var existing = await _context.RoomTypes.FindAsync(id);
             if (existing == null) return NotFound();
 
-            // Đọc dữ liệu linh hoạt (Thử cả chữ hoa và chữ thường)
-            if (data["typeName"] != null) existing.TypeName = data["typeName"]!.ToString();
-            else if (data["TypeName"] != null) existing.TypeName = data["TypeName"]!.ToString();
+            // Cập nhật thông tin cơ bản
+            existing.TypeName = (data["typeName"] ?? data["TypeName"])?.ToString() ?? existing.TypeName;
+            existing.Description = (data["description"] ?? data["Description"])?.ToString() ?? existing.Description;
+            
+            if (data["basePrice"] != null || data["BasePrice"] != null)
+                existing.BasePrice = decimal.Parse((data["basePrice"] ?? data["BasePrice"])!.ToString());
+            
+            if (data["maxOccupancy"] != null || data["MaxOccupancy"] != null)
+                existing.MaxOccupancy = int.Parse((data["maxOccupancy"] ?? data["MaxOccupancy"])!.ToString());
 
-            if (data["description"] != null) existing.Description = data["description"]?.ToString();
-            else if (data["Description"] != null) existing.Description = data["Description"]?.ToString();
-
-            if (data["basePrice"] != null) existing.BasePrice = decimal.Parse(data["basePrice"]!.ToString());
-            else if (data["BasePrice"] != null) existing.BasePrice = decimal.Parse(data["BasePrice"]!.ToString());
-
-            if (data["maxOccupancy"] != null) existing.MaxOccupancy = int.Parse(data["maxOccupancy"]!.ToString());
-            else if (data["MaxOccupancy"] != null) existing.MaxOccupancy = int.Parse(data["MaxOccupancy"]!.ToString());
-
-            // QUAN TRỌNG: Lấy link ảnh
-            var img = data["imageUrl"] ?? data["ImageUrl"];
-            if (img != null)
+            // Xử lý link ảnh - ÉP BUỘC LƯU
+            var imgNode = data["imageUrl"] ?? data["ImageUrl"];
+            if (imgNode != null)
             {
-                existing.ImageUrl = img.ToString();
+                string link = imgNode.ToString();
+                if (!string.IsNullOrEmpty(link))
+                {
+                    existing.ImageUrl = link;
+                    _context.Entry(existing).Property(x => x.ImageUrl).IsModified = true;
+                }
             }
 
             try

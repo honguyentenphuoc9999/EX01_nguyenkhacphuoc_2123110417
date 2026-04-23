@@ -23,15 +23,18 @@ const RoomTypes = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            const finalImg = modalData.imageUrl || modalData.ImageUrl;
+            const finalImg = modalData.imageUrl || modalData.ImageUrl || '';
             const payload = {
-                ...modalData,
-                ImageUrl: finalImg,
-                imageUrl: finalImg
+                typeName: modalData.typeName || modalData.TypeName,
+                basePrice: modalData.basePrice || modalData.BasePrice || 0,
+                maxOccupancy: modalData.maxOccupancy || modalData.MaxOccupancy || 0,
+                description: modalData.description || modalData.Description || '',
+                imageUrl: finalImg // Đồng bộ về 1 tên duy nhất
             };
 
-            if (modalData.roomTypeId) {
-                await api.put(`/RoomTypes/${modalData.roomTypeId}`, payload);
+            if (modalData.roomTypeId || modalData.RoomTypeId) {
+                const id = modalData.roomTypeId || modalData.RoomTypeId;
+                await api.put(`/RoomTypes/${id}`, payload);
             } else {
                 await api.post('/RoomTypes', payload);
             }

@@ -44,23 +44,25 @@ namespace Demo02.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRoom(Guid id, [FromBody] System.Text.Json.Nodes.JsonNode data)
         {
-            var existing = await _context.Rooms.FindAsync(id);
-            if (existing == null) return NotFound();
+            if (data["roomNumber"] != null || data["RoomNumber"] != null)
+                existing.RoomNumber = (data["roomNumber"] ?? data["RoomNumber"])!.ToString();
 
-            if (data["roomNumber"] != null) existing.RoomNumber = data["roomNumber"]!.ToString();
-            else if (data["RoomNumber"] != null) existing.RoomNumber = data["RoomNumber"]!.ToString();
+            if (data["floor"] != null || data["Floor"] != null)
+                existing.Floor = int.Parse((data["floor"] ?? data["Floor"])!.ToString());
 
-            if (data["floor"] != null) existing.Floor = int.Parse(data["floor"]!.ToString());
-            else if (data["Floor"] != null) existing.Floor = int.Parse(data["Floor"]!.ToString());
+            if (data["roomTypeId"] != null || data["RoomTypeId"] != null)
+                existing.RoomTypeId = Guid.Parse((data["roomTypeId"] ?? data["RoomTypeId"])!.ToString());
 
-            if (data["roomTypeId"] != null) existing.RoomTypeId = Guid.Parse(data["roomTypeId"]!.ToString());
-            else if (data["RoomTypeId"] != null) existing.RoomTypeId = Guid.Parse(data["RoomTypeId"]!.ToString());
+            if (data["status"] != null || data["Status"] != null)
+                existing.Status = (RoomStatus)int.Parse((data["status"] ?? data["Status"])!.ToString());
 
-            if (data["status"] != null) existing.Status = (RoomStatus)int.Parse(data["status"]!.ToString());
-            else if (data["Status"] != null) existing.Status = (RoomStatus)int.Parse(data["Status"]!.ToString());
-
-            if (data["imageUrls"] != null) existing.ImageUrls = data["imageUrls"]!.ToString();
-            else if (data["ImageUrls"] != null) existing.ImageUrls = data["ImageUrls"]!.ToString();
+            // Xử lý link ảnh - ÉP BUỘC LƯU
+            var imgsNode = data["imageUrls"] ?? data["ImageUrls"];
+            if (imgsNode != null)
+            {
+                existing.ImageUrls = imgsNode.ToString();
+                _context.Entry(existing).Property(x => x.ImageUrls).IsModified = true;
+            }
 
             try
             {
