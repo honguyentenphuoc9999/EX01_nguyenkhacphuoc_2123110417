@@ -155,6 +155,14 @@ const GuestDashboard = () => {
         setIsSaving(false);
     };
 
+    const handleSearchRooms = async () => {
+        try {
+            const res = await api.get(`/RoomTypes?checkIn=${searchData.checkIn}&checkOut=${searchData.checkOut}`);
+            setRoomTypes(res.data);
+            setShowToast("Đã cập nhật số lượng phòng theo ngày!");
+        } catch (err) { console.error(err); }
+    };
+
     const handleViewRoomType = async (rt) => {
         setViewingRoomType(rt);
         setLoadingRooms(true);
@@ -295,7 +303,7 @@ const GuestDashboard = () => {
                                 </select>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                <button style={{ width: '100%', height: '42px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)' }}>
+                                <button onClick={handleSearchRooms} style={{ width: '100%', height: '42px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)' }}>
                                     Tìm phòng
                                 </button>
                             </div>
