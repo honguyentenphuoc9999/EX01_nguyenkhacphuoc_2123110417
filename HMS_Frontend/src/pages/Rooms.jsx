@@ -171,7 +171,9 @@ const Rooms = () => {
                                             <div style={{ width: '45px', height: '45px', borderRadius: '12px', background: '#f1f5f9', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px', overflow: 'hidden' }}>
                                                 {room.imageUrls ? (
                                                     <img src={JSON.parse(room.imageUrls)[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Room" />
-                                                ) : (room.roomNumber || room.RoomNumber)}
+                                                ) : (
+                                                    <Box size={20} color="#94a3b8" />
+                                                )}
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '14px' }}>P.{room.roomNumber || room.RoomNumber}</div>

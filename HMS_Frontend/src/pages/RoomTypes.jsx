@@ -84,8 +84,12 @@ const RoomTypes = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
                 {roomTypes.map(rt => (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} key={rt.roomTypeId || rt.RoomTypeId} style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px', background: '#f1f5f9' }}>
-                            <img src={rt.imageUrl || rt.ImageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                        <div style={{ width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {(rt.imageUrl || rt.ImageUrl) ? (
+                                <img src={rt.imageUrl || rt.ImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                            ) : (
+                                <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '600' }}>Chưa có ảnh hạng phòng</div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div>
