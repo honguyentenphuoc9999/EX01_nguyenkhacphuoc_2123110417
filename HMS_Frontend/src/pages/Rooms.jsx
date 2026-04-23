@@ -42,10 +42,10 @@ const Rooms = () => {
         }
 
         const payload = {
-            roomNumber: modalData.roomNumber || modalData.RoomNumber,
-            floor: modalData.floor || modalData.Floor || 1,
+            roomNumber: String(modalData.roomNumber || modalData.RoomNumber || ""),
+            floor: parseInt(modalData.floor || modalData.Floor || 1),
             roomTypeId: (modalData.roomTypeId || modalData.RoomTypeId) || null,
-            status: modalData.status ?? modalData.Status ?? 0,
+            status: parseInt(modalData.status ?? modalData.Status ?? 0),
             imageUrls: finalUrls 
         };
 
