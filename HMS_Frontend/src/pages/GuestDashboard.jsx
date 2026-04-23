@@ -296,9 +296,9 @@ const GuestDashboard = () => {
                                 >
                                     <div style={{ height: '180px', position: 'relative' }}>
                                         <img 
-                                            src={`https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=60&sig=${rt.typeName || rt.TypeName}`} 
+                                            src={rt.imageUrl || rt.ImageUrl || `https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=60&sig=${rt.typeName || rt.TypeName}`} 
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                            alt={rt.typeName}
+                                            alt={rt.typeName || rt.TypeName}
                                         />
                                         <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', padding: '6px 14px', borderRadius: '12px', fontWeight: '900', color: '#10b981', fontSize: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                                             {(() => {
