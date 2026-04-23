@@ -95,6 +95,7 @@ namespace Demo02.Controllers
                 RoomNumber = r.RoomNumber,
                 Floor = r.Floor,
                 RoomTypeName = r.RoomType!.TypeName,
+                RoomTypeId = r.RoomTypeId,
                 Status = r.Status,
                 BasePrice = r.BasePrice,
                 ImageUrls = r.ImageUrls
@@ -118,12 +119,17 @@ namespace Demo02.Controllers
             _context.Rooms.Add(room);
             await _context.SaveChangesAsync();
 
+            var roomType = await _context.RoomTypes.FindAsync(room.RoomTypeId);
+
             return CreatedAtAction("GetRoom", new { id = room.RoomId }, new RoomResponseDto {
                 RoomId = room.RoomId,
                 RoomNumber = room.RoomNumber,
                 Floor = room.Floor,
+                RoomTypeName = roomType?.TypeName ?? "",
+                RoomTypeId = room.RoomTypeId,
+                Status = room.Status,
                 BasePrice = room.BasePrice,
-                Status = room.Status
+                ImageUrls = room.ImageUrls
             });
         }
 
