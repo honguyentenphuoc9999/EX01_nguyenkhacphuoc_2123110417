@@ -23,9 +23,11 @@ const RoomTypes = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
+            const finalImg = modalData.imageUrl || modalData.ImageUrl;
             const payload = {
                 ...modalData,
-                imageUrl: modalData.imageUrl // Đảm bảo field khớp với backend
+                ImageUrl: finalImg,
+                imageUrl: finalImg
             };
 
             if (modalData.roomTypeId) {
@@ -136,8 +138,8 @@ const RoomTypes = () => {
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#64748b', marginBottom: '8px' }}>Ảnh hạng phòng (1 ảnh Cloudinary)</label>
                                 <div style={{ width: '100%', height: '150px', border: '2px dashed #e2e8f0', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative' }} onClick={() => document.getElementById('roomTypeImg').click()}>
-                                    {modalData.imageUrl ? (
-                                        <img src={modalData.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
+                                    {(modalData.imageUrl || modalData.ImageUrl) ? (
+                                        <img src={modalData.imageUrl || modalData.ImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
                                     ) : (
                                         <div style={{ textAlign: 'center' }}>
                                             <Plus size={24} color="#94a3b8" />

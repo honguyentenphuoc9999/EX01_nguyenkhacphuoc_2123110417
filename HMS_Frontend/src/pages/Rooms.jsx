@@ -34,17 +34,24 @@ const Rooms = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         // Kiểm tra tối thiểu 1 ảnh
-        const images = JSON.parse(modalData.imageUrls || '[]');
+        const finalUrls = modalData.imageUrls || modalData.ImageUrls || '[]';
+        const images = JSON.parse(finalUrls);
         if (images.length === 0) {
             alert("Vui lòng tải lên ít nhất 1 ảnh cho phòng.");
             return;
         }
 
+        const payload = {
+            ...modalData,
+            ImageUrls: finalUrls,
+            imageUrls: finalUrls
+        };
+
         try {
             if (modalData.roomId) {
-                await api.put(`/Rooms/${modalData.roomId}`, modalData);
+                await api.put(`/Rooms/${modalData.roomId}`, payload);
             } else {
-                await api.post('/Rooms', modalData);
+                await api.post('/Rooms', payload);
             }
             alert("Lưu thông tin phòng thành công!");
             fetchRooms();
