@@ -98,14 +98,21 @@ namespace Demo02.Controllers
         // PUT: api/RoomTypes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoomType(Guid id, RoomType roomType)
+        public async Task<IActionResult> PutRoomType(Guid id, [FromBody] RoomType roomType)
         {
-            if (id != roomType.RoomTypeId)
-            {
-                return BadRequest();
-            }
+            if (id != roomType.RoomTypeId) return BadRequest();
 
-            _context.Entry(roomType).State = EntityState.Modified;
+            var existing = await _context.RoomTypes.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            // Cập nhật các trường thông tin
+            existing.TypeName = roomType.TypeName;
+            existing.BasePrice = roomType.BasePrice;
+            existing.Description = roomType.Description;
+            existing.MaxOccupancy = roomType.MaxOccupancy;
+            existing.ImageUrl = roomType.ImageUrl; // Đảm bảo gán đúng link ảnh mới
+
+            _context.Entry(existing).State = EntityState.Modified;
 
             try
             {
@@ -113,14 +120,8 @@ namespace Demo02.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!RoomTypeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                if (!RoomTypeExists(id)) return NotFound();
+                else throw;
             }
 
             return NoContent();

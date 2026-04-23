@@ -41,6 +41,37 @@ namespace Demo02.Controllers
                 }).ToListAsync();
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutRoom(Guid id, [FromBody] Room room)
+        {
+            if (id != room.RoomId) return BadRequest();
+
+            var existing = await _context.Rooms.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            // Cập nhật các trường
+            existing.RoomNumber = room.RoomNumber;
+            existing.RoomTypeId = room.RoomTypeId;
+            existing.Status = room.Status;
+            existing.BasePrice = room.BasePrice;
+            existing.Description = room.Description;
+            existing.ImageUrls = room.ImageUrls; // Đảm bảo lưu mảng ảnh Cloudinary
+
+            _context.Entry(existing).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!RoomExists(id)) return NotFound();
+                else throw;
+            }
+
+            return NoContent();
+        }
+
         // GET: api/Rooms/5
         [HttpGet("{id}")]
         public async Task<ActionResult<RoomResponseDto>> GetRoom(Guid id)
