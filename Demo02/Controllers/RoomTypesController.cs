@@ -100,15 +100,10 @@ namespace Demo02.Controllers
         public class RoomTypeUpdateDto
         {
             public string? TypeName { get; set; }
-            public string? typeName { get; set; }
             public decimal? BasePrice { get; set; }
-            public decimal? basePrice { get; set; }
             public string? Description { get; set; }
-            public string? description { get; set; }
             public int? MaxOccupancy { get; set; }
-            public int? maxOccupancy { get; set; }
             public string? ImageUrl { get; set; }
-            public string? imageUrl { get; set; }
         }
 
         [HttpPut("{id}")]
@@ -117,21 +112,16 @@ namespace Demo02.Controllers
             var existing = await _context.RoomTypes.FindAsync(id);
             if (existing == null) return NotFound();
 
-            // Cập nhật thông tin cơ bản
-            existing.TypeName = data.TypeName ?? data.typeName ?? existing.TypeName;
-            existing.Description = data.Description ?? data.description ?? existing.Description;
-            
+            // Cập nhật thông tin (Tự động map nhờ PropertyNameCaseInsensitive trong Program.cs)
+            if (data.TypeName != null) existing.TypeName = data.TypeName;
+            if (data.Description != null) existing.Description = data.Description;
             if (data.BasePrice.HasValue) existing.BasePrice = data.BasePrice.Value;
-            else if (data.basePrice.HasValue) existing.BasePrice = data.basePrice.Value;
-            
             if (data.MaxOccupancy.HasValue) existing.MaxOccupancy = data.MaxOccupancy.Value;
-            else if (data.maxOccupancy.HasValue) existing.MaxOccupancy = data.maxOccupancy.Value;
 
             // Xử lý link ảnh - ÉP BUỘC LƯU
-            string? link = data.ImageUrl ?? data.imageUrl;
-            if (!string.IsNullOrEmpty(link))
+            if (!string.IsNullOrEmpty(data.ImageUrl))
             {
-                existing.ImageUrl = link;
+                existing.ImageUrl = data.ImageUrl;
                 _context.Entry(existing).Property(x => x.ImageUrl).IsModified = true;
             }
 

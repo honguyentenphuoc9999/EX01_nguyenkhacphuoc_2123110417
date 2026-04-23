@@ -44,15 +44,10 @@ namespace Demo02.Controllers
         public class RoomUpdateDto
         {
             public string? RoomNumber { get; set; }
-            public string? roomNumber { get; set; }
             public int? Floor { get; set; }
-            public int? floor { get; set; }
             public Guid? RoomTypeId { get; set; }
-            public Guid? roomTypeId { get; set; }
             public int? Status { get; set; }
-            public int? status { get; set; }
             public string? ImageUrls { get; set; }
-            public string? imageUrls { get; set; }
         }
 
         [HttpPut("{id}")]
@@ -61,23 +56,15 @@ namespace Demo02.Controllers
             var existing = await _context.Rooms.FindAsync(id);
             if (existing == null) return NotFound();
 
-            string? num = data.RoomNumber ?? data.roomNumber;
-            if (num != null) existing.RoomNumber = num;
-
+            if (data.RoomNumber != null) existing.RoomNumber = data.RoomNumber;
             if (data.Floor.HasValue) existing.Floor = data.Floor.Value;
-            else if (data.floor.HasValue) existing.Floor = data.floor.Value;
-
             if (data.RoomTypeId.HasValue) existing.RoomTypeId = data.RoomTypeId.Value;
-            else if (data.roomTypeId.HasValue) existing.RoomTypeId = data.roomTypeId.Value;
-
             if (data.Status.HasValue) existing.Status = (RoomStatus)data.Status.Value;
-            else if (data.status.HasValue) existing.Status = (RoomStatus)data.status.Value;
 
             // Xử lý link ảnh - ÉP BUỘC LƯU
-            string? links = data.ImageUrls ?? data.imageUrls;
-            if (links != null)
+            if (data.ImageUrls != null)
             {
-                existing.ImageUrls = links;
+                existing.ImageUrls = data.ImageUrls;
                 _context.Entry(existing).Property(x => x.ImageUrls).IsModified = true;
             }
 
