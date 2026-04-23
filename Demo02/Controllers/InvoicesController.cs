@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Demo02.Data;
 using Demo02.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Demo02.Controllers
 {
