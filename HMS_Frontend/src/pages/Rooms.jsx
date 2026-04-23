@@ -49,6 +49,7 @@ const Rooms = () => {
             imageUrls: finalUrls 
         };
 
+        console.log("Payload sending:", payload);
         try {
             if (modalData.roomId) {
                 await api.put(`/Rooms/${modalData.roomId}`, payload);
@@ -59,8 +60,10 @@ const Rooms = () => {
             fetchRooms();
             setIsModalOpen(false);
         } catch (err) { 
+            console.error("Save error details:", err.response);
             const msg = err.response?.data?.message || err.response?.data || err.message;
-            alert(`Lỗi khi ${modalData.roomId ? 'cập nhật' : 'thêm'} phòng: ${msg}`); 
+            const details = err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : "";
+            alert(`Lỗi khi ${modalData.roomId ? 'cập nhật' : 'thêm'} phòng: ${msg} ${details}`); 
         }
     };
 
