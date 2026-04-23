@@ -138,5 +138,10 @@ namespace Demo02.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+        private bool RoomExists(Guid id)
+        {
+            return _context.Rooms.Any(e => e.RoomId == id);
+        }
     }
 }
