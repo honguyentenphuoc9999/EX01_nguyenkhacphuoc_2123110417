@@ -231,7 +231,7 @@ const PublicBooking = () => {
                             style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}
                         >
                             <div style={{ height: '240px', background: '#f1f5f9', position: 'relative' }}>
-                                <img src={`https://images.unsplash.com/photo-1590490360182-c33d597353a0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60&sig=${rt.typeName || rt.TypeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName} />
+                                <img src={rt.imageUrl || rt.ImageUrl || `https://images.unsplash.com/photo-1590490360182-c33d597353a0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60&sig=${rt.typeName || rt.TypeName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rt.typeName || rt.TypeName} />
                                 <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'white', padding: '6px 12px', borderRadius: '10px', fontWeight: '800', fontSize: '18px', color: '#10b981' }}>
                                     {new Intl.NumberFormat('vi-VN').format(rt.basePrice || rt.BasePrice)} <span style={{ fontSize: '12px' }}>₫/đêm</span>
                                 </div>
