@@ -35,6 +35,7 @@ namespace Demo02.Controllers
                     RoomNumber = r.RoomNumber,
                     Floor = r.Floor,
                     RoomTypeName = r.RoomType!.TypeName,
+                    RoomTypeId = r.RoomTypeId,
                     Status = r.Status,
                     BasePrice = r.BasePrice,
                     ImageUrls = r.ImageUrls // Thêm ảnh Cloudinary

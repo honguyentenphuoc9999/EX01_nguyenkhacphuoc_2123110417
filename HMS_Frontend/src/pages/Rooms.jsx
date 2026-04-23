@@ -153,7 +153,7 @@ const Rooms = () => {
                     </h1>
                     <p style={{ color: '#64748b', marginTop: '4px', fontSize: isMobile ? '13px' : '15px' }}>Quản lý chi tiết từng số phòng, vị trí tầng và hạng phòng.</p>
                 </div>
-                <button onClick={() => { setModalData({ roomNumber: '', floor: 1, roomTypeId: roomTypes[0]?.roomTypeId || roomTypes[0]?.RoomTypeId || '' }); setIsModalOpen(true); }} style={{ width: isMobile ? '100%' : 'auto', background: '#3b82f6', color: 'white', padding: '12px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button onClick={() => { setModalData({ roomNumber: '', floor: 1, roomTypeId: '' }); setIsModalOpen(true); }} style={{ width: isMobile ? '100%' : 'auto', background: '#3b82f6', color: 'white', padding: '12px 24px', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <Plus size={20} /> {isMobile ? 'Thêm phòng' : 'Thêm Phòng mới'}
                 </button>
             </div>

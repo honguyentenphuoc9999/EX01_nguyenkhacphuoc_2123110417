@@ -24,6 +24,7 @@ const GuestDashboard = () => {
     const [specificRooms, setSpecificRooms] = useState([]);
     const [loadingRooms, setLoadingRooms] = useState(false);
     const [selectedSpecificRoom, setSelectedSpecificRoom] = useState(null);
+    const [selectedRoomDetail, setSelectedRoomDetail] = useState(null);
     const [cart, setCart] = useState({});
     const [menuItems, setMenuItems] = useState([]);
 
@@ -290,11 +291,21 @@ const GuestDashboard = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1.2fr 0.8fr 1fr', gap: '12px', background: '#f8fafc', padding: isMobile ? '12px' : '16px', borderRadius: '20px', marginBottom: isMobile ? '20px' : '32px', border: '1px solid #f1f5f9' }}>
                             <div>
                                 <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Nhận phòng</label>
-                                <input type="date" value={searchData.checkIn} onChange={e => setSearchData({...searchData, checkIn: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
+                                <input type="date" min={new Date().toISOString().split('T')[0]} value={searchData.checkIn} onChange={e => {
+                                    const newCin = e.target.value;
+                                    const cout = new Date(searchData.checkOut);
+                                    if (new Date(newCin) >= cout) {
+                                        const newCout = new Date(newCin);
+                                        newCout.setDate(newCout.getDate() + 1);
+                                        setSearchData({...searchData, checkIn: newCin, checkOut: newCout.toISOString().split('T')[0]});
+                                    } else {
+                                        setSearchData({...searchData, checkIn: newCin});
+                                    }
+                                }} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
                             </div>
                             <div>
                                 <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Trả phòng</label>
-                                <input type="date" value={searchData.checkOut} onChange={e => setSearchData({...searchData, checkOut: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
+                                <input type="date" min={new Date(new Date(searchData.checkIn).getTime() + 86400000).toISOString().split('T')[0]} value={searchData.checkOut} onChange={e => setSearchData({...searchData, checkOut: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }} />
                             </div>
                             <div>
                                 <label style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Số khách</label>
@@ -311,7 +322,7 @@ const GuestDashboard = () => {
 
                         {/* Room Types Grid - Optimized layout */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                            {roomTypes.map(rt => (
+                            {roomTypes.filter(rt => (rt.maxOccupancy || rt.MaxOccupancy) >= searchData.guests).map(rt => (
                                 <motion.div 
                                     key={rt.roomTypeId || rt.RoomTypeId} 
                                     whileHover={{ y: -8 }}
@@ -846,13 +857,68 @@ const GuestDashboard = () => {
                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ position: 'relative', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#f8fafc', borderRadius: '32px', padding: isMobile ? '24px' : '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                                 <div>
-                                    <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>Chọn phòng thuộc hạng: {viewingRoomType.typeName}</h2>
-                                    <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Sắp nhận phòng vào: {searchData.checkIn} — Trả phòng: {searchData.checkOut}</p>
+                                    <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>
+                                        {selectedRoomDetail ? `Chi tiết phòng ${selectedRoomDetail.roomNumber}` : `Chọn phòng thuộc hạng: ${viewingRoomType.typeName}`}
+                                    </h2>
+                                    {!selectedRoomDetail && <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Sắp nhận phòng vào: {searchData.checkIn} — Trả phòng: {searchData.checkOut}</p>}
                                 </div>
-                                <button onClick={() => setViewingRoomType(null)} style={{ background: '#e2e8f0', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20}/></button>
+                                <button onClick={() => {
+                                    if (selectedRoomDetail) setSelectedRoomDetail(null);
+                                    else setViewingRoomType(null);
+                                }} style={{ background: '#e2e8f0', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <X size={20}/>
+                                </button>
                             </div>
 
-                            {loadingRooms ? (
+                            {selectedRoomDetail ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '8px' }}>
+                                        {(selectedRoomDetail.imageUrls && JSON.parse(selectedRoomDetail.imageUrls).length > 0) ? (
+                                            JSON.parse(selectedRoomDetail.imageUrls).map((img, idx) => (
+                                                <img key={idx} src={img} style={{ width: '300px', height: '200px', objectFit: 'cover', borderRadius: '16px', border: '1px solid #e2e8f0' }} alt={`Room ${idx}`} />
+                                            ))
+                                        ) : (
+                                            <img src={`https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=60`} style={{ width: '400px', height: '250px', objectFit: 'cover', borderRadius: '16px' }} alt="Placeholder" />
+                                        )}
+                                    </div>
+                                    <div style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', marginBottom: '8px' }}>Phòng {selectedRoomDetail.roomNumber}</h3>
+                                                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                                                    {selectedRoomDetail.isAvailable ? (
+                                                        <span style={{ fontSize: '13px', background: '#ecfdf5', color: '#059669', padding: '6px 12px', borderRadius: '8px', fontWeight: '800' }}>● Còn trống ngày này</span>
+                                                    ) : (
+                                                        <span style={{ fontSize: '13px', background: '#fef2f2', color: '#dc2626', padding: '6px 12px', borderRadius: '8px', fontWeight: '800' }}>■ Đã có khách đặt</span>
+                                                    )}
+                                                    <span style={{ fontSize: '13px', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontWeight: '800' }}>Hạng: {viewingRoomType.typeName}</span>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '24px', fontWeight: '900', color: '#10b981' }}>{new Intl.NumberFormat('vi-VN').format(viewingRoomType.basePrice || viewingRoomType.BasePrice)}<span style={{fontSize: '14px', color: '#64748b'}}>₫/đêm</span></div>
+                                            </div>
+                                        </div>
+                                        <p style={{ color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
+                                            Đây là góc nhìn chi tiết của phòng {selectedRoomDetail.roomNumber}. HMS Royal luôn đảm bảo phòng vật lý này được trang bị đầy đủ tiện nghi tiêu chuẩn tốt nhất để quý khách có một kỳ nghỉ hoàn hảo.
+                                        </p>
+                                        <div style={{ display: 'flex', gap: '16px' }}>
+                                            <button onClick={() => setSelectedRoomDetail(null)} style={{ flex: 1, padding: '16px', background: 'white', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '16px', fontWeight: '800', cursor: 'pointer' }}>Quay lại danh sách</button>
+                                            <button 
+                                                disabled={!selectedRoomDetail.isAvailable}
+                                                onClick={() => {
+                                                    setSelectedSpecificRoom(selectedRoomDetail);
+                                                    setSelectedRoomDetail(null);
+                                                    setSelectedType(viewingRoomType);
+                                                    setViewingRoomType(null);
+                                                }}
+                                                style={{ flex: 1.5, padding: '16px', background: selectedRoomDetail.isAvailable ? '#3b82f6' : '#cbd5e1', color: selectedRoomDetail.isAvailable ? 'white' : '#94a3b8', border: 'none', borderRadius: '16px', fontWeight: '800', cursor: selectedRoomDetail.isAvailable ? 'pointer' : 'not-allowed' }}
+                                            >
+                                                {selectedRoomDetail.isAvailable ? "Quyết định đặt phòng này" : "Phòng đang bận"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : loadingRooms ? (
                                 <div style={{ textAlign: 'center', padding: '60px' }}>
                                     <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '40px', height: '40px', border: '4px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto' }} />
                                     <p style={{ marginTop: '16px', color: '#64748b', fontWeight: '600' }}>Đang tải danh sách phòng chi tiết...</p>
@@ -877,15 +943,10 @@ const GuestDashboard = () => {
                                                 )}
                                                 
                                                 <button 
-                                                    disabled={!room.isAvailable}
-                                                    onClick={() => {
-                                                        setSelectedSpecificRoom(room);
-                                                        setSelectedType(viewingRoomType);
-                                                        setViewingRoomType(null);
-                                                    }}
-                                                    style={{ width: '100%', padding: '12px', background: room.isAvailable ? '#3b82f6' : '#cbd5e1', color: room.isAvailable ? 'white' : '#94a3b8', border: 'none', borderRadius: '12px', fontWeight: '800', marginTop: '16px', cursor: room.isAvailable ? 'pointer' : 'not-allowed' }}
+                                                    onClick={() => setSelectedRoomDetail(room)}
+                                                    style={{ width: '100%', padding: '12px', background: 'white', color: '#3b82f6', border: '2px solid #e0f2fe', borderRadius: '12px', fontWeight: '800', marginTop: '16px', cursor: 'pointer', transition: '0.2s' }}
                                                 >
-                                                    {room.isAvailable ? "Chọn phòng này" : "Không khả dụng"}
+                                                    Xem chi tiết phòng
                                                 </button>
                                             </div>
                                         </div>
