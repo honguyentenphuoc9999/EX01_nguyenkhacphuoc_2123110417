@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Calendar, Users, Search, 
     ArrowRight, Star, Coffee, 
-    Wifi, MapPin, CheckCircle2, Eye, EyeOff
+    Wifi, MapPin, CheckCircle2, Eye, EyeOff, X
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../auth/AuthContext';
@@ -38,6 +38,10 @@ const PublicBooking = () => {
     const [bookingSuccess, setBookingSuccess] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [showPass, setShowPass] = useState(false);
+    const [viewingRoomType, setViewingRoomType] = useState(null);
+    const [specificRooms, setSpecificRooms] = useState([]);
+    const [loadingRooms, setLoadingRooms] = useState(false);
+    const [selectedSpecificRoom, setSelectedSpecificRoom] = useState(null);
 
     const fetchRoomTypes = async (cin, cout) => {
         setLoading(true);
@@ -54,6 +58,16 @@ const PublicBooking = () => {
     useEffect(() => {
         fetchRoomTypes(); // Tải dữ liệu ban đầu cho ngày hôm nay
     }, []);
+
+    const handleViewRoomType = async (rt) => {
+        setViewingRoomType(rt);
+        setLoadingRooms(true);
+        try {
+            const res = await api.get(`/PublicBooking/AvailableRoomsInType/${rt.roomTypeId || rt.RoomTypeId}?checkIn=${searchData.checkIn}&checkOut=${searchData.checkOut}`);
+            setSpecificRooms(res.data);
+        } catch (err) { console.error(err); }
+        setLoadingRooms(false);
+    };
 
     const handleCheckAvailability = () => {
         const newErrors = {};
@@ -126,7 +140,8 @@ const PublicBooking = () => {
                 CheckOutDate: searchData.checkOut,
                 GuestCount: parseInt(searchData.guests),
                 Password: guestInfo.password,
-                ConfirmPassword: guestInfo.confirmPassword
+                ConfirmPassword: guestInfo.confirmPassword,
+                AssignedRoomId: selectedSpecificRoom?.roomId
             });
             // Thành công: Chuyển thẳng về Dashboard người dùng
             window.location.href = res.data.redirect;
@@ -277,8 +292,8 @@ const PublicBooking = () => {
                                         CHẾ ĐỘ GIÁM SÁT - KHÔNG THỂ ĐẶT ĐƠN
                                     </div>
                                 ) : (
-                                    <button onClick={() => setSelectedType(rt)} style={{ width: '100%', padding: '16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                        Đặt phòng ngay <ArrowRight size={18} />
+                                    <button onClick={() => handleViewRoomType(rt)} style={{ width: '100%', padding: '16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                        Xem danh sách phòng <ArrowRight size={18} />
                                     </button>
                                 )}
                             </div>
@@ -299,6 +314,81 @@ const PublicBooking = () => {
                     )}
                 </div>
             </div>
+
+            {/* Modal Danh Sách Phòng */}
+            <AnimatePresence>
+                {viewingRoomType && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px' : '20px' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)' }} onClick={() => setViewingRoomType(null)} />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ position: 'relative', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#f8fafc', borderRadius: '32px', padding: isMobile ? '24px' : '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>Chọn phòng thuộc hạng: {viewingRoomType.typeName || viewingRoomType.TypeName}</h2>
+                                    <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Sắp nhận phòng vào: {searchData.checkIn} — Trả phòng: {searchData.checkOut}</p>
+                                </div>
+                                <button onClick={() => setViewingRoomType(null)} style={{ background: '#e2e8f0', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20}/></button>
+                            </div>
+
+                            {loadingRooms ? (
+                                <div style={{ textAlign: 'center', padding: '60px' }}>
+                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '40px', height: '40px', border: '4px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto' }} />
+                                    <p style={{ marginTop: '16px', color: '#64748b', fontWeight: '600' }}>Đang tải danh sách phòng chi tiết...</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(220px, 1fr))`, gap: '16px' }}>
+                                    {specificRooms.map(room => (
+                                        <div key={room.roomId} style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', border: room.isAvailable ? '2px solid #3b82f6' : '2px solid #e2e8f0', opacity: room.isAvailable ? 1 : 0.6, position: 'relative' }}>
+                                            <div style={{ height: '140px', background: '#f1f5f9' }}>
+                                                <img 
+                                                    src={(room.imageUrls && JSON.parse(room.imageUrls).length > 0) ? JSON.parse(room.imageUrls)[0] : `https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=60`} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                    alt={room.roomNumber}
+                                                />
+                                            </div>
+                                            <div style={{ padding: '16px' }}>
+                                                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1e293b', marginBottom: '8px' }}>Phòng {room.roomNumber}</div>
+                                                {room.isAvailable ? (
+                                                    <span style={{ fontSize: '12px', background: '#ecfdf5', color: '#059669', padding: '4px 10px', borderRadius: '8px', fontWeight: '800' }}>● Còn trống</span>
+                                                ) : (
+                                                    <span style={{ fontSize: '12px', background: '#fef2f2', color: '#dc2626', padding: '4px 10px', borderRadius: '8px', fontWeight: '800' }}>■ Đã có người</span>
+                                                )}
+                                                
+                                                <button 
+                                                    disabled={!room.isAvailable}
+                                                    onClick={() => {
+                                                        setSelectedSpecificRoom(room);
+                                                        setSelectedType(viewingRoomType);
+                                                        setViewingRoomType(null);
+                                                    }}
+                                                    style={{ width: '100%', padding: '12px', background: room.isAvailable ? '#3b82f6' : '#cbd5e1', color: room.isAvailable ? 'white' : '#94a3b8', border: 'none', borderRadius: '12px', fontWeight: '800', marginTop: '16px', cursor: room.isAvailable ? 'pointer' : 'not-allowed' }}
+                                                >
+                                                    {room.isAvailable ? "Chọn phòng này" : "Không khả dụng"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {specificRooms.length === 0 && (
+                                        <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Hiện tại không có phòng vật lý cực đẹp thuộc hạng này.</div>
+                                    )}
+                                </div>
+                            )}
+                            
+                            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                                <button 
+                                    onClick={() => {
+                                        setSelectedSpecificRoom(null);
+                                        setSelectedType(viewingRoomType);
+                                        setViewingRoomType(null);
+                                    }}
+                                    style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                    Bỏ qua, hãy tự động xếp phòng cho tôi
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Modal Đặt phòng */}
             <AnimatePresence>

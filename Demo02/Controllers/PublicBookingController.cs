@@ -22,6 +22,7 @@ namespace Demo02.Controllers
         // --- 🔐 SECURITY ADDITIONS ---
         public string? Password { get; set; }
         public string? ConfirmPassword { get; set; }
+        public Guid? AssignedRoomId { get; set; }
     }
 
     [Route("api/[controller]")]
@@ -37,6 +38,47 @@ namespace Demo02.Controllers
             _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
+        }
+
+        // --- MỚI: API KIỂM TRA PHÒNG CHI TIẾT THEO NGÀY ---
+        [HttpGet("AvailableRoomsInType/{roomTypeId}")]
+        public async Task<IActionResult> GetAvailableRoomsInType(Guid roomTypeId, [FromQuery] DateTime checkIn, [FromQuery] DateTime checkOut)
+        {
+            var vnNow = DateTime.UtcNow.AddHours(7);
+            var today = vnNow.Date;
+
+            var allRooms = await _context.Rooms
+                .Where(r => r.RoomTypeId == roomTypeId && !r.IsDeleted)
+                .Select(r => new { r.RoomId, r.RoomNumber, r.Status, r.ImageUrls })
+                .ToListAsync();
+
+            var result = new List<object>();
+
+            foreach (var r in allRooms)
+            {
+                var isReserved = await _context.Reservations.AnyAsync(res => 
+                    res.RoomId == r.RoomId && 
+                    res.Status != ReservationStatus.Cancelled &&
+                    res.Status != ReservationStatus.CheckedOut &&
+                    res.CheckInDate.Date < checkOut.Date && 
+                    res.CheckOutDate.Date > checkIn.Date);
+
+                bool isAvailable = !isReserved;
+
+                if (isAvailable && checkIn.Date == today)
+                {
+                    if (r.Status != RoomStatus.VacantClean) isAvailable = false;
+                }
+
+                result.Add(new {
+                    roomId = r.RoomId,
+                    roomNumber = r.RoomNumber,
+                    imageUrls = r.ImageUrls,
+                    isAvailable = isAvailable
+                });
+            }
+
+            return Ok(result);
         }
 
         // 1. Kiểm tra SĐT có tồn tại chưa để Frontend "biến hình" & Áp dụng Ưu đãi VIP
@@ -118,32 +160,61 @@ namespace Demo02.Controllers
             if (bookedRoomsCount >= totalRoomsInType)
                 return BadRequest(new { message = "Rất tiếc, hạng phòng này hiện đã kín chỗ trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác!" });
 
-            // Tìm một phòng bất kỳ thuộc hạng này để gán vào đơn (Logic ưu tiên phòng trống thực tế)
+            // Lấy danh sách tất cả các phòng để tính toán (trước khi chia logic chọn hay không)
             var allRoomsOfType = await _context.Rooms
                 .Where(r => r.RoomTypeId == dto.RoomTypeId && !r.IsDeleted)
                 .ToListAsync();
 
             Room? targetRoom = null;
-            foreach (var r in allRoomsOfType)
-            {
-                // 1. Kiểm tra xem phòng vật lý này có bị ai đặt trùng lịch không
-                var isReserved = await _context.Reservations.AnyAsync(res => 
-                    res.RoomId == r.RoomId && 
-                    res.Status != ReservationStatus.Cancelled &&
-                    res.Status != ReservationStatus.CheckedOut &&
-                    res.CheckInDate.Date < dto.CheckOutDate.Date && 
-                    res.CheckOutDate.Date > dto.CheckInDate.Date);
-                
-                if (isReserved) continue;
 
-                // 2. Nếu đặt cho HÔM NAY, phải kiểm tra trạng thái vật lý (Phòng phải Sạch)
-                if (dto.CheckInDate.Date == today)
+            // 1. Nếu khách hàng CHỌN TRƯỚC phòng cụ thể:
+            if (dto.AssignedRoomId != null)
+            {
+                var specificRoom = await _context.Rooms.FindAsync(dto.AssignedRoomId);
+                if (specificRoom != null && specificRoom.RoomTypeId == dto.RoomTypeId && !specificRoom.IsDeleted)
                 {
-                    if (r.Status != RoomStatus.VacantClean) continue;
+                    // Kiểm tra xem phòng đó có lịch trùng lặp không
+                    var isReserved = await _context.Reservations.AnyAsync(res => 
+                        res.RoomId == specificRoom.RoomId && 
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.CheckedOut &&
+                        res.CheckInDate.Date < dto.CheckOutDate.Date && 
+                        res.CheckOutDate.Date > dto.CheckInDate.Date);
+
+                    if (!isReserved)
+                    {
+                        if (dto.CheckInDate.Date == today && specificRoom.Status == RoomStatus.VacantClean)
+                            targetRoom = specificRoom; // ok
+                        else if (dto.CheckInDate.Date != today)
+                            targetRoom = specificRoom; // ok
+                    }
                 }
                 
-                targetRoom = r;
-                break;
+                if (targetRoom == null)
+                    return BadRequest(new { message = "Phòng bạn chọn hiện không sẵn sàng trong khoảng thời gian này hoặc đã có người đặt. Vui lòng chọn phòng khác!" });
+            }
+            else
+            {
+                // 2. Nếu khách không chọn phòng cụ thể, Tự động phân bổ
+                foreach (var r in allRoomsOfType)
+                {
+                    var isReserved = await _context.Reservations.AnyAsync(res => 
+                        res.RoomId == r.RoomId && 
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.CheckedOut &&
+                        res.CheckInDate.Date < dto.CheckOutDate.Date && 
+                        res.CheckOutDate.Date > dto.CheckInDate.Date);
+                    
+                    if (isReserved) continue;
+
+                    if (dto.CheckInDate.Date == today)
+                    {
+                        if (r.Status != RoomStatus.VacantClean) continue;
+                    }
+                    
+                    targetRoom = r;
+                    break;
+                }
             }
 
             if (targetRoom == null) 

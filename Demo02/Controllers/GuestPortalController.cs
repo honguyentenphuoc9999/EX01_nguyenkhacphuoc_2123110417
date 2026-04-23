@@ -210,20 +210,44 @@ namespace Demo02.Controllers
 
             var allRoomsOfType = await _context.Rooms.Where(r => r.RoomTypeId == request.RoomTypeId && !r.IsDeleted).ToListAsync();
             Room? targetRoom = null;
-            foreach (var r in allRoomsOfType)
+
+            if (request.AssignedRoomId != null)
             {
-                var isReserved = await _context.Reservations.AnyAsync(res => 
-                    res.RoomId == r.RoomId && 
-                    res.Status != ReservationStatus.Cancelled &&
-                    res.Status != ReservationStatus.CheckedOut &&
-                    res.CheckInDate.Date < request.CheckOut.Date && 
-                    res.CheckOutDate.Date > request.CheckIn.Date);
-                if (isReserved) continue;
-                if (request.CheckIn.Date == today && r.Status != RoomStatus.VacantClean) continue;
-                targetRoom = r; break;
+                var specificRoom = await _context.Rooms.FindAsync(request.AssignedRoomId);
+                if (specificRoom != null && specificRoom.RoomTypeId == request.RoomTypeId && !specificRoom.IsDeleted)
+                {
+                    var isReserved = await _context.Reservations.AnyAsync(res => 
+                        res.RoomId == specificRoom.RoomId && 
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.CheckedOut &&
+                        res.CheckInDate.Date < request.CheckOut.Date && 
+                        res.CheckOutDate.Date > request.CheckIn.Date);
+                    
+                    if (!isReserved)
+                    {
+                        if (request.CheckIn.Date == today && specificRoom.Status == RoomStatus.VacantClean) targetRoom = specificRoom;
+                        else if (request.CheckIn.Date != today) targetRoom = specificRoom;
+                    }
+                }
             }
 
-            if (targetRoom == null) return BadRequest(request.CheckIn.Date == today ? "Không có phòng Sạch sẵn sàng ngay." : "Hết phòng vật lý.");
+            if (targetRoom == null)
+            {
+                foreach (var r in allRoomsOfType)
+                {
+                    var isReserved = await _context.Reservations.AnyAsync(res => 
+                        res.RoomId == r.RoomId && 
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.CheckedOut &&
+                        res.CheckInDate.Date < request.CheckOut.Date && 
+                        res.CheckOutDate.Date > request.CheckIn.Date);
+                    if (isReserved) continue;
+                    if (request.CheckIn.Date == today && r.Status != RoomStatus.VacantClean) continue;
+                    targetRoom = r; break;
+                }
+            }
+
+            if (targetRoom == null) return BadRequest(request.CheckIn.Date == today ? "Không có phòng Sạch sẵn sàng ngay." : "Phòng bạn chọn không khả dụng, hoặc hết phòng vật lý.");
 
             var loyalty = await _context.LoyaltyAccounts.FirstOrDefaultAsync(l => l.GuestId == guest.GuestId && !l.IsDeleted);
             decimal dm = 1;
@@ -255,5 +279,6 @@ namespace Demo02.Controllers
         public DateTime CheckIn { get; set; }
         public DateTime CheckOut { get; set; }
         public int NumberOfGuests { get; set; }
+        public Guid? AssignedRoomId { get; set; }
     }
 }
