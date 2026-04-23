@@ -98,21 +98,30 @@ namespace Demo02.Controllers
         // PUT: api/RoomTypes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoomType(Guid id, [FromBody] RoomType roomType)
+        public async Task<IActionResult> PutRoomType(Guid id, [FromBody] System.Text.Json.Nodes.JsonNode data)
         {
-            if (id != roomType.RoomTypeId) return BadRequest();
-
             var existing = await _context.RoomTypes.FindAsync(id);
             if (existing == null) return NotFound();
 
-            // Cập nhật các trường thông tin
-            existing.TypeName = roomType.TypeName;
-            existing.BasePrice = roomType.BasePrice;
-            existing.Description = roomType.Description;
-            existing.MaxOccupancy = roomType.MaxOccupancy;
-            existing.ImageUrl = roomType.ImageUrl; // Đảm bảo gán đúng link ảnh mới
+            // Đọc dữ liệu linh hoạt (Thử cả chữ hoa và chữ thường)
+            if (data["typeName"] != null) existing.TypeName = data["typeName"]!.ToString();
+            else if (data["TypeName"] != null) existing.TypeName = data["TypeName"]!.ToString();
 
-            _context.Entry(existing).State = EntityState.Modified;
+            if (data["description"] != null) existing.Description = data["description"]?.ToString();
+            else if (data["Description"] != null) existing.Description = data["Description"]?.ToString();
+
+            if (data["basePrice"] != null) existing.BasePrice = decimal.Parse(data["basePrice"]!.ToString());
+            else if (data["BasePrice"] != null) existing.BasePrice = decimal.Parse(data["BasePrice"]!.ToString());
+
+            if (data["maxOccupancy"] != null) existing.MaxOccupancy = int.Parse(data["maxOccupancy"]!.ToString());
+            else if (data["MaxOccupancy"] != null) existing.MaxOccupancy = int.Parse(data["MaxOccupancy"]!.ToString());
+
+            // QUAN TRỌNG: Lấy link ảnh
+            var img = data["imageUrl"] ?? data["ImageUrl"];
+            if (img != null)
+            {
+                existing.ImageUrl = img.ToString();
+            }
 
             try
             {
