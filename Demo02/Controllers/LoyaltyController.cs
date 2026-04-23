@@ -111,7 +111,7 @@ namespace Demo02.Controllers
     public class AddPointsRequest
     {
         public Guid AccountId { get; set; }
-        public int Points { get; set; }
+        public long Points { get; set; }
         public string? Description { get; set; }
     }
 }

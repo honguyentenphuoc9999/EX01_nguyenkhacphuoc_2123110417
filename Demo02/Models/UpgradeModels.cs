@@ -80,7 +80,7 @@ namespace Demo02.Models
         [ForeignKey("LoyaltyAccountId")]
         public LoyaltyAccount? Account { get; set; }
         public LoyaltyTxType Type { get; set; } = LoyaltyTxType.Earn;
-        public int Points { get; set; } 
+        public long Points { get; set; } 
         public string Description { get; set; } = string.Empty;
         public Guid? ReservationId { get; set; }
         public DateTime TransactionDate { get; set; } = DateTime.Now;

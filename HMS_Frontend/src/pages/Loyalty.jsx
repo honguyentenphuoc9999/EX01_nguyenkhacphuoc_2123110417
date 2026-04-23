@@ -321,6 +321,7 @@ const Loyalty = () => {
                                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>Số điểm (dùng dấu - để trừ)</label>
                                 <input 
                                     type="number" 
+                                    max="2000000000"
                                     value={adjustPoints}
                                     onChange={(e) => setAdjustPoints(e.target.value)}
                                     style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', fontWeight: '800', fontSize: '20px' }}

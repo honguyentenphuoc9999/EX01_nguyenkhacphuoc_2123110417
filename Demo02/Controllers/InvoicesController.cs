@@ -255,7 +255,7 @@ namespace Demo02.Controllers
                             _context.LoyaltyAccounts.Add(loyaltyAccount);
                         }
 
-                        int pointsToAdd = (int)(invoice.TotalAmount / 10000);
+                        long pointsToAdd = (long)(invoice.TotalAmount / 10000);
                         if (pointsToAdd > 0)
                         {
                             loyaltyAccount.CurrentPoints += pointsToAdd;

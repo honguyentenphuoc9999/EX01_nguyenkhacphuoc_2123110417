@@ -308,7 +308,7 @@ namespace Demo02.Services
             var loyalty = (await _uow.LoyaltyAccounts.FindAsync(a => a.GuestId == r.GuestId)).FirstOrDefault();
             if (loyalty != null)
             {
-                int pointsToAdd = (int)(total / 10000);
+                long pointsToAdd = (long)(total / 10000);
                 if (pointsToAdd > 0)
                 {
                     loyalty.CurrentPoints += pointsToAdd;

@@ -131,8 +131,8 @@ namespace Demo02.Models
         [Required, StringLength(20)]
         public string MemberNumber { get; set; } = string.Empty;
         public LoyaltyTier Tier { get; set; } = LoyaltyTier.Silver;
-        public int CurrentPoints { get; set; }
-        public int LifetimePoints { get; set; }
+        public long CurrentPoints { get; set; }
+        public long LifetimePoints { get; set; }
         public DateTime EnrolledAt { get; set; } = DateTime.Now;
     }
 

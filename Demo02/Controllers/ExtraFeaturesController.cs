@@ -179,7 +179,7 @@ namespace Demo02.Controllers
     public class LoyaltyRedeemRequest
     {
         public Guid LoyaltyAccountId { get; set; }
-        public int Points { get; set; }
+        public long Points { get; set; }
         public string? Description { get; set; }
     }
 
