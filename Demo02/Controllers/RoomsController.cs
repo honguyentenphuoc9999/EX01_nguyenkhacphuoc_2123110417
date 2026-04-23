@@ -48,6 +48,7 @@ namespace Demo02.Controllers
             public int? Floor { get; set; }
             public Guid? RoomTypeId { get; set; }
             public int? Status { get; set; }
+            public decimal? BasePrice { get; set; }
             public string? ImageUrls { get; set; }
         }
 
@@ -57,10 +58,17 @@ namespace Demo02.Controllers
             var existing = await _context.Rooms.FindAsync(id);
             if (existing == null) return NotFound();
 
-            if (data.RoomNumber != null) existing.RoomNumber = data.RoomNumber;
+            if (data.RoomNumber != null && data.RoomNumber != existing.RoomNumber)
+            {
+                // Kiểm tra trùng số phòng với phòng khác
+                if (await _context.Rooms.AnyAsync(r => r.RoomNumber == data.RoomNumber))
+                    return BadRequest("Số phòng này đã tồn tại trong hệ thống.");
+                existing.RoomNumber = data.RoomNumber;
+            }
             if (data.Floor.HasValue) existing.Floor = data.Floor.Value;
             if (data.RoomTypeId.HasValue) existing.RoomTypeId = data.RoomTypeId.Value;
             if (data.Status.HasValue) existing.Status = (RoomStatus)data.Status.Value;
+            if (data.BasePrice.HasValue) existing.BasePrice = data.BasePrice.Value;
 
             // Xử lý link ảnh - ÉP BUỘC LƯU
             if (data.ImageUrls != null)
@@ -107,6 +115,10 @@ namespace Demo02.Controllers
         [Authorize(Roles = "Admin")] // Chỉ Admin mới được tạo phòng (Mục 2.1)
         public async Task<ActionResult<RoomResponseDto>> PostRoom(RoomCreateDto dto)
         {
+            // Kiểm tra trùng số phòng trước khi tạo
+            if (await _context.Rooms.AnyAsync(r => r.RoomNumber == dto.RoomNumber))
+                return BadRequest("Số phòng này đã tồn tại trong hệ thống.");
+
             var room = new Room {
                 RoomNumber = dto.RoomNumber,
                 Floor = dto.Floor,

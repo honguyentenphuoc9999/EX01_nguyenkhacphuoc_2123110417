@@ -44,9 +44,9 @@ const Rooms = () => {
         const payload = {
             roomNumber: modalData.roomNumber || modalData.RoomNumber,
             floor: modalData.floor || modalData.Floor || 1,
-            roomTypeId: modalData.roomTypeId || modalData.RoomTypeId,
+            roomTypeId: (modalData.roomTypeId || modalData.RoomTypeId) || null,
             status: modalData.status ?? modalData.Status ?? 0,
-            imageUrls: finalUrls // Đồng bộ về 1 tên duy nhất
+            imageUrls: finalUrls 
         };
 
         try {
@@ -58,7 +58,10 @@ const Rooms = () => {
             alert("Lưu thông tin phòng thành công!");
             fetchRooms();
             setIsModalOpen(false);
-        } catch (err) { alert("Lỗi khi lưu dữ liệu. Kiểm tra xem số phòng đã tồn tại chưa?"); }
+        } catch (err) { 
+            const msg = err.response?.data?.message || err.response?.data || err.message;
+            alert(`Lỗi khi ${modalData.roomId ? 'cập nhật' : 'thêm'} phòng: ${msg}`); 
+        }
     };
 
     const handleImagesUpload = async (e) => {
