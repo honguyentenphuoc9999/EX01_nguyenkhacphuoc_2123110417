@@ -97,32 +97,42 @@ namespace Demo02.Controllers
 
         // PUT: api/RoomTypes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        public class RoomTypeUpdateDto
+        {
+            public string? TypeName { get; set; }
+            public string? typeName { get; set; }
+            public decimal? BasePrice { get; set; }
+            public decimal? basePrice { get; set; }
+            public string? Description { get; set; }
+            public string? description { get; set; }
+            public int? MaxOccupancy { get; set; }
+            public int? maxOccupancy { get; set; }
+            public string? ImageUrl { get; set; }
+            public string? imageUrl { get; set; }
+        }
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoomType(Guid id, [FromBody] System.Text.Json.Nodes.JsonNode data)
+        public async Task<IActionResult> PutRoomType(Guid id, [FromBody] RoomTypeUpdateDto data)
         {
             var existing = await _context.RoomTypes.FindAsync(id);
             if (existing == null) return NotFound();
 
             // Cập nhật thông tin cơ bản
-            existing.TypeName = (data["typeName"] ?? data["TypeName"])?.ToString() ?? existing.TypeName;
-            existing.Description = (data["description"] ?? data["Description"])?.ToString() ?? existing.Description;
+            existing.TypeName = data.TypeName ?? data.typeName ?? existing.TypeName;
+            existing.Description = data.Description ?? data.description ?? existing.Description;
             
-            if (data["basePrice"] != null || data["BasePrice"] != null)
-                existing.BasePrice = decimal.Parse((data["basePrice"] ?? data["BasePrice"])!.ToString());
+            if (data.BasePrice.HasValue) existing.BasePrice = data.BasePrice.Value;
+            else if (data.basePrice.HasValue) existing.BasePrice = data.basePrice.Value;
             
-            if (data["maxOccupancy"] != null || data["MaxOccupancy"] != null)
-                existing.MaxOccupancy = int.Parse((data["maxOccupancy"] ?? data["MaxOccupancy"])!.ToString());
+            if (data.MaxOccupancy.HasValue) existing.MaxOccupancy = data.MaxOccupancy.Value;
+            else if (data.maxOccupancy.HasValue) existing.MaxOccupancy = data.maxOccupancy.Value;
 
             // Xử lý link ảnh - ÉP BUỘC LƯU
-            var imgNode = data["imageUrl"] ?? data["ImageUrl"];
-            if (imgNode != null)
+            string? link = data.ImageUrl ?? data.imageUrl;
+            if (!string.IsNullOrEmpty(link))
             {
-                string link = imgNode.ToString();
-                if (!string.IsNullOrEmpty(link))
-                {
-                    existing.ImageUrl = link;
-                    _context.Entry(existing).Property(x => x.ImageUrl).IsModified = true;
-                }
+                existing.ImageUrl = link;
+                _context.Entry(existing).Property(x => x.ImageUrl).IsModified = true;
             }
 
             try

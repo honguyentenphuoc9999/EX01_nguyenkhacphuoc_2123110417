@@ -41,26 +41,43 @@ namespace Demo02.Controllers
                 }).ToListAsync();
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoom(Guid id, [FromBody] System.Text.Json.Nodes.JsonNode data)
+        public class RoomUpdateDto
         {
-            if (data["roomNumber"] != null || data["RoomNumber"] != null)
-                existing.RoomNumber = (data["roomNumber"] ?? data["RoomNumber"])!.ToString();
+            public string? RoomNumber { get; set; }
+            public string? roomNumber { get; set; }
+            public int? Floor { get; set; }
+            public int? floor { get; set; }
+            public Guid? RoomTypeId { get; set; }
+            public Guid? roomTypeId { get; set; }
+            public int? Status { get; set; }
+            public int? status { get; set; }
+            public string? ImageUrls { get; set; }
+            public string? imageUrls { get; set; }
+        }
 
-            if (data["floor"] != null || data["Floor"] != null)
-                existing.Floor = int.Parse((data["floor"] ?? data["Floor"])!.ToString());
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutRoom(Guid id, [FromBody] RoomUpdateDto data)
+        {
+            var existing = await _context.Rooms.FindAsync(id);
+            if (existing == null) return NotFound();
 
-            if (data["roomTypeId"] != null || data["RoomTypeId"] != null)
-                existing.RoomTypeId = Guid.Parse((data["roomTypeId"] ?? data["RoomTypeId"])!.ToString());
+            string? num = data.RoomNumber ?? data.roomNumber;
+            if (num != null) existing.RoomNumber = num;
 
-            if (data["status"] != null || data["Status"] != null)
-                existing.Status = (RoomStatus)int.Parse((data["status"] ?? data["Status"])!.ToString());
+            if (data.Floor.HasValue) existing.Floor = data.Floor.Value;
+            else if (data.floor.HasValue) existing.Floor = data.floor.Value;
+
+            if (data.RoomTypeId.HasValue) existing.RoomTypeId = data.RoomTypeId.Value;
+            else if (data.roomTypeId.HasValue) existing.RoomTypeId = data.roomTypeId.Value;
+
+            if (data.Status.HasValue) existing.Status = (RoomStatus)data.Status.Value;
+            else if (data.status.HasValue) existing.Status = (RoomStatus)data.status.Value;
 
             // Xử lý link ảnh - ÉP BUỘC LƯU
-            var imgsNode = data["imageUrls"] ?? data["ImageUrls"];
-            if (imgsNode != null)
+            string? links = data.ImageUrls ?? data.imageUrls;
+            if (links != null)
             {
-                existing.ImageUrls = imgsNode.ToString();
+                existing.ImageUrls = links;
                 _context.Entry(existing).Property(x => x.ImageUrls).IsModified = true;
             }
 
